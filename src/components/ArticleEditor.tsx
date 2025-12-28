@@ -1,0 +1,331 @@
+'use client';
+
+import { useState, useRef } from 'react';
+import { Article, Section } from '@/lib/types';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/context/ToastContext';
+
+interface ArticleEditorProps {
+    article: Article;
+}
+
+// Helper Component for Image Uploading
+function ImageUploader({
+    currentUrl,
+    onUpload,
+    label
+}: {
+    currentUrl?: string,
+    onUpload: (url: string) => void,
+    label: string
+}) {
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { success, error } = useToast();
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!res.ok) throw new Error('Upload failed');
+
+            const data = await res.json();
+            onUpload(data.url);
+            success('Image uploaded successfully');
+        } catch (err) {
+            console.error(err);
+            error('Failed to upload image');
+        } finally {
+            setUploading(false);
+            // Reset input so same file can be selected again if needed
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    return (
+        <div className="space-y-2">
+            <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider mb-1">{label}</label>
+
+            {/* Preview Area */}
+            <div className={`relative group w-full overflow-hidden rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 transition-colors
+                ${!currentUrl ? 'h-32 flex items-center justify-center' : 'aspect-video'}`}>
+
+                {currentUrl ? (
+                    <>
+                        <img
+                            src={currentUrl}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="px-4 py-2 bg-white text-black font-bold rounded-lg text-sm hover:bg-gray-100"
+                            >
+                                Change Image
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-gray-400 font-medium text-sm flex flex-col items-center gap-2 hover:text-gray-600 transition-colors"
+                    >
+                        <span>{uploading ? 'Uploading...' : 'Click to Upload Image'}</span>
+                    </button>
+                )}
+
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                />
+            </div>
+            {currentUrl && (
+                <p className="text-[10px] text-gray-400 truncate font-mono">{currentUrl}</p>
+            )}
+        </div>
+    );
+}
+
+export default function ArticleEditor({ article }: ArticleEditorProps) {
+    const router = useRouter();
+    const { success, error } = useToast();
+    const [title, setTitle] = useState(article.title);
+    const [excerpt, setExcerpt] = useState(article.excerpt);
+    const [status, setStatus] = useState(article.status || (article.isArchived ? 'archived' : 'published'));
+    const [sections, setSections] = useState<Section[]>(article.sections);
+    const [imageUrl, setImageUrl] = useState(article.imageUrl || '');
+
+    // We treat imageSearchQuery as the "Caption" if manually edited
+    // Or we can add a specific caption field? 
+    // Let's use imageSearchQuery as the caption field for now since it's displayed below the image in the viewer.
+    // Ideally we should rename this field in the future, but for now we reuse it.
+
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async (newStatus?: string) => {
+        setSaving(true);
+        const finalStatus = newStatus || status;
+
+        try {
+            const res = await fetch('/api/admin/edit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    slug: article.slug,
+                    title,
+                    excerpt,
+                    sections,
+                    status: finalStatus,
+                    tags: article.tags,
+                    imageUrl,
+                    // We don't really use this top-level field for much anymore if we upload, 
+                    // but let's keep it synced or just empty.
+                    imageSearchQuery: ''
+                }),
+            });
+
+            if (!res.ok) throw new Error('Failed to save');
+
+            setStatus(finalStatus as any);
+            setStatus(finalStatus as any);
+            router.refresh();
+            success('Saved successfully!');
+        } catch (e) {
+            error('Error saving article');
+            console.error(e);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSectionChange = (index: number, field: keyof Section, value: string) => {
+        const newSections = [...sections];
+        newSections[index] = { ...newSections[index], [field]: value };
+        setSections(newSections);
+    };
+
+    const handleSectionImageUpload = (index: number, url: string) => {
+        handleSectionChange(index, 'imageUrl', url);
+    };
+
+    return (
+        <div className="space-y-8 max-w-7xl mx-auto">
+            {/* Header Controls */}
+            <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 sticky top-4 z-50">
+                <div className="flex items-center gap-4">
+                    <div>
+                        <h2 className="text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Status</h2>
+                        <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${status === 'published' ? 'bg-green-100 text-green-800' :
+                            status === 'archived' ? 'bg-gray-200 text-gray-800' :
+                                'bg-yellow-100 text-yellow-800'
+                            }`}>
+                            {status?.toUpperCase()}
+                        </div>
+                    </div>
+                </div>
+                <div className="flex gap-4">
+                    <button
+                        onClick={() => handleSave('draft')}
+                        disabled={saving}
+                        className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-sm transition-colors"
+                    >
+                        Save Draft
+                    </button>
+                    <button
+                        onClick={() => handleSave('published')}
+                        disabled={saving}
+                        className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-sm transition-colors shadow-lg shadow-purple-500/20"
+                    >
+                        {saving ? 'Publishing...' : 'Publish Live'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Main Content Editor */}
+                <div className="lg:col-span-2 space-y-8">
+
+                    {/* Meta Section */}
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-6">
+                        <div>
+                            <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider mb-2">Article Title</label>
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none text-2xl font-serif font-bold text-gray-800 dark:text-gray-100 placeholder-gray-300"
+                                placeholder="Enter a captivating title..."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider mb-2">Excerpt</label>
+                            <textarea
+                                value={excerpt}
+                                onChange={(e) => setExcerpt(e.target.value)}
+                                rows={3}
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none text-gray-600 dark:text-gray-300 text-lg leading-relaxed resize-none"
+                                placeholder="A brief, intriguing summary..."
+                            />
+                        </div>
+                    </div>
+
+                    {/* Sections */}
+                    <div className="space-y-8">
+                        {sections.map((section, idx) => (
+                            <div key={idx} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                {/* Section Header */}
+                                <div className="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                                    <span className="text-xs font-bold uppercase text-gray-400 tracking-widest">Section {idx + 1}</span>
+                                </div>
+
+                                <div className="p-6 space-y-6">
+                                    {/* Heading */}
+                                    <div>
+                                        <input
+                                            type="text"
+                                            value={section.heading}
+                                            onChange={(e) => handleSectionChange(idx, 'heading', e.target.value)}
+                                            className="w-full px-0 py-2 border-0 border-b-2 border-transparent focus:border-purple-500 focus:ring-0 bg-transparent text-xl font-serif font-bold text-gray-800 dark:text-gray-100 placeholder-gray-300 transition-colors"
+                                            placeholder="Section Heading"
+                                        />
+                                    </div>
+
+                                    {/* Split View: Content & Image */}
+                                    <div className="grid md:grid-cols-2 gap-8">
+
+                                        {/* Text Content */}
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-xs font-bold font-sans uppercase text-gray-300 tracking-wider mb-2">Content</label>
+                                                <textarea
+                                                    value={section.content}
+                                                    onChange={(e) => handleSectionChange(idx, 'content', e.target.value)}
+                                                    rows={12}
+                                                    className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none font-sans text-sm leading-7 text-gray-600 dark:text-gray-300 resize-none"
+                                                    placeholder="Write your story..."
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Visuals & Links */}
+                                        <div className="space-y-6 bg-gray-50 dark:bg-gray-900/30 p-6 rounded-xl">
+                                            <ImageUploader
+                                                label="Section Image"
+                                                currentUrl={section.imageUrl}
+                                                onUpload={(url) => handleSectionImageUpload(idx, url)}
+                                            />
+
+                                            {/* Caption (mapped to imageSearchQuery for now) */}
+                                            <div>
+                                                <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider mb-2">Image Caption</label>
+                                                <input
+                                                    type="text"
+                                                    value={section.imageSearchQuery || ''}
+                                                    onChange={(e) => handleSectionChange(idx, 'imageSearchQuery', e.target.value)}
+                                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-serif italic text-gray-500 text-center"
+                                                    placeholder="Enter a caption for the image..."
+                                                />
+                                            </div>
+
+                                            <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold uppercase text-blue-500 mb-1">🛒 Product Link</label>
+                                                    <input
+                                                        type="url"
+                                                        value={section.productUrl || ''}
+                                                        onChange={(e) => handleSectionChange(idx, 'productUrl', e.target.value)}
+                                                        className="w-full px-3 py-2 rounded-lg border border-blue-100 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800 text-xs text-blue-800"
+                                                        placeholder="https://amazon.com/..."
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold uppercase text-purple-500 mb-1">✨ CTA Text</label>
+                                                    <input
+                                                        type="text"
+                                                        value={section.buttonText || ''}
+                                                        onChange={(e) => handleSectionChange(idx, 'buttonText', e.target.value)}
+                                                        className="w-full px-3 py-2 rounded-lg border border-purple-100 bg-purple-50 dark:bg-purple-900/10 dark:border-purple-800 text-xs text-purple-800 font-serif italic"
+                                                        placeholder="Claim your match..."
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Sidebar - Cover Image */}
+                <div className="lg:col-span-1">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 sticky top-32">
+                        <h3 className="font-serif font-bold text-xl mb-6 text-gray-800 dark:text-white">Cover Appearance</h3>
+                        <ImageUploader
+                            label="Cover Image"
+                            currentUrl={imageUrl}
+                            onUpload={setImageUrl}
+                        />
+                        <p className="text-xs text-gray-400 mt-4 leading-relaxed">
+                            This image will be the first thing readers see. Make it expansive and atmospheric.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
