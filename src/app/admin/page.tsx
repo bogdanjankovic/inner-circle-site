@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getPaginatedPosts } from '@/lib/storage';
 import { getMetrics } from '@/lib/metrics';
 import ArchiveButton from '@/components/ArchiveButton';
+import CreateManualButton from '@/components/CreateManualButton';
 
 // Force dynamic rendering so we always see fresh data
 export const dynamic = 'force-dynamic';
@@ -52,13 +53,14 @@ export default async function AdminDashboard({ searchParams }: AdminDashboardPro
                         <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Total Views</h3>
                         <p className="text-4xl font-black text-purple-600">{totalViews}</p>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center gap-4">
                         <Link
                             href="/admin/create"
-                            className="bg-black dark:bg-white text-white dark:text-black px-6 py-3 rounded-lg font-bold hover:scale-105 transition-transform shadow-lg"
+                            className="bg-black dark:bg-white text-white dark:text-black px-6 py-3 rounded-lg font-bold hover:scale-105 transition-transform shadow-lg w-full text-center"
                         >
-                            + Create New
+                            + Generate with AI
                         </Link>
+                        <CreateManualButton />
                     </div>
                 </div>
 

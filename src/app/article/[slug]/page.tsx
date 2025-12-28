@@ -1,7 +1,8 @@
 // This file renders the actual article
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getPostBySlug } from '@/lib/storage';
+import { getPostBySlug, getPublishedPosts } from '@/lib/storage';
+import { getMetrics } from '@/lib/metrics';
 import AdUnit from '@/components/AdUnit';
 import TextToSpeech from '@/components/TextToSpeech';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
@@ -19,6 +20,19 @@ export default async function ArticlePage(props: PageProps) {
     // Fetch from storage using the slug
     // Our getPostBySlug logic now checks for exact slug match
     const article = await getPostBySlug(slug);
+
+    // Fetch trending data
+    const allPosts = await getPublishedPosts();
+    const metrics = await getMetrics();
+
+    const trending = allPosts
+        .filter(p => p.slug !== slug) // Optional: exclude current article? Maybe keep it for accurate ranking. Let's keep it.
+        .map(post => ({
+            ...post,
+            views: metrics[post.slug]?.views || 0
+        }))
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 4);
 
     if (!article || article.isArchived) {
         return notFound();
@@ -152,16 +166,18 @@ export default async function ArticlePage(props: PageProps) {
                             Trending Frequencies
                         </h3>
                         <ul className="space-y-8">
-                            {[1, 2, 3, 4].map(i => (
-                                <li key={i} className="group cursor-pointer flex gap-6 items-baseline">
-                                    <span className="text-3xl font-serif italic text-gold-200 group-hover:text-gold-500 transition-colors">0{i}</span>
-                                    <div>
-                                        <h4 className="font-serif text-xl text-charcoal group-hover:text-gold-600 transition-colors leading-tight">
-                                            Why AI is changing how we manifest abundance
-                                        </h4>
-                                        <span className="text-[10px] font-sans font-bold text-gray-300 uppercase mt-2 block tracking-widest">Read Now</span>
-                                    </div>
-                                </li>
+                            {trending.map((post, i) => (
+                                <Link key={post.slug} href={`/article/${post.slug}`}>
+                                    <li className="group cursor-pointer flex gap-6 items-baseline">
+                                        <span className="text-3xl font-serif italic text-gold-200 group-hover:text-gold-500 transition-colors">0{i + 1}</span>
+                                        <div>
+                                            <h4 className="font-serif text-xl text-charcoal group-hover:text-gold-600 transition-colors leading-tight line-clamp-2">
+                                                {post.title}
+                                            </h4>
+                                            <span className="text-[10px] font-sans font-bold text-gray-300 uppercase mt-2 block tracking-widest">Read Now</span>
+                                        </div>
+                                    </li>
+                                </Link>
                             ))}
                         </ul>
                     </div>
