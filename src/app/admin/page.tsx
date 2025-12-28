@@ -11,14 +11,14 @@ interface AdminDashboardProps {
     searchParams: { [key: string]: string | string[] | undefined };
 }
 
-export default function AdminDashboard({ searchParams }: AdminDashboardProps) {
+export default async function AdminDashboard({ searchParams }: AdminDashboardProps) {
     const pageParam = searchParams?.page;
     const page = typeof pageParam === 'string' ? parseInt(pageParam, 10) : 1;
     const currentPage = isNaN(page) || page < 1 ? 1 : page;
     const limit = 10;
 
-    const { posts, total, totalPages } = getPaginatedPosts(currentPage, limit);
-    const metrics = getMetrics();
+    const { posts, total, totalPages } = await getPaginatedPosts(currentPage, limit);
+    const metrics = await getMetrics();
 
     const totalViews = Object.values(metrics).reduce((sum, m) => sum + m.views, 0);
 

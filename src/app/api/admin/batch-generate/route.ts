@@ -48,7 +48,7 @@ export async function GET() {
         try {
             console.log(`Generating: ${topic}`);
             const article = await generateArticle(topic);
-            savePost(article);
+            await savePost(article);
             results.push({ topic, status: 'success', slug: article.slug });
         } catch (e) {
             console.error(`Failed to generate ${topic}`, e);

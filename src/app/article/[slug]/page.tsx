@@ -18,7 +18,7 @@ export default async function ArticlePage(props: PageProps) {
 
     // Fetch from storage using the slug
     // Our getPostBySlug logic now checks for exact slug match
-    const article = getPostBySlug(slug);
+    const article = await getPostBySlug(slug);
 
     if (!article || article.isArchived) {
         return notFound();

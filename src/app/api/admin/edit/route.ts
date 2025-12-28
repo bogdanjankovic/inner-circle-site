@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const existingPost = getPostBySlug(slug);
+        const existingPost = await getPostBySlug(slug);
 
         // Construct updated article, preserving date and other fields if not provided
         const updatedArticle: Article = {
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
             isArchived: status === 'archived' // Keep sync
         };
 
-        savePost(updatedArticle);
+        await savePost(updatedArticle);
         console.log(`[API/Edit] Saved article: ${slug} with status: ${status}`);
 
         return NextResponse.json({ success: true, slug });

@@ -9,7 +9,7 @@ export async function POST(request: Request) {
         const { topic, action, article } = body;
 
         if (action === "publish" && article) {
-            savePost(article);
+            await savePost(article);
             return NextResponse.json({ success: true, slug: article.slug }); // Assuming slug will be handled in client or generated
         }
 

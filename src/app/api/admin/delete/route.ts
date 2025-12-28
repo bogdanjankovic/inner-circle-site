@@ -32,7 +32,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Slug required' }, { status: 400 });
         }
 
-        deletePost(slug);
+        await deletePost(slug);
         console.log("[API/Delete] Delete success");
         return NextResponse.json({ success: true });
     } catch (error) {

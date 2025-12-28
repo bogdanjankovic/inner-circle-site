@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
         }
 
         const shouldArchive = action !== 'restore'; // Default to archive if not specified
-        togglePostArchiveStatus(slug, shouldArchive);
+        await togglePostArchiveStatus(slug, shouldArchive);
 
         console.log(`[API/Archive] ${shouldArchive ? 'Archive' : 'Restore'} success`);
         return NextResponse.json({ success: true });

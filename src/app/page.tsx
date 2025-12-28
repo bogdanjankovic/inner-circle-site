@@ -5,8 +5,8 @@ import NewsletterForm from '@/components/NewsletterForm';
 
 export const dynamic = 'force-dynamic'; // Force dynamic rendering to ensure fresh data
 
-export default function Home() {
-    const posts = getPublishedPosts();
+export default async function Home() {
+    const posts = await getPublishedPosts();
 
     // Featured Post (First one)
     const featured = posts[0];

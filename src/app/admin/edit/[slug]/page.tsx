@@ -12,7 +12,7 @@ interface PageProps {
 
 export default async function EditPage(props: PageProps) {
     const params = await props.params;
-    const post = getPostBySlug(params.slug);
+    const post = await getPostBySlug(params.slug);
 
     if (!post) {
         notFound();
