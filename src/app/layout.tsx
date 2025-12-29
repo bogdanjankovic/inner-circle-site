@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Montserrat } from "next/font/google"; // Import Google Fonts
+import { JetBrains_Mono, Montserrat } from "next/font/google"; // Import Google Fonts
 import "./globals.css";
 import ConsentBanner from "@/components/ConsentBanner";
 import Navbar from "@/components/Navbar";
@@ -7,10 +7,9 @@ import Footer from "@/components/Footer";
 import { ToastProvider } from "@/context/ToastContext";
 
 // Configure Fonts
-const cormorant = Cormorant_Garamond({
+const mono = JetBrains_Mono({
     subsets: ["latin"],
-    weight: ["300", "400", "500", "600", "700"],
-    variable: "--font-cormorant",
+    variable: "--font-mono",
     display: 'swap',
 });
 
@@ -22,8 +21,8 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-    title: "The Inner Circle",
-    description: "Exclusive insights and energetic alignment.",
+    title: "PROTOCOL | High-Performance Optimization",
+    description: "Data-driven strategies for wealth, health, and workspace.",
 };
 
 export default function RootLayout({
@@ -33,15 +32,10 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className={`${cormorant.variable} ${montserrat.variable} antialiased bg-[#F5F2EA] text-[#1A1A1A]`}>
-                {/* 
-                  Base Background: Champagne Cream (#F5F2EA) 
-                  Base Text: Soft Charcoal (#1A1A1A) 
-                */}
-                <div className="fixed inset-0 -z-10 bg-[#F5F2EA]">
-                    {/* Subtle Mystical Gradient - muted for luxury */}
-                    <div className="absolute top-0 right-0 w-[60%] h-[60%] rounded-full bg-[#D4AF37]/5 blur-[150px]" />
-                    <div className="absolute bottom-0 left-0 w-[60%] h-[60%] rounded-full bg-[#9DC183]/10 blur-[150px]" />
+            <body className={`${mono.variable} ${montserrat.variable} antialiased bg-black text-gray-200 selection:bg-green-500 selection:text-black`}>
+                <div className="fixed inset-0 -z-10 bg-black">
+                    {/* Tech Grid Background */}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
                 </div>
 
                 <ToastProvider>

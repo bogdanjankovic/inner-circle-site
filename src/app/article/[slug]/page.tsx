@@ -9,7 +9,6 @@ import TextToSpeech from '@/components/TextToSpeech';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
 import { getAffiliateUrl } from '@/lib/affiliate';
 
-
 interface PageProps {
     params: Promise<{ slug: string }>;
 }
@@ -20,18 +19,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     if (!article) {
         return {
-            title: 'Article Not Found',
+            title: 'Protocol Not Found',
         };
     }
 
     return {
-        title: `${article.title} | The Inner Circle`,
+        title: `${article.title} | PROTOCOL`,
         description: article.excerpt,
         openGraph: {
             title: article.title,
             description: article.excerpt,
             url: `https://inner-circle-site.vercel.app/article/${slug}`,
-            siteName: 'The Inner Circle',
+            siteName: 'PROTOCOL',
             images: [
                 {
                     url: article.imageUrl,
@@ -57,7 +56,6 @@ export default async function ArticlePage(props: PageProps) {
     const slug = params.slug;
 
     // Fetch from storage using the slug
-    // Our getPostBySlug logic now checks for exact slug match
     const article = await getPostBySlug(slug);
 
     // Fetch trending data
@@ -65,7 +63,7 @@ export default async function ArticlePage(props: PageProps) {
     const metrics = await getMetrics();
 
     const trending = allPosts
-        .filter(p => p.slug !== slug) // Optional: exclude current article? Maybe keep it for accurate ranking. Let's keep it.
+        .filter(p => p.slug !== slug)
         .map(post => ({
             ...post,
             views: metrics[post.slug]?.views || 0
@@ -78,7 +76,7 @@ export default async function ArticlePage(props: PageProps) {
     }
 
     return (
-        <div className="min-h-screen pb-32 pt-16 bg-[#F5F2EA] text-[#1A1A1A]">
+        <div className="min-h-screen pb-32 pt-20 bg-black text-gray-200 font-sans">
             <AnalyticsTracker slug={slug} />
             <script
                 type="application/ld+json"
@@ -89,17 +87,17 @@ export default async function ArticlePage(props: PageProps) {
                         headline: article.title,
                         description: article.excerpt,
                         image: article.imageUrl,
-                        datePublished: new Date(article.date).toISOString(), // Assuming date is parseable or just use raw string if needed
+                        datePublished: new Date(article.date).toISOString(),
                         author: {
                             '@type': 'Person',
-                            name: 'The Inner Circle', // Or specific author if available
+                            name: 'PROTOCOL',
                         },
                         publisher: {
                             '@type': 'Organization',
-                            name: 'The Inner Circle',
+                            name: 'PROTOCOL',
                             logo: {
                                 '@type': 'ImageObject',
-                                url: 'https://inner-circle-site.vercel.app/logo.png', // Update with real logo path
+                                url: 'https://inner-circle-site.vercel.app/logo.png',
                             },
                         },
                     }),
@@ -110,25 +108,25 @@ export default async function ArticlePage(props: PageProps) {
 
                 {/* Main Content Column */}
                 <article>
-                    {/* Article Header - Spacious & Editorial */}
+                    {/* Article Header - Tech / Editorial */}
                     <header className="mb-16 text-center lg:text-left">
                         <div className="flex gap-4 mb-8 justify-center lg:justify-start">
                             {article.tags.map(tag => (
-                                <span key={tag} className="px-4 py-2 text-[10px] font-sans font-bold uppercase tracking-[0.2em] border border-charcoal/10 rounded-none text-charcoal/60 hover:text-gold-600 hover:border-gold-500 transition-all">
+                                <span key={tag} className="px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-widest border border-green-500/20 text-green-500 bg-green-500/5 hover:bg-green-500/10 transition-all">
                                     {tag}
                                 </span>
                             ))}
                         </div>
-                        <h1 className="text-5xl md:text-7xl font-serif font-medium mb-8 leading-[1.1] text-charcoal tracking-tight">
+                        <h1 className="text-4xl md:text-6xl font-mono font-bold mb-8 leading-tight text-white tracking-tighter">
                             {article.title}
                         </h1>
-                        <p className="text-2xl font-serif italic text-gray-600 mb-10 leading-relaxed max-w-2xl">
+                        <p className="text-xl font-mono text-gray-400 mb-10 leading-relaxed max-w-2xl border-l border-green-500/50 pl-6">
                             {article.excerpt}
                         </p>
-                        <div className="flex items-center justify-center lg:justify-start gap-4 text-[10px] font-sans font-bold uppercase tracking-[0.25em] text-gold-600 border-t border-b border-gold-500/20 py-4">
-                            <span>{article.date}</span>
-                            <span className="w-1 h-1 bg-gold-400 rounded-full"></span>
-                            <span>{article.readingTime}</span>
+                        <div className="flex items-center justify-center lg:justify-start gap-4 text-[10px] font-mono font-bold uppercase tracking-widest text-gray-500 border-t border-b border-white/10 py-4">
+                            <span>{article.date || 'TBD'}</span>
+                            <span className="text-green-900">//</span>
+                            <span>{article.readingTime || '5 MIN READ'}</span>
                         </div>
 
                         {/* Audio Narration */}
@@ -138,48 +136,48 @@ export default async function ArticlePage(props: PageProps) {
 
                         {/* Partnership Disclosure */}
                         <div className="mt-4 text-center lg:text-left">
-                            <p className="text-[9px] uppercase tracking-[0.2em] text-gray-400 font-sans">
-                                Partnership Disclosure: Curated selections may earn commission.
+                            <p className="text-[9px] uppercase tracking-widest text-gray-600 font-mono">
+                                System Disclosure: Affiliate links active.
                             </p>
                         </div>
                     </header>
 
                     {/* Featured Image - Cinematic */}
-                    <div className="w-full aspect-[21/9] overflow-hidden mb-20 relative shadow-2xl shadow-[#D4AF37]/10">
+                    <div className="w-full aspect-[21/9] overflow-hidden mb-20 relative border border-white/10 bg-white/5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={article.imageUrl}
                             alt={article.title}
-                            className="w-full h-full object-cover transition-transform duration-[20s] hover:scale-110"
+                            className="w-full h-full object-cover grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-700"
                         />
                     </div>
 
                     {/* Content - High Readability */}
-                    <div className="prose prose-xl prose-stone max-w-none font-sans font-light leading-[2.2] text-gray-700">
+                    <div className="prose prose-xl prose-invert max-w-none font-sans font-light leading-loose text-gray-300">
                         {article.sections.map((section, idx) => (
                             <section key={idx} className="mb-24 last:mb-0">
-                                <h2 className="text-4xl font-serif font-medium mb-8 mt-12 text-charcoal italic tracking-wide">
+                                <h2 className="text-3xl font-mono font-bold mb-8 mt-12 text-white tracking-tight border-b border-white/10 pb-4 inline-block">
                                     {section.heading}
                                 </h2>
 
                                 {/* Section Specific Image (Top for Products) */}
                                 {section.imageUrl && (
-                                    <figure className="my-12">
+                                    <figure className="my-12 border border-white/10 bg-white/5 p-1 rounded-sm">
                                         <img
                                             src={section.imageUrl}
                                             alt={section.imageSearchQuery || section.heading}
-                                            className="w-full shadow-lg object-cover max-h-[600px] grayscale-[10%] hover:grayscale-0 transition-all duration-700"
+                                            className="w-full object-cover max-h-[500px] grayscale opacity-90 hover:grayscale-0 hover:opacity-100 transition-all duration-700"
                                         />
                                         {section.imageSearchQuery && (
-                                            <figcaption className="text-center text-xs font-serif italic text-gray-400 mt-4 tracking-widest">
-                                                {section.imageSearchQuery}
+                                            <figcaption className="text-center text-[10px] font-mono text-gray-500 mt-2 tracking-widest uppercase">
+                                                :: {section.imageSearchQuery}
                                             </figcaption>
                                         )}
                                     </figure>
                                 )}
 
                                 {/* Section Content */}
-                                <div className="text-lg md:text-xl text-gray-800 leading-loose">
+                                <div className="text-lg md:text-xl text-gray-300 leading-relaxed font-sans">
                                     <p>{section.content}</p>
                                 </div>
 
@@ -190,10 +188,10 @@ export default async function ArticlePage(props: PageProps) {
                                             href={getAffiliateUrl(section.productUrl)}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="group relative inline-flex items-center gap-4 px-12 py-5 bg-charcoal text-white font-serif italic text-xl shadow-2xl hover:bg-gold-600 transition-all duration-500 overflow-hidden"
+                                            className="group relative inline-flex items-center gap-4 px-8 py-4 bg-white text-black font-mono font-bold text-sm hover:bg-green-500 hover:text-black transition-all duration-300"
                                         >
-                                            <span className="relative z-10">{section.buttonText || 'Claim your energetic match'}</span>
-                                            <span className="text-sm not-italic opacity-50 relative z-10 group-hover:translate-x-2 transition-transform">→</span>
+                                            <span className="relative z-10 tracking-widest uppercase">{section.buttonText || 'Acquire Hardware'}</span>
+                                            <span className="text-sm border-l border-black/20 pl-4 relative z-10 group-hover:translate-x-1 transition-transform">→</span>
                                         </a>
                                     </div>
                                 )}
@@ -201,8 +199,8 @@ export default async function ArticlePage(props: PageProps) {
 
                                 {/* Ad Injection - Styled Minimal */}
                                 {(idx === 1 || idx === 4) && (
-                                    <div className="my-16 flex justify-center opaicty-50 hover:opacity-100 transition-opacity">
-                                        <span className="text-[8px] uppercase tracking-widest text-gray-300 absolute -mt-4">Sponsored Alignment</span>
+                                    <div className="my-16 flex justify-center opacity-50 hover:opacity-100 transition-opacity border border-white/5 p-4 bg-white/5">
+                                        <span className="text-[8px] uppercase tracking-widest text-gray-500 absolute -mt-7 bg-black px-2">Sponsored Protocol</span>
                                         <AdUnit slotId={`content-ad-${idx}`} format="banner" />
                                     </div>
                                 )}
@@ -211,13 +209,13 @@ export default async function ArticlePage(props: PageProps) {
                     </div>
                 </article>
 
-                {/* Sidebar Column - "The Curated Rail" */}
-                <aside className="hidden lg:block space-y-16 border-l border-[#D4AF37]/20 pl-12 h-fit sticky top-32">
+                {/* Sidebar Column - "System Status" */}
+                <aside className="hidden lg:block space-y-16 border-l border-white/10 pl-12 h-fit sticky top-32">
                     {/* Sidebar Ad 1 */}
-                    <div className="bg-white/50 p-8 border border-[#D4AF37]/10 backdrop-blur-sm">
+                    <div className="bg-white/5 p-6 border border-white/10 backdrop-blur-sm">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-serif italic text-lg text-charcoal">Curated Pick</h3>
-                            <span className="w-1 h-1 bg-gold-500 rounded-full"></span>
+                            <h3 className="font-mono font-bold text-xs text-white uppercase tracking-widest">Sponsored</h3>
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
                         </div>
                         <div className="flex justify-center grayscale hover:grayscale-0 transition-all">
                             <AdUnit slotId="sidebar-1" format="rectangle" />
@@ -226,19 +224,19 @@ export default async function ArticlePage(props: PageProps) {
 
                     {/* Trending Widget */}
                     <div className="">
-                        <h3 className="font-sans font-bold text-xs uppercase tracking-[0.3em] mb-8 border-b border-gray-200 pb-4 text-gray-400">
-                            Trending Frequencies
+                        <h3 className="font-mono font-bold text-xs uppercase tracking-[0.2em] mb-8 border-b border-white/10 pb-4 text-gray-500">
+                            High Traffic
                         </h3>
-                        <ul className="space-y-8">
+                        <ul className="space-y-6">
                             {trending.map((post, i) => (
                                 <Link key={post.slug} href={`/article/${post.slug}`}>
-                                    <li className="group cursor-pointer flex gap-6 items-baseline">
-                                        <span className="text-3xl font-serif italic text-gold-200 group-hover:text-gold-500 transition-colors">0{i + 1}</span>
+                                    <li className="group cursor-pointer flex gap-4 items-start">
+                                        <span className="text-xl font-mono font-bold text-gray-700 group-hover:text-green-500 transition-colors">0{i + 1}</span>
                                         <div>
-                                            <h4 className="font-serif text-xl text-charcoal group-hover:text-gold-600 transition-colors leading-tight line-clamp-2">
+                                            <h4 className="font-mono text-sm font-bold text-gray-300 group-hover:text-white transition-colors leading-tight line-clamp-2 mb-1">
                                                 {post.title}
                                             </h4>
-                                            <span className="text-[10px] font-sans font-bold text-gray-300 uppercase mt-2 block tracking-widest">Read Now</span>
+                                            <span className="text-[9px] font-mono font-medium text-green-900 group-hover:text-green-500 uppercase block tracking-widest transition-colors">:: Access Protocol</span>
                                         </div>
                                     </li>
                                 </Link>
