@@ -21,7 +21,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-    title: "PROTOCOL | High-Performance Optimization",
+    title: "BLEXOUT | High-Performance Optimization",
     description: "Data-driven strategies for wealth, health, and workspace.",
 };
 

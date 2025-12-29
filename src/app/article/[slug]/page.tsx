@@ -19,18 +19,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     if (!article) {
         return {
-            title: 'Protocol Not Found',
+            title: 'BLEXOUT Not Found',
         };
     }
 
     return {
-        title: `${article.title} | PROTOCOL`,
+        title: `${article.title} | BLEXOUT`,
         description: article.excerpt,
         openGraph: {
             title: article.title,
             description: article.excerpt,
             url: `https://inner-circle-site.vercel.app/article/${slug}`,
-            siteName: 'PROTOCOL',
+            siteName: 'BLEXOUT',
             images: [
                 {
                     url: article.imageUrl,
@@ -90,11 +90,11 @@ export default async function ArticlePage(props: PageProps) {
                         datePublished: new Date(article.date).toISOString(),
                         author: {
                             '@type': 'Person',
-                            name: 'PROTOCOL',
+                            name: 'BLEXOUT',
                         },
                         publisher: {
                             '@type': 'Organization',
-                            name: 'PROTOCOL',
+                            name: 'BLEXOUT',
                             logo: {
                                 '@type': 'ImageObject',
                                 url: 'https://inner-circle-site.vercel.app/logo.png',

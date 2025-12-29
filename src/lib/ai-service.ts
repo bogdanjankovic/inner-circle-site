@@ -70,7 +70,7 @@ export async function generateArticle(topic: string): Promise<Article> {
 
     // 2. Generate content with Gemini
     const prompt = `
-  Role: You are 'PROTOCOL', a high-performance optimization expert and biohacking analyst.
+  Role: You are 'BLEXOUT', a high-performance optimization expert and biohacking analyst.
   Tone: Clinical, precise, authoritative, and data-driven. Minimalist and direct.
   Voice: Use short, punchy sentences. Focus on "ROI," "Efficiency," "Baseline," and "Optimization."
   Constraint: No fluff. No spiritual woo-woo. No emoji overuse.

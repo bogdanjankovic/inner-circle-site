@@ -7,9 +7,9 @@ export default function Footer() {
 
                 {/* Brand */}
                 <div className="md:col-span-1">
-                    <h3 className="text-white font-mono font-bold text-2xl mb-6 tracking-tighter">PROTOCOL</h3>
+                    <h3 className="text-white font-mono font-bold text-2xl mb-6 tracking-tighter">BLEXOUT</h3>
                     <p className="text-gray-500 font-mono text-xs leading-6">
-                        Systematizing success. <br />
+                        title: "BLEXOUT | High-Performance Optimization",g success. <br />
                         Wealth. Biology. Architecture.
                     </p>
                 </div>
@@ -51,7 +51,7 @@ export default function Footer() {
             </div>
 
             <div className="max-w-7xl mx-auto border-t border-white/5 pt-10 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] text-gray-600 uppercase tracking-widest font-mono">
-                <p>&copy; {new Date().getFullYear()} PROTOCOL. All Systems Nominal.</p>
+                <p>&copy; {new Date().getFullYear()} BLEXOUT. All Systems Nominal.</p>
                 <div className="flex gap-8">
                     <span className="hover:text-green-500 cursor-pointer transition-colors">X / Twitter</span>
                     <span className="hover:text-green-500 cursor-pointer transition-colors">GitHub</span>

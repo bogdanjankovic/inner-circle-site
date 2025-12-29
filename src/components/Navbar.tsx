@@ -7,7 +7,7 @@ export default function Navbar() {
             {/* Logo Area */}
             <Link href="/" className="flex items-center gap-4 group">
                 <div className="relative h-16 w-auto transition-opacity duration-300 hover:opacity-80">
-                    <img src="/logo.png" alt="PROTOCOL" className="h-full w-auto object-contain" />
+                    <img src="/logo.png" alt="BLEXOUT" className="h-full w-auto object-contain" />
                 </div>
             </Link>
 
