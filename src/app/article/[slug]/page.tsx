@@ -1,5 +1,6 @@
 // This file renders the actual article
 import Link from 'next/link';
+import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getPostBySlug, getPublishedPosts } from '@/lib/storage';
 import { getMetrics } from '@/lib/metrics';
@@ -11,6 +12,44 @@ import { getAffiliateUrl } from '@/lib/affiliate';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const { slug } = await params;
+    const article = await getPostBySlug(slug);
+
+    if (!article) {
+        return {
+            title: 'Article Not Found',
+        };
+    }
+
+    return {
+        title: `${article.title} | The Inner Circle`,
+        description: article.excerpt,
+        openGraph: {
+            title: article.title,
+            description: article.excerpt,
+            url: `https://inner-circle-site.vercel.app/article/${slug}`,
+            siteName: 'The Inner Circle',
+            images: [
+                {
+                    url: article.imageUrl,
+                    width: 1200,
+                    height: 630,
+                    alt: article.title,
+                },
+            ],
+            locale: 'en_US',
+            type: 'article',
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: article.title,
+            description: article.excerpt,
+            images: [article.imageUrl],
+        },
+    };
 }
 
 export default async function ArticlePage(props: PageProps) {
@@ -41,6 +80,31 @@ export default async function ArticlePage(props: PageProps) {
     return (
         <div className="min-h-screen pb-32 pt-16 bg-[#F5F2EA] text-[#1A1A1A]">
             <AnalyticsTracker slug={slug} />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        '@context': 'https://schema.org',
+                        '@type': 'Article',
+                        headline: article.title,
+                        description: article.excerpt,
+                        image: article.imageUrl,
+                        datePublished: new Date(article.date).toISOString(), // Assuming date is parseable or just use raw string if needed
+                        author: {
+                            '@type': 'Person',
+                            name: 'The Inner Circle', // Or specific author if available
+                        },
+                        publisher: {
+                            '@type': 'Organization',
+                            name: 'The Inner Circle',
+                            logo: {
+                                '@type': 'ImageObject',
+                                url: 'https://inner-circle-site.vercel.app/logo.png', // Update with real logo path
+                            },
+                        },
+                    }),
+                }}
+            />
 
             <div className="max-w-[1400px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-20">
 
