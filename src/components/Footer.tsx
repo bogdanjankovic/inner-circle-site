@@ -9,7 +9,7 @@ export default function Footer() {
                 <div className="md:col-span-1">
                     <h3 className="text-white font-mono font-bold text-2xl mb-6 tracking-tighter">BLEXOUT</h3>
                     <p className="text-gray-500 font-mono text-xs leading-6">
-                        title: "BLEXOUT | High-Performance Optimization",g success. <br />
+                        Systematizing success. <br />
                         Wealth. Biology. Architecture.
                     </p>
                 </div>
