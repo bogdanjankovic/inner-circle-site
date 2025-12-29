@@ -142,6 +142,29 @@ export default async function ArticlePage(props: PageProps) {
                         </div>
                     </header>
 
+                    {/* Protocol Brief - TL;DR */}
+                    {article.keyPoints && article.keyPoints.length > 0 && (
+                        <div className="mb-20 p-8 border border-green-500/20 bg-green-500/5 rounded-sm">
+                            <h3 className="text-green-500 font-mono font-bold text-xs uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                Protocol Brief
+                            </h3>
+                            <ul className="grid gap-4">
+                                {article.keyPoints.map((point, idx) => (
+                                    <li key={idx}>
+                                        <a href={`#section-${point.sectionIndex}`} className="group flex items-start gap-4 hover:bg-green-500/10 p-2 -ml-2 rounded transition-colors cursor-pointer">
+                                            <span className="text-green-500/50 font-mono text-sm">0{idx + 1}</span>
+                                            <span className="text-gray-300 font-mono text-sm group-hover:text-white transition-colors border-b border-transparent group-hover:border-green-500/50">
+                                                {point.text}
+                                            </span>
+                                            <span className="ml-auto text-green-500/50 text-xs opacity-0 group-hover:opacity-100 transition-opacity">↓</span>
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     {/* Featured Image - Cinematic */}
                     <div className="w-full aspect-[21/9] overflow-hidden mb-20 relative border border-white/10 bg-white/5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -155,7 +178,7 @@ export default async function ArticlePage(props: PageProps) {
                     {/* Content - High Readability */}
                     <div className="prose prose-xl prose-invert max-w-none font-sans font-light leading-loose text-gray-300">
                         {article.sections.map((section, idx) => (
-                            <section key={idx} className="mb-24 last:mb-0">
+                            <section key={idx} id={`section-${idx}`} className="mb-24 last:mb-0 scroll-mt-32">
                                 <h2 className="text-3xl font-mono font-bold mb-8 mt-12 text-white tracking-tight border-b border-white/10 pb-4 inline-block">
                                     {section.heading}
                                 </h2>

@@ -87,6 +87,10 @@ export async function generateArticle(topic: string): Promise<Article> {
   - **Products**: Recommend tools as implementation steps ("Acquire X to solve Y").
   - **Visuals**: Provide precise, modern, tech-focused 'imageSearchQuery' (e.g. "matte black mechanical keyboard workspace, overhead shot, 8k").
   
+  CRITICAL CONSTRAINT: 
+  - Do NOT use markdown bolding (**) for product names. Keep them plain text.
+  - Link them if possible, but do not bold them.
+
   CRITICAL REQUIREMENT - THE CONCLUSION:
   You MUST include a "Protocol Summary" section at the end.
   1. "Implementation": Immediate action step.
@@ -102,6 +106,10 @@ export async function generateArticle(topic: string): Promise<Article> {
     "readingTime": "5 min read",
     "imageSearchQuery": "Minimalist tech or lab aesthetic cover image",
     "date": "${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}",
+    "keyPoints": [
+        { "text": "Impactful summary of a specific section", "sectionIndex": 0 },
+        { "text": "Another key takeaway linked to a later section", "sectionIndex": 2 }
+    ],
     "sections": [
         {
             "heading": "Section Heading",

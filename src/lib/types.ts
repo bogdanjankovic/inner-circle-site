@@ -20,6 +20,7 @@ export interface Article {
     imageSearchQuery?: string;
     sections: Section[];
     slug: string;
+    keyPoints?: { text: string, sectionIndex: number }[]; // TL;DR Anchor links
     status?: ArticleStatus; // New field
     isArchived?: boolean; // Deprecated, keeping for backward compatibility migration
 }
