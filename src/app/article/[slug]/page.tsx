@@ -12,6 +12,7 @@ import ProtocolBrief from '@/components/ProtocolBrief';
 import ReadingProgressBar from '@/components/ReadingProgressBar';
 import ScrollToTopButton from '@/components/ScrollToTopButton';
 import RevealImage from '@/components/RevealImage';
+import ArticleActions from '@/components/ArticleActions'; // New client wrapper
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -134,10 +135,8 @@ export default async function ArticlePage(props: PageProps) {
                             <span>{article.readingTime || '5 MIN READ'}</span>
                         </div>
 
-                        {/* Audio Narration */}
-                        <div className="mt-8 flex justify-center lg:justify-start">
-                            <TextToSpeech text={`${article.title}. ${article.excerpt}. ${article.sections.map(s => s.heading + '. ' + s.content).join(' ')}`} />
-                        </div>
+                        {/* Actions (Audio + Watch) */}
+                        <ArticleActions article={article} />
 
                         {/* Partnership Disclosure */}
                         {article.showAffiliateDisclosure && (
