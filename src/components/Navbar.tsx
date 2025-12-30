@@ -13,7 +13,7 @@ export default function Navbar() {
 
             {/* Desktop Links - Minimalist & Spacious */}
             <div className="hidden md:flex items-center gap-8">
-                {['Stack', 'Systems', 'Wealth', 'Bio'].map((item) => (
+                {['Hardware', 'Industry', 'Reviews', 'Guides'].map((item) => (
                     <Link key={item} href="/" className="text-[10px] font-mono font-medium uppercase tracking-widest text-gray-400 hover:text-green-500 transition-colors">
                         {item}
                     </Link>

@@ -9,19 +9,19 @@ export default function Footer() {
                 <div className="md:col-span-1">
                     <h3 className="text-white font-mono font-bold text-2xl mb-6 tracking-tighter">BLEXOUT</h3>
                     <p className="text-gray-500 font-mono text-xs leading-6">
-                        Systematizing success. <br />
-                        Wealth. Biology. Architecture.
+                        Dominate the meta. <br />
+                        Hardware. Software. Performance.
                     </p>
                 </div>
 
                 {/* Links */}
                 <div>
-                    <h4 className="text-white font-mono font-bold mb-6 tracking-widest text-xs uppercase">Systems</h4>
+                    <h4 className="text-white font-mono font-bold mb-6 tracking-widest text-xs uppercase">Hardware</h4>
                     <ul className="space-y-4 text-xs text-gray-500 font-mono">
-                        <li><Link href="/" className="hover:text-green-500 transition-colors">Stack</Link></li>
-                        <li><Link href="/" className="hover:text-green-500 transition-colors">Workspace</Link></li>
-                        <li><Link href="/" className="hover:text-green-500 transition-colors">Finance</Link></li>
-                        <li><Link href="/" className="hover:text-green-500 transition-colors">Bio</Link></li>
+                        <li><Link href="/" className="hover:text-green-500 transition-colors">Peripherals</Link></li>
+                        <li><Link href="/" className="hover:text-green-500 transition-colors">Components</Link></li>
+                        <li><Link href="/" className="hover:text-green-500 transition-colors">Setups</Link></li>
+                        <li><Link href="/" className="hover:text-green-500 transition-colors">Audio</Link></li>
                     </ul>
                 </div>
 
