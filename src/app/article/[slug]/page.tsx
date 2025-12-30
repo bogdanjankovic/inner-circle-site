@@ -188,7 +188,7 @@ export default async function ArticlePage(props: PageProps) {
 
                                     {/* Section Content */}
                                     <div className="text-lg md:text-xl text-gray-300 leading-relaxed font-sans">
-                                        <SmartContent content={section.content} />
+                                        <SmartContent content={section.content} glossary={glossary} />
                                     </div>
 
                                     {/* Affiliate / Product Button */}

@@ -77,3 +77,22 @@ export async function togglePostArchiveStatus(slug: string, isArchived: boolean)
 export function generateSlug(title: string): string {
     return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
+
+// --- GLOSSARY STORAGE ---
+
+import { GLOSSARY as DEFAULT_GLOSSARY, TermDefinition } from './glossary'; // fallback import
+
+export async function getGlossary(): Promise<Record<string, TermDefinition>> {
+    try {
+        const stored = await kv.get<Record<string, TermDefinition>>('site:glossary');
+        // Merge stored with default to ensure we always have base terms if KV is empty
+        return { ...DEFAULT_GLOSSARY, ...stored };
+    } catch (error) {
+        console.error("Error fetching glossary:", error);
+        return DEFAULT_GLOSSARY;
+    }
+}
+
+export async function saveGlossary(glossary: Record<string, TermDefinition>): Promise<void> {
+    await kv.set('site:glossary', glossary);
+}
