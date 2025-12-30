@@ -23,7 +23,7 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
     title: "BLEXOUT | Elite Hardware & Game Analysis",
     description: "The protocol for gaming performance. In-depth hardware reviews, game optimization guides, and no-nonsense tech analysis.",
-    metadataBase: new URL('https://blexout.com'), // Replace with actual Vercel URL later
+    metadataBase: new URL('https://inner-circle-site.vercel.app'),
     openGraph: {
         siteName: 'BLEXOUT',
         type: 'website',
@@ -32,6 +32,13 @@ export const metadata: Metadata = {
     robots: {
         index: true,
         follow: true,
+        googleBot: {
+            index: true,
+            follow: true,
+            'max-video-preview': -1,
+            'max-image-preview': 'large',
+            'max-snippet': -1,
+        },
     }
 };
 
