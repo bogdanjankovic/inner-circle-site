@@ -21,8 +21,18 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-    title: "BLEXOUT | High-Performance Optimization",
-    description: "Data-driven strategies for wealth, health, and workspace.",
+    title: "BLEXOUT | Elite Hardware Analysis",
+    description: "The protocol for gaming performance. In-depth reviews, optimization guides, and no-nonsense tech analysis.",
+    metadataBase: new URL('https://blexout.com'), // Replace with actual Vercel URL later
+    openGraph: {
+        siteName: 'BLEXOUT',
+        type: 'website',
+        locale: 'en_US',
+    },
+    robots: {
+        index: true,
+        follow: true,
+    }
 };
 
 export default function RootLayout({
