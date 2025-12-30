@@ -13,6 +13,7 @@ export interface Article {
     tags?: string[];
     showAffiliateDisclosure?: boolean;
     keyPoints?: string[];
+    imageSearchQuery?: string;
 }
 
 export interface ArticleSection {

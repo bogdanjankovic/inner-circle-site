@@ -22,6 +22,8 @@ export async function POST(request: NextRequest) {
             excerpt: "Enter a short summary here...",
             date: now,
             status: 'draft',
+            author: 'BLEXOUT System',
+            readTime: '1 min read',
             tags: [],
             readingTime: "1 min read",
             imageUrl: "",
