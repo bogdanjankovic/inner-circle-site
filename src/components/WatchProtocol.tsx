@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Article } from '@/lib/types';
 import GlitchText from './GlitchText';
@@ -13,68 +13,126 @@ interface WatchProtocolProps {
 export default function WatchProtocol({ article, onClose }: WatchProtocolProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [transcript, setTranscript] = useState("");
+    const [currentWordIndex, setCurrentWordIndex] = useState(-1);
+    const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+    const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
 
-    // Prepare Slides: Cover, then Sections
-    const slides = [
+    // Prepare Slides
+    const slides = useMemo(() => [
         {
             image: article.imageUrl,
             text: article.excerpt,
             title: article.title
         },
         ...article.sections.map(s => ({
-            image: s.imageUrl || article.imageUrl, // Fallback to cover if section has no image
+            image: s.imageUrl || article.imageUrl,
             text: s.content,
             title: s.heading
         }))
-    ];
+    ], [article]);
 
-    // Audio Sync (Mock/Simple for now - we assume 10s per slide or wait for TTS)
-    // Ideally we would hook into the actual SpeechSynthesis events
+    const currentSlide = slides[currentIndex];
+
+    // Split text into words for highlighting
+    const words = useMemo(() => {
+        return currentSlide.text.split(" ");
+    }, [currentSlide.text]);
+
+    // Calculate character offsets for each word to map `onboundary` event
+    const wordOffsets = useMemo(() => {
+        let currentOffset = 0;
+        return words.map(word => {
+            const start = currentOffset;
+            currentOffset += word.length + 1; // +1 for space
+            return start;
+        });
+    }, [words]);
+
+    // Load available voices
     useEffect(() => {
-        if (!isPlaying) return;
+        const loadVoices = () => {
+            const available = window.speechSynthesis.getVoices();
+            console.log("Available Voices:", available.map(v => v.name));
+            setVoices(available);
 
-        const duration = 8000; // 8 seconds per slide for now
-        const timer = setTimeout(() => {
-            if (currentIndex < slides.length - 1) {
-                setCurrentIndex(prev => prev + 1);
-            } else {
-                setIsPlaying(false);
+            // Priority: "Google US English" -> "Microsoft Zira" -> Any "English"
+            const preferred = available.find(v => v.name.includes("Google US English"))
+                || available.find(v => v.name.includes("Zira"))
+                || available.find(v => v.lang.startsWith("en"));
+
+            if (preferred) setSelectedVoice(preferred);
+        };
+
+        loadVoices();
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+    }, []);
+
+    // Playback Logic
+    useEffect(() => {
+        // Cancel any ongoing speech when slide changes or pausing
+        window.speechSynthesis.cancel();
+
+        if (isPlaying) {
+            const utterance = new SpeechSynthesisUtterance(currentSlide.text);
+
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
             }
-        }, duration);
 
-        return () => clearTimeout(timer);
-    }, [currentIndex, isPlaying, slides.length]);
+            // Tuning for "Natural" Flow
+            utterance.rate = 0.9;
+            utterance.pitch = 1.0;
+
+            // Highlight Sync
+            utterance.onboundary = (event) => {
+                if (event.name === 'word') {
+                    // Find which word index corresponds to this char index
+                    const charIndex = event.charIndex;
+                    // Simple search (can be optimized but fine for short text)
+                    const index = wordOffsets.findIndex((offset, i) => {
+                        const nextOffset = wordOffsets[i + 1] ?? Infinity;
+                        return charIndex >= offset && charIndex < nextOffset;
+                    });
+                    if (index !== -1) setCurrentWordIndex(index);
+                }
+            };
+
+            // Audio Finished -> Next Slide
+            utterance.onend = () => {
+                if (currentIndex < slides.length - 1) {
+                    setCurrentIndex(prev => prev + 1);
+                    setCurrentWordIndex(-1);
+                } else {
+                    setIsPlaying(false);
+                }
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        return () => {
+            window.speechSynthesis.cancel();
+        };
+    }, [currentIndex, isPlaying, currentSlide.text, selectedVoice, slides.length, wordOffsets, currentSlide]);
 
 
     // Keyboard Navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
-            if (e.key === 'ArrowRight') setCurrentIndex(prev => Math.min(prev + 1, slides.length - 1));
-            if (e.key === 'ArrowLeft') setCurrentIndex(prev => Math.max(prev - 1, 0));
+            if (e.key === 'ArrowRight') {
+                setCurrentIndex(prev => Math.min(prev + 1, slides.length - 1));
+                setCurrentWordIndex(-1);
+            }
+            if (e.key === 'ArrowLeft') {
+                setCurrentIndex(prev => Math.max(prev - 1, 0));
+                setCurrentWordIndex(-1);
+            }
             if (e.key === ' ') setIsPlaying(prev => !prev);
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose, slides.length]);
-
-
-    const currentSlide = slides[currentIndex];
-
-    // Read Aloud Logic (Simple implementation)
-    useEffect(() => {
-        if (isPlaying) {
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(currentSlide.text);
-            utterance.rate = 0.9;
-            utterance.pitch = 0.9; // Lower pitch for "System" voice
-            window.speechSynthesis.speak(utterance);
-        } else {
-            window.speechSynthesis.cancel();
-        }
-        return () => window.speechSynthesis.cancel();
-    }, [currentIndex, isPlaying, currentSlide.text]);
 
 
     return (
@@ -87,8 +145,10 @@ export default function WatchProtocol({ article, onClose }: WatchProtocolProps) 
             {/* Top Bar */}
             <div className="absolute top-0 left-0 w-full z-50 p-6 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
                 <div className="flex items-center gap-4">
-                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_red]"></span>
-                    <span className="font-mono text-xs uppercase tracking-widest text-red-500">Rec / Playback</span>
+                    <span className={`w-2 h-2 rounded-full shadow-[0_0_10px_red] ${isPlaying ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}`}></span>
+                    <span className="font-mono text-xs uppercase tracking-widest text-white">
+                        {isPlaying ? "Broadcast Active" : "Paused"}
+                    </span>
                     <span className="font-mono text-xs text-gray-500">:: {String(currentIndex + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}</span>
                 </div>
                 <button onClick={onClose} className="group flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
@@ -150,33 +210,70 @@ export default function WatchProtocol({ article, onClose }: WatchProtocolProps) 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 1 }}
-                        className="text-xl md:text-2xl font-mono text-gray-300 leading-relaxed max-w-3xl border-l-4 border-green-500 pl-6 bg-black/50 p-4 backdrop-blur-md"
+                        className="text-xl md:text-3xl font-mono text-gray-500 leading-relaxed max-w-4xl border-l-4 border-green-500 pl-6 bg-black/80 p-6 backdrop-blur-md rounded-r-xl"
                     >
-                        {currentSlide.text.length > 300 ? currentSlide.text.substring(0, 300) + "..." : currentSlide.text}
+                        {words.map((word, i) => (
+                            <span
+                                key={i}
+                                className={`transition-colors duration-100 mr-2 inline-block ${i === currentWordIndex ? 'text-green-400 font-bold scale-110' : i < currentWordIndex ? 'text-white' : 'text-gray-600'}`}
+                            >
+                                {word}
+                            </span>
+                        ))}
                     </motion.p>
                 </div>
             </div>
 
             {/* Controls */}
-            <div className="absolute bottom-12 right-12 z-50 flex gap-4">
-                <button
-                    onClick={() => setCurrentIndex(prev => Math.max(prev - 1, 0))}
-                    className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded-full transition-all"
-                >
-                    ◄
-                </button>
-                <button
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    className="p-4 bg-green-500 hover:bg-green-400 text-black font-bold rounded-full transition-all w-16 h-16 flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.4)]"
-                >
-                    {isPlaying ? "||" : "▶"}
-                </button>
-                <button
-                    onClick={() => setCurrentIndex(prev => Math.min(prev + 1, slides.length - 1))}
-                    className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded-full transition-all"
-                >
-                    ►
-                </button>
+            <div className="absolute bottom-12 right-12 z-50 flex flex-col items-end gap-6">
+
+                {/* Voice Selector */}
+                <div className="bg-black/80 p-2 rounded border border-white/10 hidden md:block">
+                    <select
+                        className="bg-transparent text-xs font-mono text-gray-400 outline-none cursor-pointer w-48 truncate"
+                        value={selectedVoice?.name || ""}
+                        onChange={(e) => {
+                            const v = voices.find(voice => voice.name === e.target.value);
+                            if (v) setSelectedVoice(v);
+                            // Restart current slide to apply voice
+                            setIsPlaying(false);
+                            setTimeout(() => setIsPlaying(true), 100);
+                        }}
+                    >
+                        {voices.filter(v => v.lang.startsWith('en')).map(v => (
+                            <option key={v.name} value={v.name}>
+                                {v.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="flex gap-4">
+                    <button
+                        onClick={() => {
+                            setCurrentIndex(prev => Math.max(prev - 1, 0));
+                            setCurrentWordIndex(-1);
+                        }}
+                        className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded-full transition-all"
+                    >
+                        ◄
+                    </button>
+                    <button
+                        onClick={() => setIsPlaying(!isPlaying)}
+                        className="p-4 bg-green-500 hover:bg-green-400 text-black font-bold rounded-full transition-all w-16 h-16 flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.4)]"
+                    >
+                        {isPlaying ? "||" : "▶"}
+                    </button>
+                    <button
+                        onClick={() => {
+                            setCurrentIndex(prev => Math.min(prev + 1, slides.length - 1));
+                            setCurrentWordIndex(-1);
+                        }}
+                        className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded-full transition-all"
+                    >
+                        ►
+                    </button>
+                </div>
             </div>
 
             {/* Progress Bar */}
