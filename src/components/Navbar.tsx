@@ -33,11 +33,23 @@ export default function Navbar() {
             </div>
 
             {/* Mobile Menu Toggle */}
-            <button onClick={toggleMenu} className="md:hidden z-[70] text-white p-2 relative">
-                <div className="w-6 flex flex-col items-end gap-1.5">
-                    <span className={`h-0.5 bg-white transition-all duration-300 ${isOpen ? 'w-6 rotate-45 translate-y-2' : 'w-6'}`} />
-                    <span className={`h-0.5 bg-white transition-all duration-300 ${isOpen ? 'opacity-0' : 'w-4'}`} />
-                    <span className={`h-0.5 bg-white transition-all duration-300 ${isOpen ? 'w-6 -rotate-45 -translate-y-2' : 'w-2'}`} />
+            <button onClick={toggleMenu} className="md:hidden z-[70] group relative px-4 py-2 bg-black/50 border border-green-500/30 hover:border-green-500 hover:bg-green-500/10 transition-all duration-300">
+                <div className="flex items-center gap-3">
+                    <div className="flex flex-col gap-0.5">
+                        <span className={`block w-1 h-1 bg-green-500 rounded-full transition-all duration-300 ${isOpen ? 'opacity-0' : 'opacity-100'}`} />
+                        <span className={`block w-1 h-1 bg-green-500 rounded-full transition-all duration-300 ${isOpen ? 'opacity-0' : 'opacity-100 delay-75'}`} />
+                        <span className={`block w-1 h-1 bg-green-500 rounded-full transition-all duration-300 ${isOpen ? 'opacity-0' : 'opacity-100 delay-100'}`} />
+                    </div>
+                    <span className="font-mono text-xs font-bold text-green-500 tracking-widest uppercase">
+                        {isOpen ? 'CLOSE ::' : 'MENU ::'}
+                    </span>
+                    {/* X Icon overlay for open state */}
+                    {isOpen && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4">
+                            <span className="absolute top-1/2 left-0 w-full h-0.5 bg-green-500 rotate-45 transform origin-center" />
+                            <span className="absolute top-1/2 left-0 w-full h-0.5 bg-green-500 -rotate-45 transform origin-center" />
+                        </div>
+                    )}
                 </div>
             </button>
 
