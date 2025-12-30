@@ -42,13 +42,13 @@ export default function Navbar() {
             </button>
 
             {/* Mobile Overlay */}
-            <div className={`fixed inset-0 bg-black z-[60] flex flex-col items-center justify-center gap-8 transition-all duration-500 md:hidden ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+            <div className={`absolute top-full left-0 w-full bg-black border-b border-green-500/20 shadow-2xl z-[60] flex flex-col items-center gap-6 py-8 transition-all duration-300 md:hidden origin-top ${isOpen ? 'scale-y-100 opacity-100 visible' : 'scale-y-0 opacity-0 invisible'}`}>
                 {navLinks.map((item) => (
                     <Link
                         key={item}
                         href="/"
                         onClick={closeMenu}
-                        className="text-2xl font-mono font-bold uppercase tracking-widest text-white hover:text-green-500 transition-colors"
+                        className="text-lg font-mono font-bold uppercase tracking-widest text-white hover:text-green-500 transition-colors"
                     >
                         {item}
                     </Link>
@@ -56,7 +56,7 @@ export default function Navbar() {
                 <Link
                     href="/admin"
                     onClick={closeMenu}
-                    className="mt-8 px-8 py-4 border border-green-500 text-green-500 font-mono text-sm tracking-widest uppercase hover:bg-green-500 hover:text-black transition-all"
+                    className="mt-4 px-6 py-3 border border-green-500 text-green-500 font-mono text-xs tracking-widest uppercase hover:bg-green-500 hover:text-black transition-all"
                 >
                     Admin Access
                 </Link>
