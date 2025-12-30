@@ -13,7 +13,8 @@ export default function SyncCompletion() {
 
             // Check if we are near bottom of page
             const scrolledTo = window.scrollY + window.innerHeight;
-            const threshold = document.documentElement.scrollHeight - 100; // 100px from bottom
+            // Increased buffer to 300px to ensure it triggers before exact bottom, covering footer/padding variations
+            const threshold = document.documentElement.scrollHeight - 300;
 
             if (scrolledTo >= threshold) {
                 setIsComplete(true);
