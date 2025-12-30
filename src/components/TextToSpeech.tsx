@@ -74,49 +74,52 @@ export default function TextToSpeech({ text }: TextToSpeechProps) {
             {!isSpeaking && !isPaused ? (
                 <button
                     onClick={handlePlay}
-                    className="group relative flex items-center gap-3 px-5 py-2.5 border border-green-500/30 bg-green-500/5 hover:bg-green-500/10 transition-all rounded-sm"
+                    className="group flex items-center gap-4 px-6 py-3 border border-green-500/30 bg-green-500/10 hover:bg-green-500/20 transition-all rounded-sm w-full md:w-auto"
                 >
-                    {/* Decorative Corner Markers */}
-                    <div className="absolute top-0 left-0 w-1 h-1 border-l border-t border-green-500 mb-px ml-px" />
-                    <div className="absolute top-0 right-0 w-1 h-1 border-r border-t border-green-500 mt-px mr-px" />
-                    <div className="absolute bottom-0 left-0 w-1 h-1 border-l border-b border-green-500 mb-px ml-px" />
-                    <div className="absolute bottom-0 right-0 w-1 h-1 border-r border-b border-green-500 mt-px mr-px" />
-
-                    <div className="w-2 h-2 bg-green-500 rounded-full opacity-50 group-hover:opacity-100 group-hover:animate-pulse transition-opacity" />
-
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-green-500 group-hover:text-green-400">
-                        Initiate Audio
-                    </span>
+                    <div className="relative w-8 h-8 flex items-center justify-center border border-green-500 rounded-full">
+                        <div className="w-2 h-2 bg-green-500 rounded-full opacity-50 group-hover:opacity-100 group-hover:animate-pulse transition-opacity" />
+                    </div>
+                    <div className="text-left">
+                        <div className="text-[10px] font-mono text-green-500 uppercase tracking-widest mb-1">Audio Briefing</div>
+                        <div className="text-sm font-bold font-mono text-white tracking-tight group-hover:text-green-400">
+                            INITIATE AUDIO
+                        </div>
+                    </div>
                 </button>
             ) : (
-                <div className="flex items-center gap-2 border border-green-500/30 bg-black p-1 rounded-sm">
+                <div className="flex items-center gap-2 border border-green-500/30 bg-black p-2 rounded-sm h-[62px]">
                     {/* Status Indicator */}
-                    <div className="flex items-center gap-2 px-3 py-1.5 border-r border-green-500/20">
-                        <div className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-green-500 animate-pulse'}`} />
-                        <span className="text-[9px] font-mono uppercase tracking-widest text-green-500">
-                            {isPaused ? 'STREAM PAUSED' : 'AUDIO ACTIVE'}
-                        </span>
+                    <div className="flex flex-col justify-center px-4 border-r border-green-500/20 h-full">
+                        <div className="flex items-center gap-2 mb-1">
+                            <div className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-green-500 animate-pulse'}`} />
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-green-500">
+                                {isPaused ? 'PAUSED' : 'ACTIVE'}
+                            </span>
+                        </div>
+                        <div className="text-[9px] font-mono text-gray-500 uppercase tracking-wider">
+                            Audio Stream
+                        </div>
                     </div>
 
                     {/* Controls */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 px-2">
                         {isSpeaking ? (
                             <button
                                 onClick={handlePause}
-                                className="p-2 hover:bg-green-500/10 text-green-500 transition-colors rounded-sm group"
+                                className="p-3 hover:bg-green-500/10 text-green-500 transition-colors rounded-sm group"
                                 title="Pause"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 group-hover:scale-90 transition-transform">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 group-hover:scale-90 transition-transform">
                                     <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clipRule="evenodd" />
                                 </svg>
                             </button>
                         ) : (
                             <button
                                 onClick={handlePlay}
-                                className="p-2 hover:bg-green-500/10 text-green-500 transition-colors rounded-sm group"
+                                className="p-3 hover:bg-green-500/10 text-green-500 transition-colors rounded-sm group"
                                 title="Resume"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 group-hover:scale-90 transition-transform">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 group-hover:scale-90 transition-transform">
                                     <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
                                 </svg>
                             </button>
@@ -124,10 +127,10 @@ export default function TextToSpeech({ text }: TextToSpeechProps) {
 
                         <button
                             onClick={handleStop}
-                            className="p-2 hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-colors rounded-sm group"
+                            className="p-3 hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-colors rounded-sm group"
                             title="Terminate"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 group-hover:scale-90 transition-transform">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 group-hover:scale-90 transition-transform">
                                 <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
                             </svg>
                         </button>

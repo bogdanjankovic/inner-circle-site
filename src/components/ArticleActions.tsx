@@ -18,7 +18,7 @@ export default function ArticleActions({ article }: ArticleActionsProps) {
     const fullText = `${article.title}. ${article.excerpt}. ${article.sections.map(s => s.heading + '. ' + s.content).join(' ')}`;
 
     return (
-        <div className="mt-8 flex flex-col items-start gap-6">
+        <div className="mt-8 flex flex-row flex-wrap items-center gap-6">
 
             {/* Standard Audio Player */}
             <TextToSpeech text={fullText} />
