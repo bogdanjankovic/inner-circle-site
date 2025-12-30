@@ -119,6 +119,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     const [status, setStatus] = useState(article.status || (article.isArchived ? 'archived' : 'published'));
     const [sections, setSections] = useState<Section[]>(article.sections);
     const [imageUrl, setImageUrl] = useState(article.imageUrl || '');
+    const [showAffiliateDisclosure, setShowAffiliateDisclosure] = useState(article.showAffiliateDisclosure || false);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
     const handleDragStart = (index: number) => {
@@ -167,7 +168,8 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                     imageUrl,
                     // We don't really use this top-level field for much anymore if we upload, 
                     // but let's keep it synced or just empty.
-                    imageSearchQuery: ''
+                    imageSearchQuery: '',
+                    showAffiliateDisclosure
                 }),
             });
 

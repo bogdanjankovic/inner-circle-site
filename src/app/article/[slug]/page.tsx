@@ -139,11 +139,13 @@ export default async function ArticlePage(props: PageProps) {
                         </div>
 
                         {/* Partnership Disclosure */}
-                        <div className="mt-4 text-center lg:text-left">
-                            <p className="text-[9px] uppercase tracking-widest text-gray-600 font-mono">
-                                System Disclosure: Affiliate links active.
-                            </p>
-                        </div>
+                        {article.showAffiliateDisclosure && (
+                            <div className="mt-4 text-center lg:text-left">
+                                <p className="text-[9px] uppercase tracking-widest text-gray-600 font-mono">
+                                    System Disclosure: Affiliate links active.
+                                </p>
+                            </div>
+                        )}
                     </header>
 
                     {/* Featured Image - Cinematic */}
