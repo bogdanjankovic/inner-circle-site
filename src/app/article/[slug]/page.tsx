@@ -11,6 +11,7 @@ import { getAffiliateUrl } from '@/lib/affiliate';
 import ProtocolBrief from '@/components/ProtocolBrief';
 import ReadingProgressBar from '@/components/ReadingProgressBar';
 import ScrollToTopButton from '@/components/ScrollToTopButton';
+import RevealImage from '@/components/RevealImage';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -149,12 +150,11 @@ export default async function ArticlePage(props: PageProps) {
                     </header>
 
                     {/* Featured Image - Cinematic */}
+                    {/* Featured Image - Cinematic */}
                     <div className="w-full aspect-[21/9] overflow-hidden mb-20 relative border border-white/10 bg-white/5">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <RevealImage
                             src={article.imageUrl}
                             alt={article.title}
-                            className="w-full h-full object-cover grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-700"
                         />
                     </div>
 
@@ -171,11 +171,12 @@ export default async function ArticlePage(props: PageProps) {
                                     {/* Section Specific Image (Top for Products) */}
                                     {section.imageUrl && (
                                         <figure className="my-12 border border-white/10 bg-white/5 p-1 rounded-sm">
-                                            <img
-                                                src={section.imageUrl}
-                                                alt={section.imageSearchQuery || section.heading}
-                                                className="w-full object-cover max-h-[500px] grayscale opacity-90 hover:grayscale-0 hover:opacity-100 transition-all duration-700"
-                                            />
+                                            <div className="h-[500px] w-full">
+                                                <RevealImage
+                                                    src={section.imageUrl}
+                                                    alt={section.imageSearchQuery || section.heading}
+                                                />
+                                            </div>
                                             {section.imageSearchQuery && (
                                                 <figcaption className="text-center text-[10px] font-mono text-gray-500 mt-2 tracking-widest uppercase">
                                                     :: {section.imageSearchQuery}

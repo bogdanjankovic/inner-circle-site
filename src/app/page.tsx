@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getPublishedPosts } from "@/lib/storage";
+import RevealImage from "@/components/RevealImage";
 
 export const dynamic = 'force-dynamic';
 
@@ -19,13 +20,11 @@ export default async function Home() {
                 <section className="w-full max-w-6xl mb-24 px-6 md:px-0">
                     <div className="grid md:grid-cols-2 gap-16 items-center">
                         <div className="relative group overflow-hidden rounded-sm border border-white/10 aspect-[16/10]">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                            <RevealImage
                                 src={featured.imageUrl}
                                 alt={featured.title}
-                                className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
                         </div>
                         <div className="flex flex-col gap-6 justify-center">
                             <div className="flex gap-4">
@@ -72,11 +71,9 @@ export default async function Home() {
                 {gridPosts.map((post, idx) => (
                     <Link key={idx} href={`/article/${post.slug}`} className="group flex flex-col gap-6">
                         <div className="overflow-hidden rounded-sm aspect-[3/2] relative bg-white/5 border border-white/10 group-hover:border-green-500/50 transition-colors">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                            <RevealImage
                                 src={post.imageUrl}
                                 alt={post.title}
-                                className="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
                             />
                         </div>
                         <div className="flex flex-col gap-3">
