@@ -39,7 +39,7 @@ export default function PrivacyPage() {
                         </p>
                         <ul className="list-disc pl-6 space-y-2 mt-4">
                             <li><strong>Google AdSense:</strong> Google uses cookies (including the DoubleClick cookie) to serve ads based on your visit to our site and other sites on the Internet.</li>
-                            <li><strong>Opt-Out:</strong> You may opt out of the use of the DoubleClick cookie for interest-based advertising by visiting <a href="https://about.ads.microsoft.com/en-us/resources/policies/personalized-ads" className="text-green-500 hover:underline">Ads Settings</a>.</li>
+                            <li><strong>Opt-Out:</strong> You may opt out of personalized advertising by visiting <a href="https://myadcenter.google.com/" className="text-green-500 hover:underline" target="_blank" rel="noopener">Google Ad Center</a> or by visiting <a href="https://optout.aboutads.info/" className="text-green-500 hover:underline" target="_blank" rel="noopener">aboutads.info</a>.</li>
                         </ul>
                     </section>
 
