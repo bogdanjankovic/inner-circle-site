@@ -8,6 +8,7 @@ import AdUnit from '@/components/AdUnit';
 import TextToSpeech from '@/components/TextToSpeech';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
 import { getAffiliateUrl } from '@/lib/affiliate';
+import ProtocolBrief from '@/components/ProtocolBrief';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -142,29 +143,6 @@ export default async function ArticlePage(props: PageProps) {
                         </div>
                     </header>
 
-                    {/* Protocol Brief - TL;DR */}
-                    {article.keyPoints && article.keyPoints.length > 0 && (
-                        <div className="mb-20 p-8 border border-green-500/20 bg-green-500/5 rounded-sm">
-                            <h3 className="text-green-500 font-mono font-bold text-xs uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                Protocol Brief
-                            </h3>
-                            <ul className="grid gap-4">
-                                {article.keyPoints.map((point, idx) => (
-                                    <li key={idx}>
-                                        <a href={`#section-${point.sectionIndex}`} className="group flex items-start gap-4 hover:bg-green-500/10 p-2 -ml-2 rounded transition-colors cursor-pointer">
-                                            <span className="text-green-500/50 font-mono text-sm">0{idx + 1}</span>
-                                            <span className="text-gray-300 font-mono text-sm group-hover:text-white transition-colors border-b border-transparent group-hover:border-green-500/50">
-                                                {point.text}
-                                            </span>
-                                            <span className="ml-auto text-green-500/50 text-xs opacity-0 group-hover:opacity-100 transition-opacity">↓</span>
-                                        </a>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-
                     {/* Featured Image - Cinematic */}
                     <div className="w-full aspect-[21/9] overflow-hidden mb-20 relative border border-white/10 bg-white/5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -234,6 +212,10 @@ export default async function ArticlePage(props: PageProps) {
 
                 {/* Sidebar Column - "System Status" */}
                 <aside className="hidden lg:block space-y-16 border-l border-white/10 pl-12 h-fit sticky top-32">
+
+                    {/* Protocol Brief - Sidebar Accordion */}
+                    <ProtocolBrief keyPoints={article.keyPoints || []} />
+
                     {/* Sidebar Ad 1 */}
                     <div className="bg-white/5 p-6 border border-white/10 backdrop-blur-sm">
                         <div className="flex items-center justify-between mb-6">
