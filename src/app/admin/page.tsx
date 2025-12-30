@@ -61,6 +61,12 @@ export default async function AdminDashboard({ searchParams }: AdminDashboardPro
                             + Generate with AI
                         </Link>
                         <CreateManualButton />
+                        <Link
+                            href="/admin/glossary"
+                            className="bg-white border border-gray-200 text-gray-700 px-6 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors shadow-sm w-full text-center"
+                        >
+                            Manage Glossary
+                        </Link>
                     </div>
                 </div>
 
