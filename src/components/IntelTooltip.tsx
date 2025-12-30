@@ -31,7 +31,7 @@ export default function IntelTooltip({ termStr, definition }: { termStr: string,
                         {/* Connecting Line */}
                         <div className="absolute top-full left-1/2 -translate-x-1/2 w-[1px] h-3 bg-green-500/50"></div>
 
-                        <div className="bg-black/90 border border-green-500/30 backdrop-blur-md p-4 rounded-sm shadow-[0_0_20px_rgba(34,197,94,0.2)] overflow-hidden relative">
+                        <div className="bg-black/90 border border-green-500/30 backdrop-blur-md p-3 rounded-sm shadow-[0_0_20px_rgba(34,197,94,0.2)] overflow-hidden relative">
                             {/* Decorative Corners */}
                             <div className="absolute top-0 left-0 w-2 h-2 border-l border-t border-green-500"></div>
                             <div className="absolute top-0 right-0 w-2 h-2 border-r border-t border-green-500"></div>
@@ -42,9 +42,9 @@ export default function IntelTooltip({ termStr, definition }: { termStr: string,
                             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
 
                             {/* Header */}
-                            <div className="flex justify-between items-center mb-2 border-b border-green-500/20 pb-2">
+                            <div className="flex justify-between items-center mb-1 border-b border-green-500/20 pb-1">
                                 <span className="text-[10px] font-mono uppercase tracking-widest text-green-500 font-bold">
-                                    Database Match found
+                                    Database Match
                                 </span>
                                 <span className="text-[10px] font-mono text-gray-500">
                                     {definition.category}
@@ -53,7 +53,7 @@ export default function IntelTooltip({ termStr, definition }: { termStr: string,
 
                             {/* Content */}
                             <h4 className="font-mono font-bold text-white text-lg mb-1">{definition.term}</h4>
-                            <p className="font-sans text-xs text-gray-300 leading-relaxed">
+                            <p className="font-sans text-sm text-gray-300 leading-relaxed">
                                 {definition.description}
                             </p>
                         </div>
