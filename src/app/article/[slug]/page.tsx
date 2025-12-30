@@ -213,8 +213,7 @@ export default async function ArticlePage(props: PageProps) {
                 {/* Sidebar Column - "System Status" */}
                 <aside className="hidden lg:block space-y-16 border-l border-white/10 pl-12 h-fit sticky top-32">
 
-                    {/* Protocol Brief - Sidebar Accordion */}
-                    <ProtocolBrief keyPoints={article.keyPoints || []} />
+
 
                     {/* Sidebar Ad 1 */}
                     <div className="bg-white/5 p-6 border border-white/10 backdrop-blur-sm">
@@ -248,6 +247,9 @@ export default async function ArticlePage(props: PageProps) {
                             ))}
                         </ul>
                     </div>
+
+                    {/* Protocol Brief - Sidebar Accordion (Moved to Bottom) */}
+                    <ProtocolBrief keyPoints={article.keyPoints || []} />
                 </aside>
 
             </div>

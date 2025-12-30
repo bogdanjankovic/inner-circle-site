@@ -8,30 +8,59 @@ interface AdUnitProps {
 }
 
 export default function AdUnit({ slotId, format = 'rectangle' }: AdUnitProps) {
-    const isDev = process.env.NODE_ENV === 'development';
+    // STARTUP CONFIG: Choose your ad mode
+    // 'manual' = You provide the image/link below (Good for Amazon/Affiliates)
+    // 'programmatic' = Google AdSense (Requires approval)
+    const AD_MODE: 'manual' | 'programmatic' = 'manual';
 
     const styles = {
         rectangle: "w-full md:w-[300px] h-[250px]",
         banner: "w-full h-[90px]"
     };
 
-    return (
-        <div className={`my-8 mx-auto flex items-center justify-center bg-gray-900/50 border border-white/5 rounded-lg overflow-hidden relative ${styles[format]}`}>
-            {/* Label */}
-            <div className="absolute top-0 right-0 bg-gray-800 text-[10px] text-gray-500 px-1">ADVERTISEMENT</div>
+    // MANUAL ADS CONFIG (The "Affiliate Machine" setup)
+    const manualAd = {
+        imageUrl: format === 'banner'
+            ? 'https://placehold.co/728x90/10b981/000000?text=RTX+5090+Stock+Checker+%7C+Check+Now'
+            : 'https://placehold.co/300x250/10b981/000000?text=Secret+Lab+Sale+%7C+50%25+OFF',
+        linkUrl: 'https://amazon.com', // Replace with your affiliate link
+        cta: 'Check Price'
+    };
 
-            {/* Actual Ad Code Injection would go here */}
-            {slotId ? (
-                // Real Ad Slot
-                <div id={`ad-slot-${slotId}`} className="w-full h-full bg-white/5 flex flex-col items-center justify-center text-gray-600">
-                    {/* Script injection logic would happen in useEffect */}
-                    <span>Loading Commercial Content...</span>
-                </div>
+    return (
+        <div className={`my-8 mx-auto flex flex-col items-center justify-center bg-black/40 border border-white/5 overflow-hidden relative group/ad ${styles[format]}`}>
+
+            {/* Label */}
+            <div className="absolute top-0 right-0 bg-white/10 text-[8px] text-gray-500 px-1 uppercase tracking-widest z-10 backdrop-blur-md">
+                Sponsored
+            </div>
+
+            {AD_MODE === 'manual' ? (
+                <a
+                    href={manualAd.linkUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full h-full relative flex items-center justify-center hover:opacity-90 transition-opacity"
+                >
+                    {/* Placeholder Image - replace src with real assets later */}
+                    <img
+                        src={manualAd.imageUrl}
+                        alt="Ad"
+                        className="w-full h-full object-cover opacity-80 group-hover/ad:opacity-100 transition-opacity"
+                    />
+
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/ad:opacity-100 transition-opacity bg-black/60 backdrop-blur-[2px]">
+                        <span className="text-green-500 font-mono text-xs font-bold border border-green-500 px-4 py-2 uppercase tracking-widest">
+                            {manualAd.cta} &rarr;
+                        </span>
+                    </div>
+                </a>
             ) : (
-                // Placeholder / House Ad
-                <div className="text-center p-4">
-                    <p className="text-purple-400 font-bold mb-1">The Modern Perspective</p>
-                    <p className="text-xs text-gray-400">Premium Tech Analysis. Subscribe Today.</p>
+                /* Google AdSense Placeholder */
+                <div className="w-full h-full flex flex-col items-center justify-center text-gray-700 font-mono text-xs text-center p-4">
+                    <span className="mb-2">Google AdSense Space</span>
+                    <span className="text-[10px] opacity-50">{slotId}</span>
                 </div>
             )}
         </div>
