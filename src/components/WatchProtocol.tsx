@@ -69,8 +69,11 @@ export default function WatchProtocol({ article, onClose }: WatchProtocolProps) 
 
     // Playback Logic
     useEffect(() => {
-        // Cancel any ongoing speech when slide changes or pausing
         window.speechSynthesis.cancel();
+
+        let fallbackInterval: NodeJS.Timeout;
+        const startTime = Date.now();
+        const boundaryReceived = { current: false };
 
         if (isPlaying) {
             const utterance = new SpeechSynthesisUtterance(currentSlide.text);
@@ -83,24 +86,47 @@ export default function WatchProtocol({ article, onClose }: WatchProtocolProps) 
             utterance.rate = 0.9;
             utterance.pitch = 1.0;
 
-            // Highlight Sync
+            // 1. Native Event Sync
             utterance.onboundary = (event) => {
-                // Determine word index based on charIndex if event.name is not provided (Safari/Fallbacks) or is 'word'
+                boundaryReceived.current = true;
                 const charIndex = event.charIndex;
-
-                // Optimized search starting from current index assumption
                 const index = wordOffsets.findIndex((offset, i) => {
                     const nextOffset = wordOffsets[i + 1] ?? Infinity;
                     return charIndex >= offset && charIndex < nextOffset;
                 });
-
-                if (index !== -1) {
-                    setCurrentWordIndex(index);
-                }
+                if (index !== -1) setCurrentWordIndex(index);
             };
+
+            // 2. Fallback Timer Sync (for Google/Remote voices that omit onboundary)
+            // We estimate 350ms per word (approx 170 WPM) adjusted by rate 0.9 -> ~400ms
+            const msPerWord = 400;
+
+            fallbackInterval = setInterval(() => {
+                if (!boundaryReceived.current) {
+                    const elapsed = Date.now() - startTime;
+                    // Only take over if we haven't seen a boundary for > 150ms 
+                    if (elapsed > 150) {
+                        const estimatedIndex = Math.floor(elapsed / msPerWord);
+                        setCurrentWordIndex(Math.min(estimatedIndex, words.length - 1));
+                    }
+                }
+            }, 100);
 
             // Audio Finished -> Next Slide
             utterance.onend = () => {
+                clearInterval(fallbackInterval);
+                if (currentIndex < slides.length - 1) {
+                    setCurrentIndex(prev => prev + 1);
+                    setCurrentWordIndex(-1);
+                } else {
+                    setIsPlaying(false);
+                }
+            };
+
+            // Error Handling
+            utterance.onerror = () => {
+                console.warn("TTS Error, advancing...");
+                clearInterval(fallbackInterval);
                 if (currentIndex < slides.length - 1) {
                     setCurrentIndex(prev => prev + 1);
                     setCurrentWordIndex(-1);
@@ -114,8 +140,9 @@ export default function WatchProtocol({ article, onClose }: WatchProtocolProps) 
 
         return () => {
             window.speechSynthesis.cancel();
+            clearInterval(fallbackInterval);
         };
-    }, [currentIndex, isPlaying, currentSlide.text, selectedVoice, slides.length, wordOffsets, currentSlide]);
+    }, [currentIndex, isPlaying, currentSlide.text, selectedVoice, slides.length, wordOffsets, words.length]);
 
 
     // Keyboard Navigation
