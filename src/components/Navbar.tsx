@@ -33,7 +33,7 @@ export default function Navbar() {
             </div>
 
             {/* Mobile Menu Toggle */}
-            <button onClick={toggleMenu} className="md:hidden z-50 text-white p-2">
+            <button onClick={toggleMenu} className="md:hidden z-[70] text-white p-2 relative">
                 <div className="w-6 flex flex-col items-end gap-1.5">
                     <span className={`h-0.5 bg-white transition-all duration-300 ${isOpen ? 'w-6 rotate-45 translate-y-2' : 'w-6'}`} />
                     <span className={`h-0.5 bg-white transition-all duration-300 ${isOpen ? 'opacity-0' : 'w-4'}`} />
@@ -42,7 +42,7 @@ export default function Navbar() {
             </button>
 
             {/* Mobile Overlay */}
-            <div className={`fixed inset-0 bg-black/95 backdrop-blur-xl z-40 flex flex-col items-center justify-center gap-8 transition-all duration-500 md:hidden ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+            <div className={`fixed inset-0 bg-black z-[60] flex flex-col items-center justify-center gap-8 transition-all duration-500 md:hidden ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
                 {navLinks.map((item) => (
                     <Link
                         key={item}
