@@ -21,8 +21,8 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-    title: "BLEXOUT | Elite Hardware Analysis",
-    description: "The protocol for gaming performance. In-depth reviews, optimization guides, and no-nonsense tech analysis.",
+    title: "BLEXOUT | Elite Hardware & Game Analysis",
+    description: "The protocol for gaming performance. In-depth hardware reviews, game optimization guides, and no-nonsense tech analysis.",
     metadataBase: new URL('https://blexout.com'), // Replace with actual Vercel URL later
     openGraph: {
         siteName: 'BLEXOUT',

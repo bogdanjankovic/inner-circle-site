@@ -17,7 +17,7 @@ export default function AboutPage() {
                     </p>
 
                     <p>
-                        BLEXOUT is an elite hardware analysis hub for gamers, creators, and professionals who demand the absolute limit from their technology.
+                        BLEXOUT is an elite analysis hub for gamers, creators, and professionals who demand the absolute limit from their technology and games.
                     </p>
 
                     <p>
@@ -29,6 +29,7 @@ export default function AboutPage() {
                         <li>:: Thermal Performance & Acoustics</li>
                         <li>:: Price-to-Frame Ratios</li>
                         <li>:: Input Latency & Response Times</li>
+                        <li>:: Game Mechanics & Optimization Deep Dives</li>
                         <li>:: Long-term Build Quality</li>
                     </ul>
 
