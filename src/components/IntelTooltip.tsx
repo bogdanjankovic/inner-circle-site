@@ -42,18 +42,18 @@ export default function IntelTooltip({ termStr, definition }: { termStr: string,
                             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
 
                             {/* Header */}
-                            <div className="flex justify-between items-center mb-0.5 border-b border-green-500/20 pb-1">
-                                <span className="text-[10px] font-mono uppercase tracking-widest text-green-500 font-bold">
+                            <div className="flex justify-between items-center mb-0 border-b border-green-500/20 pb-0.5">
+                                <span className="text-[9px] font-mono uppercase tracking-widest text-green-500 font-bold">
                                     Database Match
                                 </span>
-                                <span className="text-[10px] font-mono text-gray-500">
+                                <span className="text-[9px] font-mono text-gray-500">
                                     {definition.category}
                                 </span>
                             </div>
 
                             {/* Content */}
-                            <h4 className="font-mono font-bold text-white text-lg mb-1">{definition.term}</h4>
-                            <p className="font-sans text-sm text-gray-300 leading-relaxed">
+                            <h4 className="font-mono font-bold text-white text-base mt-0.5 mb-0.5">{definition.term}</h4>
+                            <p className="font-sans text-xs text-gray-300 leading-relaxed">
                                 {definition.description}
                             </p>
                         </div>

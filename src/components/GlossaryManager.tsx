@@ -14,6 +14,7 @@ export default function GlossaryManager({ initialGlossary }: GlossaryManagerProp
     const [searchTerm, setSearchTerm] = useState('');
     const [editingTerm, setEditingTerm] = useState<TermDefinition | null>(null);
     const [isAdding, setIsAdding] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState<Partial<TermDefinition>>({
@@ -73,6 +74,7 @@ export default function GlossaryManager({ initialGlossary }: GlossaryManagerProp
             return;
         }
 
+        setIsSaving(true);
         try {
             const res = await fetch('/api/admin/glossary', {
                 method: 'POST',
@@ -94,6 +96,8 @@ export default function GlossaryManager({ initialGlossary }: GlossaryManagerProp
         } catch (e) {
             console.error(e);
             error('Failed to save term');
+        } finally {
+            setIsSaving(false);
         }
     };
 
