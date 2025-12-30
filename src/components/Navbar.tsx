@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import GlitchText from "@/components/GlitchText";
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
@@ -26,7 +27,7 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-8">
                 {navLinks.map((item) => (
                     <Link key={item} href="/" className="text-[10px] font-mono font-medium uppercase tracking-widest text-gray-400 hover:text-green-500 transition-colors">
-                        {item}
+                        <GlitchText text={item} />
                     </Link>
                 ))}
             </div>
@@ -64,7 +65,7 @@ export default function Navbar() {
             {/* CTA (Desktop) */}
             <div className="hidden md:flex items-center gap-6">
                 <button className="bg-white text-black px-6 py-2 border border-white hover:bg-black hover:text-white hover:border-green-500 text-[10px] font-bold font-mono tracking-widest transition-all duration-300">
-                    ACCESS
+                    <GlitchText text="ACCESS" />
                 </button>
             </div>
         </nav>

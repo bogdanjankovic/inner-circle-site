@@ -1,4 +1,5 @@
 import Link from "next/link";
+import GlitchText from "@/components/GlitchText";
 
 export default function Footer() {
     return (
@@ -18,10 +19,10 @@ export default function Footer() {
                 <div>
                     <h4 className="text-white font-mono font-bold mb-6 tracking-widest text-xs uppercase">Hardware</h4>
                     <ul className="space-y-4 text-xs text-gray-500 font-mono">
-                        <li><Link href="/" className="hover:text-green-500 transition-colors">Peripherals</Link></li>
-                        <li><Link href="/" className="hover:text-green-500 transition-colors">Components</Link></li>
-                        <li><Link href="/" className="hover:text-green-500 transition-colors">Setups</Link></li>
-                        <li><Link href="/" className="hover:text-green-500 transition-colors">Audio</Link></li>
+                        <li><Link href="/" className="hover:text-green-500 transition-colors"><GlitchText text="Peripherals" /></Link></li>
+                        <li><Link href="/" className="hover:text-green-500 transition-colors"><GlitchText text="Components" /></Link></li>
+                        <li><Link href="/" className="hover:text-green-500 transition-colors"><GlitchText text="Setups" /></Link></li>
+                        <li><Link href="/" className="hover:text-green-500 transition-colors"><GlitchText text="Audio" /></Link></li>
                     </ul>
                 </div>
 
@@ -29,9 +30,9 @@ export default function Footer() {
                 <div>
                     <h4 className="text-white font-mono font-bold mb-6 tracking-widest text-xs uppercase">Protocol</h4>
                     <ul className="space-y-4 text-xs text-gray-500 font-mono">
-                        <li><Link href="/about" className="hover:text-green-500 transition-colors">Mission (About)</Link></li>
-                        <li><Link href="/contact" className="hover:text-green-500 transition-colors">Contact</Link></li>
-                        <li><Link href="/privacy" className="hover:text-green-500 transition-colors">Privacy Policy</Link></li>
+                        <li><Link href="/about" className="hover:text-green-500 transition-colors"><GlitchText text="Mission (About)" /></Link></li>
+                        <li><Link href="/contact" className="hover:text-green-500 transition-colors"><GlitchText text="Contact" /></Link></li>
+                        <li><Link href="/privacy" className="hover:text-green-500 transition-colors"><GlitchText text="Privacy Policy" /></Link></li>
                     </ul>
                 </div>
 
