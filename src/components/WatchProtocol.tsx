@@ -85,15 +85,17 @@ export default function WatchProtocol({ article, onClose }: WatchProtocolProps) 
 
             // Highlight Sync
             utterance.onboundary = (event) => {
-                if (event.name === 'word') {
-                    // Find which word index corresponds to this char index
-                    const charIndex = event.charIndex;
-                    // Simple search (can be optimized but fine for short text)
-                    const index = wordOffsets.findIndex((offset, i) => {
-                        const nextOffset = wordOffsets[i + 1] ?? Infinity;
-                        return charIndex >= offset && charIndex < nextOffset;
-                    });
-                    if (index !== -1) setCurrentWordIndex(index);
+                // Determine word index based on charIndex if event.name is not provided (Safari/Fallbacks) or is 'word'
+                const charIndex = event.charIndex;
+
+                // Optimized search starting from current index assumption
+                const index = wordOffsets.findIndex((offset, i) => {
+                    const nextOffset = wordOffsets[i + 1] ?? Infinity;
+                    return charIndex >= offset && charIndex < nextOffset;
+                });
+
+                if (index !== -1) {
+                    setCurrentWordIndex(index);
                 }
             };
 
@@ -203,7 +205,7 @@ export default function WatchProtocol({ article, onClose }: WatchProtocolProps) 
                         transition={{ delay: 0.5 }}
                         className="text-4xl md:text-6xl font-mono font-bold mb-8 text-white tracking-tighter"
                     >
-                        <GlitchText text={currentSlide.title} />
+                        {currentSlide.title}
                     </motion.h2>
                     <motion.p
                         key={`text-${currentIndex}`}
