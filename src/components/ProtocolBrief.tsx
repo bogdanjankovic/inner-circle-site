@@ -41,7 +41,7 @@ export default function ProtocolBrief({ keyPoints }: { keyPoints: string[] }) {
                                     0{idx + 1}
                                 </span>
                                 <span className="text-gray-400 font-mono text-xs leading-relaxed group-hover/link:text-white transition-colors border-b border-transparent group-hover/link:border-green-500/30">
-                                    {point}
+                                    {typeof point === 'object' ? (point as any).text : point}
                                 </span>
                             </div>
                         </li>

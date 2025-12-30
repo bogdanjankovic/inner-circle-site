@@ -142,8 +142,8 @@ export async function generateArticle(topic: string): Promise<Article> {
     "imageSearchQuery": "Minimalist tech or lab aesthetic cover image",
     "date": "${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}",
     "keyPoints": [
-        { "text": "Impactful summary of a specific section", "sectionIndex": 0 },
-        { "text": "Another key takeaway linked to a later section", "sectionIndex": 2 }
+        "Impactful summary of a specific section",
+        "Another key takeaway linked to a later section"
     ],
     "sections": [
         {
