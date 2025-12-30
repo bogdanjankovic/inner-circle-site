@@ -4,11 +4,15 @@ export interface Article {
     imageUrl: string;
     date: string;
     author: string;
-    readTime: string;
+    readTime: string; // Keep for backward compatibility if needed
+    readingTime?: string; // New preferred field
     slug: string;
     sections: ArticleSection[];
     status?: 'published' | 'draft' | 'archived';
     isArchived?: boolean;
+    tags?: string[];
+    showAffiliateDisclosure?: boolean;
+    keyPoints?: string[];
 }
 
 export interface ArticleSection {
@@ -16,6 +20,9 @@ export interface ArticleSection {
     content: string;
     imageUrl?: string;
     imageCaption?: string;
+    imageSearchQuery?: string;
+    productUrl?: string; // For affiliate buttons
+    buttonText?: string; // Custom button text
 }
 
 export interface TermDefinition {
