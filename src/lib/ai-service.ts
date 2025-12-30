@@ -60,49 +60,50 @@ async function searchImages(query: string): Promise<string | null> {
         console.error("Image Search error:", error);
         return null;
     }
+}
 
 
-    async function generateImage(prompt: string): Promise<string | null> {
-        try {
-            console.log(`[AI-Service] Generating image for: ${prompt}`);
+async function generateImage(prompt: string): Promise<string | null> {
+    try {
+        console.log(`[AI-Service] Generating image for: ${prompt}`);
 
-            // TODO: CONNECT TO REAL API (Banana / Replicate / Flux)
-            // For now, this is a placeholder that requires the user's API Key/URL
+        // TODO: CONNECT TO REAL API (Banana / Replicate / Flux)
+        // For now, this is a placeholder that requires the user's API Key/URL
 
-            // MOCK IMPLEMENTATION (Simulates successful generation):
-            // In reality, this would be an axios.post() to the generation provider
-            // return "https://generated-image-url.com/image.png";
+        // MOCK IMPLEMENTATION (Simulates successful generation):
+        // In reality, this would be an axios.post() to the generation provider
+        // return "https://generated-image-url.com/image.png";
 
-            console.warn("Image Generation API not configured yet.");
-            return null;
+        console.warn("Image Generation API not configured yet.");
+        return null;
 
-        } catch (error) {
-            console.error("Image Generation error:", error);
-            return null;
-        }
+    } catch (error) {
+        console.error("Image Generation error:", error);
+        return null;
     }
+}
 
-    // TOGGLE: Choose 'SEARCH' or 'GENERATE'
-    const IMAGE_SOURCE: 'SEARCH' | 'GENERATE' = 'SEARCH';
+// TOGGLE: Choose 'SEARCH' or 'GENERATE'
+const IMAGE_SOURCE: 'SEARCH' | 'GENERATE' = 'SEARCH';
 
-    async function getImage(query: string): Promise<string | null> {
-        if (IMAGE_SOURCE === 'GENERATE') {
-            // Enforce style consistency for generated images here
-            const enhancedPrompt = `cinematic shot of ${query}, hyper-realistic, 8k, unreal engine 5 render, dramatic lighting, detailed texture`;
-            return await generateImage(enhancedPrompt);
-        } else {
-            return await searchImages(query);
-        }
+async function getImage(query: string): Promise<string | null> {
+    if (IMAGE_SOURCE === 'GENERATE') {
+        // Enforce style consistency for generated images here
+        const enhancedPrompt = `cinematic shot of ${query}, hyper-realistic, 8k, unreal engine 5 render, dramatic lighting, detailed texture`;
+        return await generateImage(enhancedPrompt);
+    } else {
+        return await searchImages(query);
     }
+}
 
-    export async function generateArticle(topic: string): Promise<Article> {
-        console.log(`[AI-Service] Starting generation for: ${topic}`);
-        // 1. Search the web for real context
-        const searchContext = await searchWeb(topic);
-        console.log(`[AI-Service] Search context found: ${searchContext.length} chars`);
+export async function generateArticle(topic: string): Promise<Article> {
+    console.log(`[AI-Service] Starting generation for: ${topic}`);
+    // 1. Search the web for real context
+    const searchContext = await searchWeb(topic);
+    console.log(`[AI-Service] Search context found: ${searchContext.length} chars`);
 
-        // 2. Generate content with Gemini
-        const prompt = `
+    // 2. Generate content with Gemini
+    const prompt = `
   Role: You are 'BLEXOUT', an elite Gaming Analyst and Tech Industry Insider.
   Tone: Knowledgeable, Opinionated, Spec-Focused but Atmospheric.
   Voice: "The machine must serve the experience." Balance raw metrics (FPS/Thermals) with "Game Feel," "Immersion," and "Artistic Impact."
@@ -154,90 +155,90 @@ async function searchImages(query: string): Promise<string | null> {
   }
   `;
 
+    try {
+        let result;
         try {
-            let result;
-            try {
-                // Try User Requested Model
-                result = await model.generateContent(prompt);
-            } catch (modelError) {
-                console.warn("Primary model failed, attempting fallback to gemini-1.5-flash-latest", modelError);
-                const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-                result = await fallbackModel.generateContent(prompt);
-            }
-
-            const responseText = result.response.text();
-
-            // Clean up if the model adds markdown
-            const cleanedJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-            let parsedData: Article;
-            try {
-                parsedData = JSON.parse(cleanedJson);
-            } catch (e) {
-                console.warn("Standard JSON parse failed, trying JSON5/Repair...");
-                try {
-                    const { default: json5 } = await import('json5');
-                    parsedData = json5.parse(cleanedJson) as Article;
-                } catch (json5Error) {
-                    console.error("JSON5 Parse Failed as well.");
-                    console.log("--- FAILING JSON CONTENT ---");
-                    console.log(cleanedJson);
-                    console.log("----------------------------");
-                    throw json5Error;
-                }
-            }
-
-            // Calculate real reading time
-            const fullText = parsedData.sections.map(s => s.content).join(" ");
-            const { calculateReadingTime } = await import('@/utils/reading-time');
-            parsedData.readingTime = calculateReadingTime(fullText);
-
-            // --- DYNAMIC IMAGE INJECTION ---
-            // 1. Cover Image
-            // @ts-ignore
-            const { getImageForCategory } = await import('./images');
-            let coverImage = getImageForCategory('TECH'); // Default backup
-
-            // Check if imageSearchQuery is provided (it might be missing in strict JSON types but present in data)
-            const query = (parsedData as any).imageSearchQuery;
-
-            if (query) {
-                console.log(`[AI-Service] Searching cover image for: ${query}`);
-                const foundCover = await getImage(query);
-                if (foundCover) coverImage = foundCover;
-            }
-            parsedData.imageUrl = coverImage;
-
-            // 2. Section Images
-            // We use Promise.all to fetch them in parallel without slowing down too much
-            await Promise.all(parsedData.sections.map(async (section) => {
-                if (section.imageSearchQuery) {
-                    console.log(`[AI-Service] Searching section image for: ${section.imageSearchQuery}`);
-                    const foundSectionImg = await getImage(section.imageSearchQuery);
-                    if (foundSectionImg) {
-                        section.imageUrl = foundSectionImg;
-                    }
-                }
-            }));
-
-            console.log("[AI-Service] Generation successful");
-            return parsedData;
-
-        } catch (error) {
-            console.error("Generation failed:", error);
-            // Fallback to offline mock if API fails
-            return {
-                slug: "error-generating",
-                title: `Error Generating: ${topic}`,
-                excerpt: "We encountered an issue connecting to the AI service.",
-                tags: ["Error"],
-                readingTime: "1 min",
-                date: new Date().toDateString(),
-                // Default Tech Image
-                imageUrl: getRandomImage(),
-                sections: [
-                    { heading: "Troubleshooting", content: "Please check your API keys." }
-                ]
-            } as Article;
+            // Try User Requested Model
+            result = await model.generateContent(prompt);
+        } catch (modelError) {
+            console.warn("Primary model failed, attempting fallback to gemini-1.5-flash-latest", modelError);
+            const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+            result = await fallbackModel.generateContent(prompt);
         }
+
+        const responseText = result.response.text();
+
+        // Clean up if the model adds markdown
+        const cleanedJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        let parsedData: Article;
+        try {
+            parsedData = JSON.parse(cleanedJson);
+        } catch (e) {
+            console.warn("Standard JSON parse failed, trying JSON5/Repair...");
+            try {
+                const { default: json5 } = await import('json5');
+                parsedData = json5.parse(cleanedJson) as Article;
+            } catch (json5Error) {
+                console.error("JSON5 Parse Failed as well.");
+                console.log("--- FAILING JSON CONTENT ---");
+                console.log(cleanedJson);
+                console.log("----------------------------");
+                throw json5Error;
+            }
+        }
+
+        // Calculate real reading time
+        const fullText = parsedData.sections.map(s => s.content).join(" ");
+        const { calculateReadingTime } = await import('@/utils/reading-time');
+        parsedData.readingTime = calculateReadingTime(fullText);
+
+        // --- DYNAMIC IMAGE INJECTION ---
+        // 1. Cover Image
+        // @ts-ignore
+        const { getImageForCategory } = await import('./images');
+        let coverImage = getImageForCategory('TECH'); // Default backup
+
+        // Check if imageSearchQuery is provided (it might be missing in strict JSON types but present in data)
+        const query = (parsedData as any).imageSearchQuery;
+
+        if (query) {
+            console.log(`[AI-Service] Searching cover image for: ${query}`);
+            const foundCover = await getImage(query);
+            if (foundCover) coverImage = foundCover;
+        }
+        parsedData.imageUrl = coverImage;
+
+        // 2. Section Images
+        // We use Promise.all to fetch them in parallel without slowing down too much
+        await Promise.all(parsedData.sections.map(async (section) => {
+            if (section.imageSearchQuery) {
+                console.log(`[AI-Service] Searching section image for: ${section.imageSearchQuery}`);
+                const foundSectionImg = await getImage(section.imageSearchQuery);
+                if (foundSectionImg) {
+                    section.imageUrl = foundSectionImg;
+                }
+            }
+        }));
+
+        console.log("[AI-Service] Generation successful");
+        return parsedData;
+
+    } catch (error) {
+        console.error("Generation failed:", error);
+        // Fallback to offline mock if API fails
+        return {
+            slug: "error-generating",
+            title: `Error Generating: ${topic}`,
+            excerpt: "We encountered an issue connecting to the AI service.",
+            tags: ["Error"],
+            readingTime: "1 min",
+            date: new Date().toDateString(),
+            // Default Tech Image
+            imageUrl: getRandomImage(),
+            sections: [
+                { heading: "Troubleshooting", content: "Please check your API keys." }
+            ]
+        } as Article;
     }
+}
