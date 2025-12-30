@@ -20,7 +20,8 @@ export default function SyncCompletion() {
                 }
             },
             {
-                threshold: 0.1, // Trigger when even a pixel is visible
+                threshold: 0,
+                rootMargin: "0px 0px 200px 0px" // Trigger when within 200px of viewport bottom
             }
         );
 
@@ -38,7 +39,8 @@ export default function SyncCompletion() {
 
     return (
         <>
-            <div ref={setRef} className="absolute bottom-0 h-px w-full pointer-events-none opacity-0" />
+            {/* Scroll Sentinel - Placed at the very end of the page */}
+            <div ref={setRef} className="w-full h-16 pointer-events-none opacity-0" aria-hidden="true" />
             <AnimatePresence>
                 {isComplete && (
                     <motion.div

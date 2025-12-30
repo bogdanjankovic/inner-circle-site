@@ -270,6 +270,7 @@ export default async function ArticlePage(props: PageProps) {
                 </aside>
 
             </div>
+            <SyncCompletion />
         </div>
     );
 }
