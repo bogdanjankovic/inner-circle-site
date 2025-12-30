@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getPostBySlug, getPublishedPosts } from '@/lib/storage';
+import { getPostBySlug, getPublishedPosts, getGlossary } from '@/lib/storage'; // Re-added getGlossary
 import { getMetrics } from '@/lib/metrics';
 import AdUnit from '@/components/AdUnit';
 import TextToSpeech from '@/components/TextToSpeech';
@@ -14,7 +14,7 @@ import ScrollToTopButton from '@/components/ScrollToTopButton';
 import RevealImage from '@/components/RevealImage';
 import ArticleActions from '@/components/ArticleActions';
 import SmartContent from '@/components/SmartContent';
-import SyncCompletion from '@/components/SyncCompletion'; // New client wrapper
+import SyncCompletion from '@/components/SyncCompletion';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -62,10 +62,13 @@ export default async function ArticlePage(props: PageProps) {
     const params = await props.params;
     const slug = params.slug;
 
-    // Fetch from storage using the slug
-    const article = await getPostBySlug(slug);
+    // Parallel fetch post, glossary, and other data
+    const [article, glossary] = await Promise.all([
+        getPostBySlug(slug),
+        getGlossary()
+    ]);
 
-    // Fetch trending data
+    // Fetch trending data separate to catch errors gracefully if needed, or included above
     const allPosts = await getPublishedPosts();
     const metrics = await getMetrics();
 

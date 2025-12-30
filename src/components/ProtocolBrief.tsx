@@ -2,12 +2,7 @@
 
 import { useState } from 'react';
 
-interface KeyPoint {
-    text: string;
-    sectionIndex: number;
-}
-
-export default function ProtocolBrief({ keyPoints }: { keyPoints: KeyPoint[] }) {
+export default function ProtocolBrief({ keyPoints }: { keyPoints: string[] }) {
     const [isOpen, setIsOpen] = useState(false);
 
     if (!keyPoints || keyPoints.length === 0) return null;
@@ -39,17 +34,16 @@ export default function ProtocolBrief({ keyPoints }: { keyPoints: KeyPoint[] }) 
                 <ul className="flex flex-col gap-3 p-4 pt-0">
                     {keyPoints.map((point, idx) => (
                         <li key={idx}>
-                            <a
-                                href={`#section-${point.sectionIndex}`}
+                            <div
                                 className="flex items-start gap-3 group/link hover:pl-1 transition-all duration-300"
                             >
                                 <span className="text-green-500/40 font-mono text-[10px] mt-1 group-hover/link:text-green-500 transition-colors">
                                     0{idx + 1}
                                 </span>
                                 <span className="text-gray-400 font-mono text-xs leading-relaxed group-hover/link:text-white transition-colors border-b border-transparent group-hover/link:border-green-500/30">
-                                    {point.text}
+                                    {point}
                                 </span>
-                            </a>
+                            </div>
                         </li>
                     ))}
                 </ul>
