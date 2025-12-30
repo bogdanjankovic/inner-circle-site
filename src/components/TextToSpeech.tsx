@@ -70,11 +70,11 @@ export default function TextToSpeech({ text }: TextToSpeechProps) {
     };
 
     return (
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 w-full">
             {!isSpeaking && !isPaused ? (
                 <button
                     onClick={handlePlay}
-                    className="group flex items-center gap-4 px-6 py-3 border border-green-500/30 bg-green-500/10 hover:bg-green-500/20 transition-all rounded-sm w-full md:w-auto"
+                    className="group flex items-center gap-4 px-6 py-3 border border-green-500/30 bg-green-500/10 hover:bg-green-500/20 transition-all rounded-sm w-full"
                 >
                     <div className="relative w-8 h-8 flex items-center justify-center border border-green-500 rounded-full">
                         <div className="w-2 h-2 bg-green-500 rounded-full opacity-50 group-hover:opacity-100 group-hover:animate-pulse transition-opacity" />
