@@ -30,7 +30,9 @@ export async function POST(request: NextRequest) {
             tags: tags || existingPost?.tags || [],
             // Preserve creation date, or use now if new (though edit usually implies existing)
             date: existingPost?.date || new Date().toISOString(),
+            readTime: existingPost?.readTime || "1 min read",
             readingTime: existingPost?.readingTime || '5 min read', // Should recalculate ideally, but keep simple for now
+            author: existingPost?.author || "BLEXOUT System",
             imageUrl: imageUrl || existingPost?.imageUrl || '',
             imageSearchQuery: imageSearchQuery || existingPost?.imageSearchQuery || '',
             isArchived: status === 'archived' // Keep sync
