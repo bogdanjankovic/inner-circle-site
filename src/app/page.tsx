@@ -28,7 +28,7 @@ export default async function Home() {
                         </div>
                         <div className="flex flex-col gap-6 justify-center">
                             <div className="flex gap-4">
-                                {featured.tags.map(t => (
+                                {(featured.tags || []).slice(0, 3).map(t => (
                                     <span key={t} className="px-2 py-1 bg-white/5 border border-white/10 text-green-500 text-[10px] font-mono font-bold uppercase tracking-widest">{t}</span>
                                 ))}
                             </div>
