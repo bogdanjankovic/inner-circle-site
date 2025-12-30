@@ -9,6 +9,7 @@ import TextToSpeech from '@/components/TextToSpeech';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
 import { getAffiliateUrl } from '@/lib/affiliate';
 import ProtocolBrief from '@/components/ProtocolBrief';
+import ReadingProgressBar from '@/components/ReadingProgressBar';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -77,7 +78,8 @@ export default async function ArticlePage(props: PageProps) {
     }
 
     return (
-        <div className="min-h-screen pb-32 pt-20 bg-black text-gray-200 font-sans">
+        <div className="min-h-screen pb-32 pt-20 bg-black text-gray-200 font-sans selection:bg-green-500 selection:text-black">
+            <ReadingProgressBar />
             <AnalyticsTracker slug={slug} />
             <script
                 type="application/ld+json"
@@ -155,58 +157,71 @@ export default async function ArticlePage(props: PageProps) {
 
                     {/* Content - High Readability */}
                     <div className="prose prose-xl prose-invert max-w-none font-sans font-light leading-loose text-gray-300">
-                        {article.sections.map((section, idx) => (
-                            <section key={idx} id={`section-${idx}`} className="mb-24 last:mb-0 scroll-mt-32">
-                                <h2 className="text-3xl font-mono font-bold mb-8 mt-12 text-white tracking-tight border-b border-white/10 pb-4 inline-block">
-                                    {section.heading}
-                                </h2>
+                        {article.sections
+                            .filter(section => section.heading !== 'Protocol Summary') // Hide legacy summaries
+                            .map((section, idx) => (
+                                <section key={idx} id={`section-${idx}`} className="mb-24 last:mb-0 scroll-mt-32">
+                                    <h2 className="text-3xl font-mono font-bold mb-8 mt-12 text-white tracking-tight border-b border-white/10 pb-4 inline-block">
+                                        {section.heading}
+                                    </h2>
 
-                                {/* Section Specific Image (Top for Products) */}
-                                {section.imageUrl && (
-                                    <figure className="my-12 border border-white/10 bg-white/5 p-1 rounded-sm">
-                                        <img
-                                            src={section.imageUrl}
-                                            alt={section.imageSearchQuery || section.heading}
-                                            className="w-full object-cover max-h-[500px] grayscale opacity-90 hover:grayscale-0 hover:opacity-100 transition-all duration-700"
-                                        />
-                                        {section.imageSearchQuery && (
-                                            <figcaption className="text-center text-[10px] font-mono text-gray-500 mt-2 tracking-widest uppercase">
-                                                :: {section.imageSearchQuery}
-                                            </figcaption>
-                                        )}
-                                    </figure>
-                                )}
+                                    {/* Section Specific Image (Top for Products) */}
+                                    {section.imageUrl && (
+                                        <figure className="my-12 border border-white/10 bg-white/5 p-1 rounded-sm">
+                                            <img
+                                                src={section.imageUrl}
+                                                alt={section.imageSearchQuery || section.heading}
+                                                className="w-full object-cover max-h-[500px] grayscale opacity-90 hover:grayscale-0 hover:opacity-100 transition-all duration-700"
+                                            />
+                                            {section.imageSearchQuery && (
+                                                <figcaption className="text-center text-[10px] font-mono text-gray-500 mt-2 tracking-widest uppercase">
+                                                    :: {section.imageSearchQuery}
+                                                </figcaption>
+                                            )}
+                                        </figure>
+                                    )}
 
-                                {/* Section Content */}
-                                <div className="text-lg md:text-xl text-gray-300 leading-relaxed font-sans">
-                                    <p>{section.content}</p>
-                                </div>
-
-                                {/* Affiliate / Product Button */}
-                                {section.productUrl && (
-                                    <div className="mt-12 flex justify-center md:justify-start">
-                                        <a
-                                            href={getAffiliateUrl(section.productUrl)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="group relative inline-flex items-center gap-4 px-8 py-4 bg-white text-black font-mono font-bold text-sm hover:bg-green-500 hover:text-black transition-all duration-300"
-                                        >
-                                            <span className="relative z-10 tracking-widest uppercase">{section.buttonText || 'Acquire Hardware'}</span>
-                                            <span className="text-sm border-l border-black/20 pl-4 relative z-10 group-hover:translate-x-1 transition-transform">→</span>
-                                        </a>
+                                    {/* Section Content */}
+                                    <div className="text-lg md:text-xl text-gray-300 leading-relaxed font-sans">
+                                        <p>{section.content}</p>
                                     </div>
-                                )}
+
+                                    {/* Affiliate / Product Button */}
+                                    {section.productUrl && (
+                                        <div className="mt-12 flex justify-center md:justify-start">
+                                            <a
+                                                href={getAffiliateUrl(section.productUrl)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="group relative inline-flex items-center gap-4 px-8 py-4 bg-white text-black font-mono font-bold text-sm hover:bg-green-500 hover:text-black transition-all duration-300"
+                                            >
+                                                <span className="relative z-10 tracking-widest uppercase">{section.buttonText || 'Acquire Hardware'}</span>
+                                                <span className="text-sm border-l border-black/20 pl-4 relative z-10 group-hover:translate-x-1 transition-transform">→</span>
+                                            </a>
+                                        </div>
+                                    )}
 
 
-                                {/* Ad Injection - Styled Minimal */}
-                                {(idx === 1 || idx === 4) && (
-                                    <div className="my-16 flex justify-center opacity-50 hover:opacity-100 transition-opacity border border-white/5 p-4 bg-white/5">
-                                        <span className="text-[8px] uppercase tracking-widest text-gray-500 absolute -mt-7 bg-black px-2">Sponsored Protocol</span>
-                                        <AdUnit slotId={`content-ad-${idx}`} format="banner" />
-                                    </div>
-                                )}
-                            </section>
-                        ))}
+                                    {/* Ad Injection - Styled Minimal */}
+                                    {(idx === 1 || idx === 4) && (
+                                        <div className="my-16 flex justify-center opacity-50 hover:opacity-100 transition-opacity border border-white/5 p-4 bg-white/5">
+                                            <span className="text-[8px] uppercase tracking-widest text-gray-500 absolute -mt-7 bg-black px-2">Sponsored Protocol</span>
+                                            <AdUnit slotId={`content-ad-${idx}`} format="banner" />
+                                        </div>
+                                    )}
+                                </section>
+                            ))}
+                    </div>
+
+                    {/* Scroll To Top Button */}
+                    <div className="mt-20 border-t border-white/10 pt-10 flex justify-center">
+                        <button
+                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                            className="group flex flex-col items-center gap-2 text-gray-500 hover:text-green-500 transition-colors"
+                        >
+                            <span className="text-2xl group-hover:-translate-y-1 transition-transform">↑</span>
+                            <span className="font-mono text-xs uppercase tracking-widest">Return to Top</span>
+                        </button>
                     </div>
                 </article>
 
