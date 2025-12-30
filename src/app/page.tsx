@@ -78,7 +78,7 @@ export default async function Home() {
                         </div>
                         <div className="flex flex-col gap-3">
                             <div className="flex gap-3 mb-1">
-                                {post.tags.slice(0, 1).map(t => (
+                                {(post.tags || []).slice(0, 1).map(t => (
                                     <span key={t} className="text-green-500 text-[10px] font-mono font-bold uppercase tracking-widest">{t}</span>
                                 ))}
                                 <span className="text-[10px] text-gray-600 font-mono uppercase tracking-widest">:: {post.date}</span>
