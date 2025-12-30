@@ -9,16 +9,20 @@ interface ArticleEditorProps {
     article: Article;
 }
 
+interface ImageUploaderProps {
+    currentUrl?: string;
+    onUpload: (url: string) => void;
+    label: string;
+    recommendedSize?: string;
+}
+
 // Helper Component for Image Uploading
 function ImageUploader({
     currentUrl,
     onUpload,
-    label
-}: {
-    currentUrl?: string,
-    onUpload: (url: string) => void,
-    label: string
-}) {
+    label,
+    recommendedSize
+}: ImageUploaderProps) {
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { success, error } = useToast();
@@ -54,7 +58,14 @@ function ImageUploader({
 
     return (
         <div className="space-y-2">
-            <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider mb-1">{label}</label>
+            <div className="flex justify-between items-baseline mb-1">
+                <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider">{label}</label>
+                {recommendedSize && (
+                    <span className="text-[10px] text-purple-400 font-mono bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded">
+                        {recommendedSize}
+                    </span>
+                )}
+            </div>
 
             {/* Preview Area */}
             <div className={`relative group w-full overflow-hidden rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 transition-colors
@@ -313,6 +324,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                         <div className="space-y-6 bg-gray-50 dark:bg-gray-900/30 p-6 rounded-xl">
                                             <ImageUploader
                                                 label="Section Image"
+                                                recommendedSize="1200 x 800 (3:2)"
                                                 currentUrl={section.imageUrl}
                                                 onUpload={(url) => handleSectionImageUpload(idx, url)}
                                             />
@@ -382,6 +394,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                         <h3 className="font-serif font-bold text-xl mb-6 text-gray-800 dark:text-white">Cover Appearance</h3>
                         <ImageUploader
                             label="Cover Image"
+                            recommendedSize="1920 x 1080 (16:9)"
                             currentUrl={imageUrl}
                             onUpload={setImageUrl}
                         />
