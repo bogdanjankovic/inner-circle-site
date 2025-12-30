@@ -98,8 +98,8 @@ export default function WatchProtocol({ article, onClose }: WatchProtocolProps) 
             };
 
             // 2. Fallback Timer Sync (for Google/Remote voices that omit onboundary)
-            // We estimate 350ms per word (approx 170 WPM) adjusted by rate 0.9 -> ~400ms
-            const msPerWord = 400;
+            // We estimate 300ms per word (approx 200 WPM) seems better for natural speaking
+            const msPerWord = 300;
 
             fallbackInterval = setInterval(() => {
                 if (!boundaryReceived.current) {
