@@ -10,6 +10,7 @@ import AnalyticsTracker from '@/components/AnalyticsTracker';
 import { getAffiliateUrl } from '@/lib/affiliate';
 import ProtocolBrief from '@/components/ProtocolBrief';
 import ReadingProgressBar from '@/components/ReadingProgressBar';
+import ScrollToTopButton from '@/components/ScrollToTopButton';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -215,13 +216,7 @@ export default async function ArticlePage(props: PageProps) {
 
                     {/* Scroll To Top Button */}
                     <div className="mt-20 border-t border-white/10 pt-10 flex justify-center">
-                        <button
-                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                            className="group flex flex-col items-center gap-2 text-gray-500 hover:text-green-500 transition-colors"
-                        >
-                            <span className="text-2xl group-hover:-translate-y-1 transition-transform">↑</span>
-                            <span className="font-mono text-xs uppercase tracking-widest">Return to Top</span>
-                        </button>
+                        <ScrollToTopButton />
                     </div>
                 </article>
 
