@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { getPublishedPosts } from '@/lib/storage';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = 'https://inner-circle-site.vercel.app'; // Replace with actual domain if custom
+    const baseUrl = 'https://blexout.com';
     const posts = await getPublishedPosts();
 
     const postUrls = posts.map((post) => ({

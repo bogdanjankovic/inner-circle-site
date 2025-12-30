@@ -108,7 +108,7 @@ export default async function ArticlePage(props: PageProps) {
                             name: 'BLEXOUT',
                             logo: {
                                 '@type': 'ImageObject',
-                                url: 'https://inner-circle-site.vercel.app/logo.png',
+                                url: 'https://blexout.com/logo.png',
                             },
                         },
                     }),
