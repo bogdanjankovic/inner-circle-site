@@ -117,7 +117,7 @@ export default async function ArticlePage(props: PageProps) {
                                 </span>
                             ))}
                         </div>
-                        <h1 className="text-4xl md:text-6xl font-mono font-bold mb-8 leading-tight text-white tracking-tighter">
+                        <h1 className="text-3xl md:text-6xl font-mono font-bold mb-8 leading-tight text-white tracking-tighter">
                             {article.title}
                         </h1>
                         <p className="text-xl font-mono text-gray-400 mb-10 leading-relaxed max-w-2xl border-l border-green-500/50 pl-6">

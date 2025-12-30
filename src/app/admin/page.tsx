@@ -42,7 +42,7 @@ export default async function AdminDashboard({ searchParams }: AdminDashboardPro
                 </div>
             </nav>
 
-            <main className="max-w-7xl mx-auto px-8 py-12">
+            <main className="max-w-7xl mx-auto px-4 md:px-8 py-12">
                 {/* Stats Row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
