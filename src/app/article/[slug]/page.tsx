@@ -119,7 +119,7 @@ export default async function ArticlePage(props: PageProps) {
                     {/* Article Header - Tech / Editorial */}
                     <header className="mb-16 text-center lg:text-left">
                         <div className="flex gap-4 mb-8 justify-center lg:justify-start">
-                            {article.tags.map(tag => (
+                            {(article.tags || []).map(tag => (
                                 <span key={tag} className="px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-widest border border-green-500/20 text-green-500 bg-green-500/5 hover:bg-green-500/10 transition-all">
                                     {tag}
                                 </span>
