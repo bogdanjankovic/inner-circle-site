@@ -12,7 +12,9 @@ import ProtocolBrief from '@/components/ProtocolBrief';
 import ReadingProgressBar from '@/components/ReadingProgressBar';
 import ScrollToTopButton from '@/components/ScrollToTopButton';
 import RevealImage from '@/components/RevealImage';
-import ArticleActions from '@/components/ArticleActions'; // New client wrapper
+import ArticleActions from '@/components/ArticleActions';
+import SmartContent from '@/components/SmartContent';
+import SyncCompletion from '@/components/SyncCompletion'; // New client wrapper
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -186,7 +188,7 @@ export default async function ArticlePage(props: PageProps) {
 
                                     {/* Section Content */}
                                     <div className="text-lg md:text-xl text-gray-300 leading-relaxed font-sans">
-                                        <p>{section.content}</p>
+                                        <SmartContent content={section.content} />
                                     </div>
 
                                     {/* Affiliate / Product Button */}
