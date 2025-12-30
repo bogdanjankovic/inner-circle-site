@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Article, ArticleSection } from '@/lib/types';
+import { Article, ArticleSection as Section } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
 
