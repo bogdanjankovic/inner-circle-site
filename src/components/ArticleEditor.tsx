@@ -117,7 +117,18 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     const [title, setTitle] = useState(article.title);
     const [excerpt, setExcerpt] = useState(article.excerpt);
     const [status, setStatus] = useState(article.status || (article.isArchived ? 'archived' : 'published'));
-    const [sections, setSections] = useState<Section[]>(article.sections);
+
+    // UI-specific wrapper for sections to handle drag-and-drop state preservation and collapsing
+    type UISection = Section & { _ui_id: string; _collapsed?: boolean };
+
+    const [sections, setSections] = useState<UISection[]>(() =>
+        article.sections.map(s => ({
+            ...s,
+            _ui_id: Math.random().toString(36).substr(2, 9),
+            _collapsed: false
+        }))
+    );
+
     const [imageUrl, setImageUrl] = useState(article.imageUrl || '');
     const [showAffiliateDisclosure, setShowAffiliateDisclosure] = useState(article.showAffiliateDisclosure || false);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -145,6 +156,12 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
         setDragReadyIndex(null);
     };
 
+    const toggleCollapse = (index: number) => {
+        const newSections = [...sections];
+        newSections[index]._collapsed = !newSections[index]._collapsed;
+        setSections(newSections);
+    };
+
     // We treat imageSearchQuery as the "Caption" if manually edited
     // Or we can add a specific caption field? 
     // Let's use imageSearchQuery as the caption field for now since it's displayed below the image in the viewer.
@@ -156,6 +173,9 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
         setSaving(true);
         const finalStatus = newStatus || status;
 
+        // Strip UI properties before saving
+        const cleanSections = sections.map(({ _ui_id, _collapsed, ...s }) => s);
+
         try {
             const res = await fetch('/api/admin/edit', {
                 method: 'POST',
@@ -164,7 +184,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                     slug: article.slug,
                     title,
                     excerpt,
-                    sections,
+                    sections: cleanSections,
                     status: finalStatus,
                     tags: article.tags,
                     imageUrl,
@@ -177,7 +197,6 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
 
             if (!res.ok) throw new Error('Failed to save');
 
-            setStatus(finalStatus as any);
             setStatus(finalStatus as any);
             router.refresh();
             success('Saved successfully!');
@@ -264,7 +283,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                     <div className="space-y-8">
                         {sections.map((section, idx) => (
                             <div
-                                key={idx}
+                                key={section._ui_id}
                                 draggable={dragReadyIndex === idx}
                                 onDragStart={() => handleDragStart(idx)}
                                 onDragOver={(e) => handleDragOver(e, idx)}
@@ -277,11 +296,22 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                     onMouseEnter={() => setDragReadyIndex(idx)}
                                     onMouseLeave={() => setDragReadyIndex(null)}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-300">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
-                                        </svg>
-                                        <span className="text-xs font-bold uppercase text-gray-400 tracking-widest">Section {idx + 1}</span>
+                                    <div className="flex items-center gap-4">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Prevent drag interference if any
+                                                toggleCollapse(idx);
+                                            }}
+                                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-5 h-5 text-gray-400 transition-transform ${section._collapsed ? '-rotate-90' : ''}`}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+                                            </svg>
+                                        </button>
+                                        <span className="text-xs font-bold uppercase text-gray-400 tracking-widest">
+                                            Section {idx + 1}
+                                            {section._collapsed && section.heading && <span className="text-gray-600 dark:text-gray-300 ml-3 normal-case truncate max-w-xs inline-block align-bottom font-serif">:: {section.heading}</span>}
+                                        </span>
                                     </div>
                                     <button
                                         onClick={() => {
@@ -299,81 +329,83 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                     </button>
                                 </div>
 
-                                <div className="p-6 space-y-6">
-                                    {/* Heading */}
-                                    <div>
-                                        <input
-                                            type="text"
-                                            value={section.heading}
-                                            onChange={(e) => handleSectionChange(idx, 'heading', e.target.value)}
-                                            className="w-full px-0 py-2 border-0 border-b-2 border-transparent focus:border-purple-500 focus:ring-0 bg-transparent text-xl font-serif font-bold text-gray-800 dark:text-gray-100 placeholder-gray-300 transition-colors"
-                                            placeholder="Section Heading"
-                                        />
-                                    </div>
-
-                                    {/* Split View: Content & Image */}
-                                    <div className="grid md:grid-cols-2 gap-8">
-
-                                        {/* Text Content */}
-                                        <div className="space-y-4">
-                                            <div>
-                                                <label className="block text-xs font-bold font-sans uppercase text-gray-300 tracking-wider mb-2">Content</label>
-                                                <textarea
-                                                    value={section.content}
-                                                    onChange={(e) => handleSectionChange(idx, 'content', e.target.value)}
-                                                    rows={12}
-                                                    className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none font-sans text-sm leading-7 text-gray-600 dark:text-gray-300 resize-none"
-                                                    placeholder="Write your story..."
-                                                />
-                                            </div>
+                                {!section._collapsed && (
+                                    <div className="p-6 space-y-6">
+                                        {/* Heading */}
+                                        <div>
+                                            <input
+                                                type="text"
+                                                value={section.heading}
+                                                onChange={(e) => handleSectionChange(idx, 'heading', e.target.value)}
+                                                className="w-full px-0 py-2 border-0 border-b-2 border-transparent focus:border-purple-500 focus:ring-0 bg-transparent text-xl font-serif font-bold text-gray-800 dark:text-gray-100 placeholder-gray-300 transition-colors"
+                                                placeholder="Section Heading"
+                                            />
                                         </div>
 
-                                        {/* Visuals & Links */}
-                                        <div className="space-y-6 bg-gray-50 dark:bg-gray-900/30 p-6 rounded-xl">
-                                            <ImageUploader
-                                                label="Section Image"
-                                                recommendedSize="1200 x 800 (3:2)"
-                                                currentUrl={section.imageUrl}
-                                                onUpload={(url) => handleSectionImageUpload(idx, url)}
-                                            />
+                                        {/* Split View: Content & Image */}
+                                        <div className="grid md:grid-cols-2 gap-8">
 
-                                            {/* Caption (mapped to imageSearchQuery for now) */}
-                                            <div>
-                                                <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider mb-2">Image Caption</label>
-                                                <input
-                                                    type="text"
-                                                    value={section.imageSearchQuery || ''}
-                                                    onChange={(e) => handleSectionChange(idx, 'imageSearchQuery', e.target.value)}
-                                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-serif italic text-gray-500 text-center"
-                                                    placeholder="Enter a caption for the image..."
-                                                />
-                                            </div>
-
-                                            <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4">
+                                            {/* Text Content */}
+                                            <div className="space-y-4">
                                                 <div>
-                                                    <label className="block text-xs font-bold uppercase text-blue-500 mb-1">🛒 Product Link</label>
-                                                    <input
-                                                        type="url"
-                                                        value={section.productUrl || ''}
-                                                        onChange={(e) => handleSectionChange(idx, 'productUrl', e.target.value)}
-                                                        className="w-full px-3 py-2 rounded-lg border border-blue-100 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800 text-xs text-blue-800"
-                                                        placeholder="https://amazon.com/..."
+                                                    <label className="block text-xs font-bold font-sans uppercase text-gray-300 tracking-wider mb-2">Content</label>
+                                                    <textarea
+                                                        value={section.content}
+                                                        onChange={(e) => handleSectionChange(idx, 'content', e.target.value)}
+                                                        rows={12}
+                                                        className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none font-sans text-sm leading-7 text-gray-600 dark:text-gray-300 resize-none"
+                                                        placeholder="Write your story..."
                                                     />
                                                 </div>
+                                            </div>
+
+                                            {/* Visuals & Links */}
+                                            <div className="space-y-6 bg-gray-50 dark:bg-gray-900/30 p-6 rounded-xl">
+                                                <ImageUploader
+                                                    label="Section Image"
+                                                    recommendedSize="1200 x 800 (3:2)"
+                                                    currentUrl={section.imageUrl}
+                                                    onUpload={(url) => handleSectionImageUpload(idx, url)}
+                                                />
+
+                                                {/* Caption (mapped to imageSearchQuery for now) */}
                                                 <div>
-                                                    <label className="block text-xs font-bold uppercase text-purple-500 mb-1">✨ CTA Text</label>
+                                                    <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider mb-2">Image Caption</label>
                                                     <input
                                                         type="text"
-                                                        value={section.buttonText || ''}
-                                                        onChange={(e) => handleSectionChange(idx, 'buttonText', e.target.value)}
-                                                        className="w-full px-3 py-2 rounded-lg border border-purple-100 bg-purple-50 dark:bg-purple-900/10 dark:border-purple-800 text-xs text-purple-800 font-serif italic"
-                                                        placeholder="Claim your match..."
+                                                        value={section.imageSearchQuery || ''}
+                                                        onChange={(e) => handleSectionChange(idx, 'imageSearchQuery', e.target.value)}
+                                                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-serif italic text-gray-500 text-center"
+                                                        placeholder="Enter a caption for the image..."
                                                     />
+                                                </div>
+
+                                                <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold uppercase text-blue-500 mb-1">🛒 Product Link</label>
+                                                        <input
+                                                            type="url"
+                                                            value={section.productUrl || ''}
+                                                            onChange={(e) => handleSectionChange(idx, 'productUrl', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-lg border border-blue-100 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800 text-xs text-blue-800"
+                                                            placeholder="https://amazon.com/..."
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold uppercase text-purple-500 mb-1">✨ CTA Text</label>
+                                                        <input
+                                                            type="text"
+                                                            value={section.buttonText || ''}
+                                                            onChange={(e) => handleSectionChange(idx, 'buttonText', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-lg border border-purple-100 bg-purple-50 dark:bg-purple-900/10 dark:border-purple-800 text-xs text-purple-800 font-serif italic"
+                                                            placeholder="Claim your match..."
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         ))}
 
@@ -385,7 +417,9 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                         heading: 'New Section',
                                         content: '',
                                         imageUrl: '',
-                                        imageSearchQuery: ''
+                                        imageSearchQuery: '',
+                                        _ui_id: Math.random().toString(36).substr(2, 9),
+                                        _collapsed: false
                                     }
                                 ]);
                             }}
@@ -395,23 +429,24 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                         </button>
                     </div>
                 </div>
+            </div>
 
-                {/* Sidebar - Cover Image */}
-                <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 sticky top-32">
-                        <h3 className="font-serif font-bold text-xl mb-6 text-gray-800 dark:text-white">Cover Appearance</h3>
-                        <ImageUploader
-                            label="Cover Image"
-                            recommendedSize="1920 x 1080 (16:9)"
-                            currentUrl={imageUrl}
-                            onUpload={setImageUrl}
-                        />
-                        <p className="text-xs text-gray-400 mt-4 leading-relaxed">
-                            This image will be the first thing readers see. Make it expansive and atmospheric.
-                        </p>
-                    </div>
+            {/* Sidebar - Cover Image */}
+            <div className="lg:col-span-1">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 sticky top-32">
+                    <h3 className="font-serif font-bold text-xl mb-6 text-gray-800 dark:text-white">Cover Appearance</h3>
+                    <ImageUploader
+                        label="Cover Image"
+                        recommendedSize="1920 x 1080 (16:9)"
+                        currentUrl={imageUrl}
+                        onUpload={setImageUrl}
+                    />
+                    <p className="text-xs text-gray-400 mt-4 leading-relaxed">
+                        This image will be the first thing readers see. Make it expansive and atmospheric.
+                    </p>
                 </div>
             </div>
         </div>
+        </div >
     );
 }
