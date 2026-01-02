@@ -12,7 +12,7 @@ export default async function Home() {
     const gridPosts = posts.slice(1);
 
     return (
-        <main className="min-h-screen flex flex-col items-center p-4 relative overflow-hidden pb-20 bg-black text-gray-200">
+        <main className="min-h-screen flex flex-col items-center p-4 relative overflow-hidden pb-20 text-gray-200">
 
             <div className="h-12"></div>
 

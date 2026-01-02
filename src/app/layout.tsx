@@ -5,7 +5,6 @@ import ConsentBanner from "@/components/ConsentBanner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ToastProvider } from "@/context/ToastContext";
-import ParticleNetwork from "@/components/ParticleNetwork";
 
 // Configure Fonts
 const mono = JetBrains_Mono({
@@ -51,7 +50,6 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={`${mono.variable} ${montserrat.variable} antialiased text-gray-200 selection:bg-green-500 selection:text-black bg-transparent`}>
-                <ParticleNetwork />
                 <div className="relative z-10">
                     <ToastProvider>
                         <Navbar />
