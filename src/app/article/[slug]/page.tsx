@@ -120,18 +120,19 @@ export default async function ArticlePage(props: PageProps) {
                 {/* Main Content Column */}
                 <article>
                     {/* Article Header - Tech / Editorial */}
-                    <header className="mb-16 text-center lg:text-left">
-                        <div className="flex gap-4 mb-8 justify-center lg:justify-start">
+                    {/* Article Header - Tech / Editorial */}
+                    <header className="mb-10 text-center lg:text-left">
+                        <div className="flex gap-4 mb-6 justify-center lg:justify-start">
                             {(article.tags || []).map(tag => (
                                 <span key={tag} className="px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-widest border border-green-500/20 text-green-500 bg-green-500/5 hover:bg-green-500/10 transition-all">
                                     {tag}
                                 </span>
                             ))}
                         </div>
-                        <h1 className="text-3xl md:text-6xl font-mono font-bold mb-8 leading-tight text-white tracking-tighter">
+                        <h1 className="text-3xl md:text-6xl font-mono font-bold mb-6 leading-tight text-white tracking-tighter">
                             {article.title}
                         </h1>
-                        <p className="text-xl font-mono text-gray-400 mb-10 leading-relaxed max-w-2xl border-l border-green-500/50 pl-6">
+                        <p className="text-xl font-mono text-gray-400 mb-8 leading-relaxed max-w-2xl border-l border-green-500/50 pl-6">
                             {article.excerpt}
                         </p>
                         <div className="flex items-center justify-center lg:justify-start gap-4 text-[10px] font-mono font-bold uppercase tracking-widest text-gray-500 border-t border-b border-white/10 py-4">
@@ -154,8 +155,7 @@ export default async function ArticlePage(props: PageProps) {
                     </header>
 
                     {/* Featured Image - Cinematic */}
-                    {/* Featured Image - Cinematic */}
-                    <div className="w-full aspect-[21/9] overflow-hidden mb-20 relative border border-white/10 bg-white/5">
+                    <div className="w-full aspect-[21/9] overflow-hidden mb-12 relative border border-white/10 bg-white/5">
                         <RevealImage
                             src={article.imageUrl}
                             alt={article.title}
@@ -167,14 +167,14 @@ export default async function ArticlePage(props: PageProps) {
                         {article.sections
                             .filter(section => section.heading !== 'Protocol Summary') // Hide legacy summaries
                             .map((section, idx) => (
-                                <section key={idx} id={`section-${idx}`} className="mb-24 last:mb-0 scroll-mt-32">
-                                    <h2 className="text-3xl font-mono font-bold mb-8 mt-12 text-white tracking-tight border-b border-white/10 pb-4 inline-block">
+                                <section key={idx} id={`section-${idx}`} className="mb-16 last:mb-0 scroll-mt-32">
+                                    <h2 className="text-3xl font-mono font-bold mb-6 mt-8 text-white tracking-tight border-b border-white/10 pb-4 inline-block">
                                         {section.heading}
                                     </h2>
 
                                     {/* Section Specific Image (Top for Products) */}
                                     {section.imageUrl && (
-                                        <figure className="my-12 border border-white/10 bg-white/5 p-1 rounded-sm">
+                                        <figure className="my-8 border border-white/10 bg-white/5 p-1 rounded-sm">
                                             <div className="h-[500px] w-full">
                                                 <RevealImage
                                                     src={section.imageUrl}
@@ -196,7 +196,7 @@ export default async function ArticlePage(props: PageProps) {
 
                                     {/* Affiliate / Product Button */}
                                     {section.productUrl && (
-                                        <div className="mt-12 flex justify-center md:justify-start">
+                                        <div className="mt-8 flex justify-center md:justify-start">
                                             <a
                                                 href={getAffiliateUrl(section.productUrl)}
                                                 target="_blank"
@@ -212,7 +212,7 @@ export default async function ArticlePage(props: PageProps) {
 
                                     {/* Ad Injection - Styled Minimal */}
                                     {(idx === 1 || idx === 4) && (
-                                        <div className="my-16 flex justify-center opacity-50 hover:opacity-100 transition-opacity border border-white/5 p-4 bg-white/5">
+                                        <div className="my-10 flex justify-center opacity-50 hover:opacity-100 transition-opacity border border-white/5 p-4 bg-white/5">
                                             <span className="text-[8px] uppercase tracking-widest text-gray-500 absolute -mt-7 bg-black px-2">Sponsored Protocol</span>
                                             <AdUnit slotId={`content-ad-${idx}`} format="banner" />
                                         </div>
