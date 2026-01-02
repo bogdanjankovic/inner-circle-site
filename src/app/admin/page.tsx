@@ -3,6 +3,7 @@ import { getPaginatedPosts } from '@/lib/storage';
 import { getMetrics, getDailyAnalytics } from '@/lib/metrics';
 import ArchiveButton from '@/components/ArchiveButton';
 import CreateManualButton from '@/components/CreateManualButton';
+import DeleteArticleButton from '@/components/DeleteArticleButton';
 
 // Force dynamic rendering so we always see fresh data
 export const dynamic = 'force-dynamic';
@@ -181,10 +182,11 @@ export default async function AdminDashboard({ searchParams }: AdminDashboardPro
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 font-bold text-purple-600">{postMetrics.views}</td>
-                                            <td className="px-6 py-4 text-right space-x-4">
+                                            <td className="px-6 py-4 text-right space-x-4 flex items-center justify-end">
                                                 <Link href={`/admin/edit/${post.slug}`} className="text-blue-600 hover:text-blue-800 font-bold text-xs uppercase tracking-wide">Edit</Link>
-                                                <Link href={`/article/${post.slug}`} className="text-gray-400 hover:text-gray-900 dark:hover:text-white">View</Link>
+                                                <Link href={`/article/${post.slug}`} className="text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium text-xs uppercase tracking-wide">View</Link>
                                                 <ArchiveButton slug={post.slug || ''} isArchived={isArchived} />
+                                                <DeleteArticleButton slug={post.slug || ''} />
                                             </td>
                                         </tr>
                                     );
