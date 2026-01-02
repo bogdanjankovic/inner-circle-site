@@ -1,6 +1,26 @@
-'use client';
+import { stripHtml } from '@/lib/utils'; // Add to imports
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+// ...
+
+const currentSlide = slides[currentIndex] || { image: '', text: '', title: '' };
+
+// Sanitized Text for Display & TTS
+const safeText = useMemo(() => stripHtml(currentSlide.text || ""), [currentSlide.text]);
+
+// Split text into words for highlighting
+const words = useMemo(() => {
+    return safeText.split(" ");
+}, [safeText]);
+
+// Calculate character offsets for each word to map `onboundary` event
+const wordOffsets = useMemo(() => {
+    let currentOffset = 0;
+    return words.map(word => {
+        const start = currentOffset;
+        currentOffset += word.length + 1; // +1 for space
+        return start;
+    });
+}, [words]);
 import { motion, AnimatePresence } from 'framer-motion';
 import { Article } from '@/lib/types';
 import GlitchText from './GlitchText';
@@ -76,7 +96,7 @@ export default function WatchProtocol({ article, onClose }: WatchProtocolProps) 
         const boundaryReceived = { current: false };
 
         if (isPlaying) {
-            const utterance = new SpeechSynthesisUtterance(currentSlide.text);
+            const utterance = new SpeechSynthesisUtterance(safeText);
 
             if (selectedVoice) {
                 utterance.voice = selectedVoice;
