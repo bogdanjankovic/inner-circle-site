@@ -121,6 +121,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     const [imageUrl, setImageUrl] = useState(article.imageUrl || '');
     const [showAffiliateDisclosure, setShowAffiliateDisclosure] = useState(article.showAffiliateDisclosure || false);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [dragReadyIndex, setDragReadyIndex] = useState<number | null>(null);
 
     const handleDragStart = (index: number) => {
         setDraggedIndex(index);
@@ -141,6 +142,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
 
     const handleDragEnd = () => {
         setDraggedIndex(null);
+        setDragReadyIndex(null);
     };
 
     // We treat imageSearchQuery as the "Caption" if manually edited
@@ -263,14 +265,18 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                         {sections.map((section, idx) => (
                             <div
                                 key={idx}
-                                draggable
+                                draggable={dragReadyIndex === idx}
                                 onDragStart={() => handleDragStart(idx)}
                                 onDragOver={(e) => handleDragOver(e, idx)}
                                 onDragEnd={handleDragEnd}
                                 className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all ${draggedIndex === idx ? 'opacity-50 ring-2 ring-purple-500' : ''}`}
                             >
                                 {/* Section Header */}
-                                <div className="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center cursor-move">
+                                <div
+                                    className="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center cursor-grab active:cursor-grabbing hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                    onMouseEnter={() => setDragReadyIndex(idx)}
+                                    onMouseLeave={() => setDragReadyIndex(null)}
+                                >
                                     <div className="flex items-center gap-3">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-300">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
