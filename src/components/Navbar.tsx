@@ -15,7 +15,7 @@ export default function Navbar() {
     const navLinks = ['Hardware', 'Industry', 'Reviews', 'Guides'];
 
     return (
-        <nav className="w-full h-auto py-6 border-b border-white/10 flex items-center justify-between px-6 md:px-12 sticky top-0 z-50 bg-black/80 backdrop-blur-md transition-all">
+        <nav className="w-full h-auto py-6 border-b border-white/10 flex items-center justify-between px-6 md:px-12 sticky top-0 z-50 bg-black transition-all">
             {/* Logo Area */}
             <Link href="/" className="flex items-center gap-4 group z-50" onClick={closeMenu}>
                 <div className="relative h-16 w-auto transition-opacity duration-300 hover:opacity-80">
