@@ -110,3 +110,54 @@ export async function getDailyAnalytics(): Promise<DailyAnalytics> {
         };
     }
 }
+
+export async function getHistoricalAnalytics(days: number = 7): Promise<DailyAnalytics[]> {
+    const promises = [];
+    const today = new Date();
+
+    for (let i = 0; i < days; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+
+        // Re-implement simplified fetch for history to assume separate pipeline per day is safer/easier
+        // Or reuse existing (but careful of date scope). 
+        // Let's manually construct pipeline here for batch efficiency if possible, 
+        // but parallel promises of getDailyAnalytics-like logic is easier to read.
+
+        // Actually, let's keep it simple: parallel individual day fetches.
+        // We need to refactor getDailyAnalytics to accept a date arg or copy logic.
+        // Copying logic to avoid breaking existing signature for now.
+
+        promises.push((async () => {
+            const pipeline = kv.pipeline();
+            pipeline.pfcount(`analytics:${dateStr}:visitors`);
+            pipeline.get(`analytics:${dateStr}:total_views`);
+            pipeline.zrange(`analytics:${dateStr}:country`, 0, 0, { rev: true, withScores: true }); // Just top 1 for CSV summary? Or all? Let's get top 3
+            pipeline.zrange(`analytics:${dateStr}:clicks`, 0, 0, { rev: true, withScores: true });
+
+            const res = await pipeline.exec();
+            const visitors = (res[0] as number) || 0;
+            const totalViews = (res[1] as number) || 0;
+
+            // Top Country
+            const rawCountry = res[2] as (string | number)[];
+            const topCountry = rawCountry.length ? String(rawCountry[0]) : '';
+
+            // Top Click
+            const rawClick = res[3] as (string | number)[];
+            const topClick = rawClick.length ? String(rawClick[0]) : '';
+
+            return {
+                date: dateStr,
+                visitors,
+                totalViews,
+                topCountries: topCountry ? [{ country: topCountry, count: 0 }] : [], // Simplified for summary
+                topClicks: topClick ? [{ url: topClick, count: 0 }] : []
+            };
+        })());
+    }
+
+    const results = await Promise.all(promises);
+    return results.sort((a, b) => b.date.localeCompare(a.date)); // Newest first
+}
