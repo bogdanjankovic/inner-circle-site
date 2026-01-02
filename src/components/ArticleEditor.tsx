@@ -116,6 +116,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     const router = useRouter();
     const { success, error } = useToast();
     const [title, setTitle] = useState(article.title);
+    const [author, setAuthor] = useState(article.author || 'Protocol Officer');
     const [excerpt, setExcerpt] = useState(article.excerpt);
     const [status, setStatus] = useState(article.status || (article.isArchived ? 'archived' : 'published'));
 
@@ -163,11 +164,6 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
         setSections(newSections);
     };
 
-    // We treat imageSearchQuery as the "Caption" if manually edited
-    // Or we can add a specific caption field? 
-    // Let's use imageSearchQuery as the caption field for now since it's displayed below the image in the viewer.
-    // Ideally we should rename this field in the future, but for now we reuse it.
-
     const [saving, setSaving] = useState(false);
 
     const handleSave = async (newStatus?: string) => {
@@ -185,12 +181,11 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                     slug: article.slug,
                     title,
                     excerpt,
+                    author,
                     sections: cleanSections,
                     status: finalStatus,
                     tags: article.tags,
                     imageUrl,
-                    // We don't really use this top-level field for much anymore if we upload, 
-                    // but let's keep it synced or just empty.
                     imageSearchQuery: '',
                     showAffiliateDisclosure
                 }),
@@ -266,6 +261,16 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                 onChange={(e) => setTitle(e.target.value)}
                                 className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none text-2xl font-serif font-bold text-gray-800 dark:text-gray-100 placeholder-gray-300"
                                 placeholder="Enter a captivating title..."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider mb-2">Author</label>
+                            <input
+                                type="text"
+                                value={author}
+                                onChange={(e) => setAuthor(e.target.value)}
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none text-gray-600 dark:text-gray-300"
+                                placeholder="Protocol Officer"
                             />
                         </div>
                         <div>
@@ -350,12 +355,9 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                             <div className="space-y-4">
                                                 <div>
                                                     <label className="block text-xs font-bold font-sans uppercase text-gray-300 tracking-wider mb-2">Content</label>
-                                                    <textarea
-                                                        value={section.content}
-                                                        onChange={(e) => handleSectionChange(idx, 'content', e.target.value)}
-                                                        rows={12}
-                                                        className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none font-sans text-sm leading-7 text-gray-600 dark:text-gray-300 resize-none"
-                                                        placeholder="Write your story..."
+                                                    <RichTextEditor
+                                                        content={section.content}
+                                                        onChange={(html) => handleSectionChange(idx, 'content', html)}
                                                     />
                                                 </div>
                                             </div>
