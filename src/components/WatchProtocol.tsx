@@ -31,11 +31,11 @@ export default function WatchProtocol({ article, onClose }: WatchProtocolProps) 
         }))
     ], [article]);
 
-    const currentSlide = slides[currentIndex];
+    const currentSlide = slides[currentIndex] || { image: '', text: '', title: '' };
 
     // Split text into words for highlighting
     const words = useMemo(() => {
-        return currentSlide.text.split(" ");
+        return (currentSlide.text || "").split(" ");
     }, [currentSlide.text]);
 
     // Calculate character offsets for each word to map `onboundary` event
