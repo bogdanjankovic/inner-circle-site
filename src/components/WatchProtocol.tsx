@@ -1,26 +1,7 @@
-import { stripHtml } from '@/lib/utils'; // Add to imports
+'use client';
 
-// ...
-
-const currentSlide = slides[currentIndex] || { image: '', text: '', title: '' };
-
-// Sanitized Text for Display & TTS
-const safeText = useMemo(() => stripHtml(currentSlide.text || ""), [currentSlide.text]);
-
-// Split text into words for highlighting
-const words = useMemo(() => {
-    return safeText.split(" ");
-}, [safeText]);
-
-// Calculate character offsets for each word to map `onboundary` event
-const wordOffsets = useMemo(() => {
-    let currentOffset = 0;
-    return words.map(word => {
-        const start = currentOffset;
-        currentOffset += word.length + 1; // +1 for space
-        return start;
-    });
-}, [words]);
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { stripHtml } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Article } from '@/lib/types';
 import GlitchText from './GlitchText';
@@ -53,10 +34,13 @@ export default function WatchProtocol({ article, onClose }: WatchProtocolProps) 
 
     const currentSlide = slides[currentIndex] || { image: '', text: '', title: '' };
 
+    // Sanitized Text for Display & TTS
+    const safeText = useMemo(() => stripHtml(currentSlide.text || ""), [currentSlide.text]);
+
     // Split text into words for highlighting
     const words = useMemo(() => {
-        return (currentSlide.text || "").split(" ");
-    }, [currentSlide.text]);
+        return safeText.split(" ");
+    }, [safeText]);
 
     // Calculate character offsets for each word to map `onboundary` event
     const wordOffsets = useMemo(() => {
