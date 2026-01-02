@@ -136,7 +136,7 @@ export default function ParticleNetwork() {
     return (
         <canvas
             ref={canvasRef}
-            className="fixed inset-0 -z-10 bg-black pointer-events-none"
+            className="fixed inset-0 z-0 bg-black pointer-events-none"
         />
     );
 }
