@@ -36,8 +36,8 @@ export default function RevealImage({ src, alt, className = "", priority = false
                 transition={{ duration: 1.2 }}
             />
 
-            {/* HUD: Scanlines */}
-            <div className="absolute inset-0 pointer-events-none bg-[url('/scanlines.png')] bg-repeat opacity-20 z-10 mix-blend-overlay" />
+            {/* HUD: Scanlines (CSS Only) */}
+            <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] z-10 opacity-20" />
             <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/60 via-transparent to-black/30 z-10" />
 
             {/* HUD: Corner Brackets */}
@@ -55,7 +55,7 @@ export default function RevealImage({ src, alt, className = "", priority = false
             </div>
 
             <div className="absolute top-4 right-8 text-[8px] font-mono text-green-500/70 tracking-widest z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-                [ VISUAL_ID: {Math.random().toString(36).substr(2, 6).toUpperCase()} ]
+                [ VISUAL_ID: {src.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0).toString(16).toUpperCase().slice(0, 6)} ]
             </div>
         </motion.div>
     );
