@@ -51,7 +51,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
 
     const setLink = () => {
         const previousUrl = editor.getAttributes('link').href;
-        consturl = window.prompt('URL', previousUrl);
+        const url = window.prompt('URL', previousUrl);
 
         // cancelled
         if (url === null) {
