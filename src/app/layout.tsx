@@ -5,6 +5,7 @@ import ConsentBanner from "@/components/ConsentBanner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ToastProvider } from "@/context/ToastContext";
+import BackgroundGrid from "@/components/BackgroundGrid";
 
 // Configure Fonts
 const mono = JetBrains_Mono({
@@ -50,10 +51,7 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={`${mono.variable} ${montserrat.variable} antialiased bg-black text-gray-200 selection:bg-green-500 selection:text-black`}>
-                <div className="fixed inset-0 -z-10 bg-black">
-                    {/* Tech Grid Background */}
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
-                </div>
+                <BackgroundGrid />
 
                 <ToastProvider>
                     <Navbar />
