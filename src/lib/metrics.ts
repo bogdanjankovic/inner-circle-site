@@ -167,3 +167,42 @@ export async function getAnalyticsInRange(startDate: Date, endDate: Date): Promi
     const results = await Promise.all(promises);
     return results.sort((a, b) => b.date.localeCompare(a.date)); // Newest first
 }
+
+// RAW ANALYTICS INTERFACE
+export interface RawAnalyticsEvent {
+    timestamp: string;
+    ip: string;
+    country: string;
+    city: string;
+    slug: string;
+    userAgent: string;
+}
+
+export async function getRawAnalyticsInRange(startDate: Date, endDate: Date): Promise<RawAnalyticsEvent[]> {
+    const promises = [];
+    const current = new Date(startDate);
+    const end = new Date(endDate);
+
+    while (current <= end) {
+        const dateStr = current.toISOString().split('T')[0];
+
+        // Fetch raw list for this day
+        promises.push((async () => {
+            // lrange returns an array of strings (because we JSON.stringified)
+            const rawLogs = await kv.lrange(`analytics:raw:${dateStr}`, 0, -1);
+            return rawLogs.map(log => {
+                try {
+                    return typeof log === 'string' ? JSON.parse(log) : log;
+                } catch (e) {
+                    return null;
+                }
+            }).filter(Boolean);
+        })());
+
+        current.setDate(current.getDate() + 1);
+    }
+
+    const results = await Promise.all(promises);
+    // Flatten array of arrays
+    return results.flat().sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+}

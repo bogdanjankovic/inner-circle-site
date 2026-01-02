@@ -1,5 +1,6 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { getAnalyticsInRange } from '@/lib/metrics';
+import { getRawAnalyticsInRange } from '@/lib/metrics';
 
 export const runtime = 'edge';
 
@@ -24,25 +25,35 @@ export async function GET(req: NextRequest) {
             startDate.setDate(today.getDate() - 30);
         }
 
-        const stats = await getAnalyticsInRange(startDate, endDate);
+        // Fetch RAW DATA (List of events)
+        const rawEvents = await getRawAnalyticsInRange(startDate, endDate);
 
-        // Process into CSV
-        const header = ['Date', 'Visitors', 'Total Views', 'Top Countries (Signals)', 'Top Outbound Targets'];
-        const rows = stats.map(day => {
-            // Format Top 3 as "US (50) | GB (20) | CA (10)"
-            const countryStr = day.topCountries.map(c => `${c.country} (${c.count})`).join(' | ');
-            // Format Top 3 Clicks as "url (count)"
-            const clickStr = day.topClicks.map(c => `${c.url.replace('https://', '')} (${c.count})`).join(' | ');
+        // Define CSV Headers
+        const header = ['Timestamp', 'IP Address', 'Country', 'City', 'Page (Slug)', 'User Agent'];
 
-            return [
-                day.date,
-                day.visitors,
-                day.totalViews,
-                countryStr,
-                clickStr
-            ];
-        });
+        // Handle Empty Data
+        if (rawEvents.length === 0) {
+            const csvContent = header.join(',');
+            return new NextResponse(csvContent, {
+                status: 200,
+                headers: {
+                    'Content-Type': 'text/csv',
+                    'Content-Disposition': `attachment; filename="protocol-raw-log-${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}.csv"`,
+                },
+            });
+        }
 
+        // Map events to rows
+        const rows = rawEvents.map(e => [
+            e.timestamp,
+            e.ip,
+            e.country,
+            e.city,
+            e.slug,
+            e.userAgent
+        ]);
+
+        // Construct CSV
         const csvContent = [
             header.join(','),
             ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
@@ -52,7 +63,7 @@ export async function GET(req: NextRequest) {
             status: 200,
             headers: {
                 'Content-Type': 'text/csv',
-                'Content-Disposition': `attachment; filename="protocol-analytics-${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}.csv"`,
+                'Content-Disposition': `attachment; filename="protocol-raw-log-${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}.csv"`,
             },
         });
 

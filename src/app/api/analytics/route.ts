@@ -28,6 +28,18 @@ export async function POST(req: NextRequest) {
             pipeline.zincrby(`analytics:${today}:country`, 1, country);
             // Site-wide Views
             pipeline.incr(`analytics:${today}:total_views`);
+
+            // RAW LOGGING (New Requirement)
+            const rawEvent = {
+                timestamp: new Date().toISOString(),
+                ip, // Ideally hash this for privacy, but user asked for individual instance tracking
+                country,
+                city,
+                slug,
+                userAgent: req.headers.get('user-agent') || 'Unknown'
+            };
+            pipeline.lpush(`analytics:raw:${today}`, JSON.stringify(rawEvent));
+            pipeline.expire(`analytics:raw:${today}`, 60 * 60 * 24 * 60); // Keep raw logs for 60 days
         }
 
         // 2. EVENT: HEARTBEAT (Duration)
