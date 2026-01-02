@@ -192,7 +192,7 @@ export default async function ArticlePage(props: PageProps) {
                                         </figure>
                                     ) : section.tweetUrl ? (
                                         <figure className="my-8 flex justify-center">
-                                            <div className="w-full max-w-[550px] dark">
+                                            <div className="w-full max-w-2xl dark not-prose">
                                                 <Tweet id={section.tweetUrl.split('/').pop() || ''} />
                                             </div>
                                         </figure>
