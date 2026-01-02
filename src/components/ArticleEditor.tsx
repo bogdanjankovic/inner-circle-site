@@ -429,24 +429,23 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                         </button>
                     </div>
                 </div>
-            </div>
 
-            {/* Sidebar - Cover Image */}
-            <div className="lg:col-span-1">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 sticky top-32">
-                    <h3 className="font-serif font-bold text-xl mb-6 text-gray-800 dark:text-white">Cover Appearance</h3>
-                    <ImageUploader
-                        label="Cover Image"
-                        recommendedSize="1920 x 1080 (16:9)"
-                        currentUrl={imageUrl}
-                        onUpload={setImageUrl}
-                    />
-                    <p className="text-xs text-gray-400 mt-4 leading-relaxed">
-                        This image will be the first thing readers see. Make it expansive and atmospheric.
-                    </p>
+                {/* Sidebar - Cover Image */}
+                <div className="lg:col-span-1">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 sticky top-32">
+                        <h3 className="font-serif font-bold text-xl mb-6 text-gray-800 dark:text-white">Cover Appearance</h3>
+                        <ImageUploader
+                            label="Cover Image"
+                            recommendedSize="1920 x 1080 (16:9)"
+                            currentUrl={imageUrl}
+                            onUpload={setImageUrl}
+                        />
+                        <p className="text-xs text-gray-400 mt-4 leading-relaxed">
+                            This image will be the first thing readers see. Make it expansive and atmospheric.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
-        </div >
     );
 }
