@@ -660,29 +660,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                                         )}
                                                     </div>
 
-                                                    {/* Affiliate Links - Always Visible at Bottom */}
-                                                    <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4 mt-auto">
-                                                        <div>
-                                                            <label className="block text-xs font-bold uppercase text-blue-500 mb-1">🛒 Product Link</label>
-                                                            <input
-                                                                type="url"
-                                                                value={section.productUrl || ''}
-                                                                onChange={(e) => handleSectionChange(idx, 'productUrl', e.target.value)}
-                                                                className="w-full px-3 py-2 rounded-lg border border-blue-100 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800 text-xs text-blue-800"
-                                                                placeholder="https://amazon.com/..."
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="block text-xs font-bold uppercase text-purple-500 mb-1">✨ CTA Text</label>
-                                                            <input
-                                                                type="text"
-                                                                value={section.buttonText || ''}
-                                                                onChange={(e) => handleSectionChange(idx, 'buttonText', e.target.value)}
-                                                                className="w-full px-3 py-2 rounded-lg border border-purple-100 bg-purple-50 dark:bg-purple-900/10 dark:border-purple-800 text-xs text-purple-800 font-serif italic"
-                                                                placeholder="Claim your match..."
-                                                            />
-                                                        </div>
-                                                    </div>
+
                                                 </div>
                                             </div>
                                         </div>
