@@ -4,8 +4,9 @@ import { useState, useRef } from 'react';
 import { Article, ArticleSection as Section } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
-import { useModal } from '@/context/ModalContext'; // Added
+import { useModal } from '@/context/ModalContext';
 import RichTextEditor from './RichTextEditor';
+import { parseTableData } from '@/lib/csv';
 
 interface ArticleEditorProps {
     article: Article;
@@ -53,7 +54,6 @@ function ImageUploader({
             error('Failed to upload image');
         } finally {
             setUploading(false);
-            // Reset input so same file can be selected again if needed
             if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
@@ -69,7 +69,6 @@ function ImageUploader({
                 )}
             </div>
 
-            {/* Preview Area */}
             <div className={`relative group w-full overflow-hidden rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 transition-colors
                 ${!currentUrl ? 'h-32 flex items-center justify-center' : 'aspect-video'}`}>
 
@@ -116,13 +115,12 @@ function ImageUploader({
 export default function ArticleEditor({ article }: ArticleEditorProps) {
     const router = useRouter();
     const { success, error } = useToast();
-    const { showConfirm } = useModal(); // Added
+    const { showConfirm } = useModal();
     const [title, setTitle] = useState(article.title);
     const [author, setAuthor] = useState(article.author || 'Protocol Officer');
     const [excerpt, setExcerpt] = useState(article.excerpt);
     const [status, setStatus] = useState(article.status || (article.isArchived ? 'archived' : 'published'));
 
-    // UI-specific wrapper for sections to handle drag-and-drop state preservation and collapsing
     type UISection = Section & { _ui_id: string; _collapsed?: boolean };
 
     const [sections, setSections] = useState<UISection[]>(() =>
@@ -137,6 +135,15 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     const [showAffiliateDisclosure, setShowAffiliateDisclosure] = useState(article.showAffiliateDisclosure || false);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragReadyIndex, setDragReadyIndex] = useState<number | null>(null);
+
+    // --- Table Modal State ---
+    const [importModalOpen, setImportModalOpen] = useState(false);
+    const [importTargetIdx, setImportTargetIdx] = useState<number | null>(null);
+    const [importText, setImportText] = useState('');
+
+    // --- Cell Edit State ---
+    const [editingCell, setEditingCell] = useState<{ sectionIdx: number, rowIndex: number, colIndex: number } | null>(null);
+    const [cellContent, setCellContent] = useState('');
 
     const handleDragStart = (index: number) => {
         setDraggedIndex(index);
@@ -171,8 +178,6 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     const handleSave = async (newStatus?: string) => {
         setSaving(true);
         const finalStatus = newStatus || status;
-
-        // Strip UI properties before saving
         const cleanSections = sections.map(({ _ui_id, _collapsed, ...s }) => s);
 
         try {
@@ -206,7 +211,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
         }
     };
 
-    const handleSectionChange = (index: number, field: keyof Section, value: string) => {
+    const handleSectionChange = (index: number, field: keyof Section, value: any) => {
         const newSections = [...sections];
         newSections[index] = { ...newSections[index], [field]: value };
         setSections(newSections);
@@ -216,7 +221,6 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
         handleSectionChange(index, 'imageUrl', url);
     };
 
-    // UI State for tabs per section
     const [sectionMediaTabs, setSectionMediaTabs] = useState<Record<number, 'image' | 'youtube' | 'tweet' | 'table'>>({});
 
     const getActiveTab = (idx: number, section: Section) => {
@@ -234,11 +238,10 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
             const newSections = [...prevSections];
             const section = { ...newSections[idx] };
 
-            // Enforce mutual exclusivity by clearing other fields
             if (type === 'image') {
                 section.youtubeUrl = '';
                 section.tweetUrl = '';
-                section.tableData = []; // Clear table
+                section.tableData = [];
             } else if (type === 'youtube') {
                 section.imageUrl = '';
                 section.tweetUrl = '';
@@ -258,8 +261,92 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
         });
     };
 
+    // --- Table Handlers ---
+    const openImportModal = (sectionIdx: number) => {
+        setImportTargetIdx(sectionIdx);
+        setImportText('');
+        setImportModalOpen(true);
+    };
+
+    const submitImport = () => {
+        if (importTargetIdx === null) return;
+        const parsed = parseTableData(importText);
+        handleSectionChange(importTargetIdx, 'tableData', parsed);
+        setImportModalOpen(false);
+        setImportTargetIdx(null);
+    };
+
+    const openCellEditor = (sectionIdx: number, rowIndex: number, colIndex: number, currentContent: string) => {
+        setEditingCell({ sectionIdx, rowIndex, colIndex });
+        setCellContent(currentContent);
+    };
+
+    const saveCellEdit = () => {
+        if (!editingCell) return;
+        const { sectionIdx, rowIndex, colIndex } = editingCell;
+
+        const newSections = [...sections];
+        const newData = [...(newSections[sectionIdx].tableData || [])];
+        if (newData[rowIndex]) {
+            newData[rowIndex] = [...newData[rowIndex]];
+            newData[rowIndex][colIndex] = cellContent;
+            newSections[sectionIdx].tableData = newData;
+            setSections(newSections);
+        }
+        setEditingCell(null);
+    };
+
     return (
         <div className="space-y-8 max-w-[95%] mx-auto">
+            {/* --- IMPORT MODAL --- */}
+            {importModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                            <h3 className="font-bold text-lg font-serif">Import Table Data</h3>
+                            <button onClick={() => setImportModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-gray-500">Paste your data from Excel, Google Sheets, or CSV below.</p>
+                            <textarea
+                                autoFocus
+                                value={importText}
+                                onChange={e => setImportText(e.target.value)}
+                                rows={10}
+                                className="w-full bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4 font-mono text-xs focus:ring-2 focus:ring-green-500 outline-none resize-none"
+                                placeholder="Rank, Model, Price..."
+                            />
+                        </div>
+                        <div className="p-6 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                            <button onClick={() => setImportModalOpen(false)} className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700">Cancel</button>
+                            <button onClick={submitImport} className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-sm transition-colors shadow-lg shadow-green-500/20">Import Data</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- CELL EDIT MODAL --- */}
+            {editingCell && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                            <h3 className="font-bold text-lg font-serif">Edit Cell Content</h3>
+                            <button onClick={() => setEditingCell(null)} className="text-gray-400 hover:text-gray-600">✕</button>
+                        </div>
+                        <div className="p-6">
+                            <RichTextEditor
+                                content={cellContent}
+                                onChange={setCellContent}
+                            />
+                        </div>
+                        <div className="p-6 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                            <button onClick={() => setEditingCell(null)} className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700">Cancel</button>
+                            <button onClick={saveCellEdit} className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-sm transition-colors shadow-lg shadow-purple-500/20">Save Content</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header Controls */}
             <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 sticky top-4 z-50">
                 <div className="flex items-center gap-4">
@@ -523,38 +610,28 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                                         {/* Table View */}
                                                         {activeTab === 'table' && (
                                                             <div className="space-y-4 animate-in fade-in duration-300">
-                                                                <div>
-                                                                    <label className="block text-xs font-bold font-sans uppercase text-green-500 tracking-wider mb-2">Paste Table Data (Excel/Sheets)</label>
-                                                                    <textarea
-                                                                        rows={5}
-                                                                        // Show raw TSV if editing, or convert back for display? 
-                                                                        // Better to perhaps keep a separate rawText state? 
-                                                                        // For now, let's just make it a "Input" area that populates the tableData
-                                                                        placeholder="Paste cells directly from Google Sheets or Excel..."
-                                                                        className="w-full px-4 py-3 rounded-lg border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-900/10 focus:ring-2 focus:ring-green-500 outline-none text-green-800 dark:text-green-200 font-mono text-xs resize-none whitespace-pre"
-                                                                        onChange={(e) => {
-                                                                            const rawInfo = e.target.value;
-                                                                            // Split by newlines, then tabs
-                                                                            const rows = rawInfo.split(/\r?\n/).filter(r => r.trim() !== '');
-                                                                            const tableData = rows.map(r => r.split('\t'));
-                                                                            // Update Section State
-                                                                            // We need to cast because handleSectionChange expects string usually.
-                                                                            // We need a specific handler or just ignore TS for a sec or update the function signature
-                                                                            // Let's update handleSectionChange signature or use setSections directly here for complexity
-                                                                            const newSections = [...sections];
-                                                                            newSections[idx] = { ...newSections[idx], tableData };
-                                                                            setSections(newSections);
-                                                                        }}
-                                                                    />
+                                                                <div className="text-center bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-lg p-6">
+                                                                    <p className="text-xs text-green-700 dark:text-green-300 mb-4 font-mono">
+                                                                        {section.tableData && section.tableData.length > 0
+                                                                            ? `${section.tableData.length - 1} Rows Loaded`
+                                                                            : 'No table data yet.'
+                                                                        }
+                                                                    </p>
+                                                                    <button
+                                                                        onClick={() => openImportModal(idx)}
+                                                                        className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-full text-xs uppercase tracking-widest shadow-lg shadow-green-500/20 transition-all transform hover:scale-105"
+                                                                    >
+                                                                        {section.tableData && section.tableData.length > 0 ? 'Replace Data' : 'Import from Sheets'}
+                                                                    </button>
                                                                 </div>
 
                                                                 {section.tableData && section.tableData.length > 0 && (
-                                                                    <div className="overflow-x-auto border border-green-200 dark:border-green-900/30 rounded-lg">
+                                                                    <div className="overflow-x-auto border border-green-200 dark:border-green-900/30 rounded-lg max-h-[300px]">
                                                                         <table className="w-full text-left border-collapse text-xs">
-                                                                            <thead>
-                                                                                <tr className="bg-green-100 dark:bg-green-900/20">
+                                                                            <thead className="sticky top-0 z-10">
+                                                                                <tr className="bg-green-100 dark:bg-green-900/50">
                                                                                     {section.tableData[0].map((header, hIdx) => (
-                                                                                        <th key={hIdx} className="p-2 border-b border-r border-green-200 dark:border-green-900/30 last:border-r-0 font-bold text-green-800 dark:text-green-200 font-sans uppercase tracking-wider">
+                                                                                        <th key={hIdx} className="p-2 border-b border-r border-green-200 dark:border-green-900/30 last:border-r-0 font-bold text-green-800 dark:text-green-200 font-sans uppercase tracking-wider whitespace-nowrap">
                                                                                             {header}
                                                                                         </th>
                                                                                     ))}
@@ -562,19 +639,21 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                                                             </thead>
                                                                             <tbody>
                                                                                 {section.tableData.slice(1).map((row, rIdx) => (
-                                                                                    <tr key={rIdx} className="border-b border-green-100 dark:border-green-900/10 last:border-b-0 hover:bg-green-50 dark:hover:bg-green-900/5 transition-colors">
+                                                                                    <tr key={rIdx} className="border-b border-green-100 dark:border-green-900/10 last:border-b-0 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
                                                                                         {row.map((cell, cIdx) => (
-                                                                                            <td key={cIdx} className="p-2 border-r border-green-100 dark:border-green-900/10 last:border-r-0 text-gray-600 dark:text-gray-300 font-mono">
-                                                                                                {cell}
+                                                                                            <td
+                                                                                                key={cIdx}
+                                                                                                onClick={() => openCellEditor(idx, rIdx + 1, cIdx, cell)}
+                                                                                                className="p-2 border-r border-green-100 dark:border-green-900/10 last:border-r-0 text-gray-600 dark:text-gray-300 font-mono cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30"
+                                                                                                title="Click to edit cell"
+                                                                                            >
+                                                                                                <div dangerouslySetInnerHTML={{ __html: cell || '&nbsp;' }} className="line-clamp-2" />
                                                                                             </td>
                                                                                         ))}
                                                                                     </tr>
                                                                                 ))}
                                                                             </tbody>
                                                                         </table>
-                                                                        <div className="p-2 bg-green-50 dark:bg-green-900/10 text-[10px] text-center text-green-600 dark:text-green-400 font-mono">
-                                                                            {section.tableData.length - 1} Rows &times; {section.tableData[0].length} Columns
-                                                                        </div>
                                                                     </div>
                                                                 )}
                                                             </div>
