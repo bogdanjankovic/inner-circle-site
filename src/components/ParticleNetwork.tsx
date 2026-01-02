@@ -50,7 +50,7 @@ export default function ParticleNetwork() {
                 if (!ctx) return;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; // Faint dots
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'; // Boosted visibility
                 ctx.fill();
             }
         }
@@ -82,7 +82,7 @@ export default function ParticleNetwork() {
 
                     if (distance < connectionDistance) {
                         ctx.beginPath();
-                        ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 * (1 - distance / connectionDistance)})`;
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 * (1 - distance / connectionDistance)})`; // Boosted line opacity
                         ctx.lineWidth = 1;
                         ctx.moveTo(particle.x, particle.y);
                         ctx.lineTo(other.x, other.y);
