@@ -216,6 +216,34 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
         handleSectionChange(index, 'imageUrl', url);
     };
 
+    // UI State for tabs per section
+    const [sectionMediaTabs, setSectionMediaTabs] = useState<Record<number, 'image' | 'youtube' | 'tweet'>>({});
+
+    const getActiveTab = (idx: number, section: Section) => {
+        if (sectionMediaTabs[idx]) return sectionMediaTabs[idx];
+        if (section.youtubeUrl) return 'youtube';
+        if (section.tweetUrl) return 'tweet';
+        return 'image';
+    };
+
+    const handleTabChange = (idx: number, type: 'image' | 'youtube' | 'tweet') => {
+        setSectionMediaTabs(prev => ({ ...prev, [idx]: type }));
+
+        // Optional: Clear data when switching? User asked for "switch back", implying mode switch.
+        // To be safe and avoid "overlap", we can clear the others.
+        if (type === 'image') {
+            handleSectionChange(idx, 'youtubeUrl', '');
+            handleSectionChange(idx, 'tweetUrl', '');
+        } else if (type === 'youtube') {
+            handleSectionChange(idx, 'imageUrl', '');
+            handleSectionChange(idx, 'tweetUrl', '');
+            // Initialize if empty to ensure it sticks? Not needed if we use state.
+        } else if (type === 'tweet') {
+            handleSectionChange(idx, 'imageUrl', '');
+            handleSectionChange(idx, 'youtubeUrl', '');
+        }
+    };
+
     return (
         <div className="space-y-8 max-w-[95%] mx-auto">
             {/* Header Controls */}
@@ -249,9 +277,9 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content Editor */}
-                <div className="lg:col-span-2 space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                {/* Main Content Editor - NOW WIDER (3/4 cols) */}
+                <div className="lg:col-span-3 space-y-8">
 
                     {/* Meta Section */}
                     <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-6">
@@ -289,236 +317,226 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
 
                     {/* Sections */}
                     <div className="space-y-8">
-                        {sections.map((section, idx) => (
-                            <div
-                                key={section._ui_id}
-                                draggable={dragReadyIndex === idx}
-                                onDragStart={() => handleDragStart(idx)}
-                                onDragOver={(e) => handleDragOver(e, idx)}
-                                onDragEnd={handleDragEnd}
-                                className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all ${draggedIndex === idx ? 'opacity-50 ring-2 ring-purple-500' : ''}`}
-                            >
-                                {/* Section Header */}
+                        {sections.map((section, idx) => {
+                            const activeTab = getActiveTab(idx, section);
+                            return (
                                 <div
-                                    className="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center cursor-grab active:cursor-grabbing hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                                    onMouseEnter={() => setDragReadyIndex(idx)}
-                                    onMouseLeave={() => setDragReadyIndex(null)}
+                                    key={section._ui_id}
+                                    draggable={dragReadyIndex === idx}
+                                    onDragStart={() => handleDragStart(idx)}
+                                    onDragOver={(e) => handleDragOver(e, idx)}
+                                    onDragEnd={handleDragEnd}
+                                    className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all ${draggedIndex === idx ? 'opacity-50 ring-2 ring-purple-500' : ''}`}
                                 >
-                                    <div className="flex items-center gap-4">
+                                    {/* Section Header */}
+                                    <div
+                                        className="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center cursor-grab active:cursor-grabbing hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                        onMouseEnter={() => setDragReadyIndex(idx)}
+                                        onMouseLeave={() => setDragReadyIndex(null)}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); // Prevent drag interference if any
+                                                    toggleCollapse(idx);
+                                                }}
+                                                className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-5 h-5 text-gray-400 transition-transform ${section._collapsed ? '-rotate-90' : ''}`}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+                                                </svg>
+                                            </button>
+                                            <span className="text-xs font-bold uppercase text-gray-400 tracking-widest">
+                                                Section {idx + 1}
+                                                {section._collapsed && section.heading && <span className="text-gray-600 dark:text-gray-300 ml-3 normal-case truncate max-w-xs inline-block align-bottom font-serif">:: {section.heading}</span>}
+                                            </span>
+                                        </div>
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // Prevent drag interference if any
-                                                toggleCollapse(idx);
+                                            onClick={async () => {
+                                                const confirmed = await showConfirm('Are you sure you want to remove this section?');
+                                                if (confirmed) {
+                                                    const newSections = sections.filter((_, i) => i !== idx);
+                                                    setSections(newSections);
+                                                    setSectionMediaTabs(prev => {
+                                                        const newState = { ...prev };
+                                                        delete newState[idx];
+                                                        return newState;
+                                                    });
+                                                }
                                             }}
-                                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                                            className="text-gray-400 hover:text-red-500 transition-colors"
+                                            title="Remove Section"
                                         >
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-5 h-5 text-gray-400 transition-transform ${section._collapsed ? '-rotate-90' : ''}`}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                             </svg>
                                         </button>
-                                        <span className="text-xs font-bold uppercase text-gray-400 tracking-widest">
-                                            Section {idx + 1}
-                                            {section._collapsed && section.heading && <span className="text-gray-600 dark:text-gray-300 ml-3 normal-case truncate max-w-xs inline-block align-bottom font-serif">:: {section.heading}</span>}
-                                        </span>
                                     </div>
-                                    <button
-                                        onClick={async () => {
-                                            const confirmed = await showConfirm('Are you sure you want to remove this section?');
-                                            if (confirmed) {
-                                                const newSections = sections.filter((_, i) => i !== idx);
-                                                setSections(newSections);
-                                            }
-                                        }}
-                                        className="text-gray-400 hover:text-red-500 transition-colors"
-                                        title="Remove Section"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                        </svg>
-                                    </button>
-                                </div>
 
-                                {!section._collapsed && (
-                                    <div className="p-6 space-y-6">
-                                        {/* Heading */}
-                                        <div>
-                                            <input
-                                                type="text"
-                                                value={section.heading}
-                                                onChange={(e) => handleSectionChange(idx, 'heading', e.target.value)}
-                                                className="w-full px-0 py-2 border-0 border-b-2 border-transparent focus:border-purple-500 focus:ring-0 bg-transparent text-xl font-serif font-bold text-gray-800 dark:text-gray-100 placeholder-gray-300 transition-colors"
-                                                placeholder="Section Heading"
-                                            />
-                                        </div>
-
-                                        {/* Split View: Content & Image */}
-                                        <div className="grid md:grid-cols-2 gap-8">
-
-                                            {/* Text Content */}
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label className="block text-xs font-bold font-sans uppercase text-gray-300 tracking-wider mb-2">Content</label>
-                                                    <RichTextEditor
-                                                        content={section.content}
-                                                        onChange={(html) => handleSectionChange(idx, 'content', html)}
-                                                    />
-                                                </div>
+                                    {!section._collapsed && (
+                                        <div className="p-6 space-y-6">
+                                            {/* Heading */}
+                                            <div>
+                                                <input
+                                                    type="text"
+                                                    value={section.heading}
+                                                    onChange={(e) => handleSectionChange(idx, 'heading', e.target.value)}
+                                                    className="w-full px-0 py-2 border-0 border-b-2 border-transparent focus:border-purple-500 focus:ring-0 bg-transparent text-xl font-serif font-bold text-gray-800 dark:text-gray-100 placeholder-gray-300 transition-colors"
+                                                    placeholder="Section Heading"
+                                                />
                                             </div>
 
-                                            {/* Visuals & Links */}
-                                            <div className="space-y-6 bg-gray-50 dark:bg-gray-900/30 p-6 rounded-xl flex flex-col h-full">
+                                            {/* Split View: Content & Image */}
+                                            <div className="grid md:grid-cols-2 gap-8">
 
-                                                {/* Media Type Tabs */}
-                                                <div className="flex gap-2 mb-4 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-                                                    {(['image', 'youtube', 'tweet'] as const).map((type) => (
-                                                        <button
-                                                            key={type}
-                                                            onClick={() => {
-                                                                if (type === 'image') {
-                                                                    handleSectionChange(idx, 'youtubeUrl', '');
-                                                                    handleSectionChange(idx, 'tweetUrl', '');
-                                                                }
-                                                                if (type === 'youtube') {
-                                                                    handleSectionChange(idx, 'imageUrl', '');
-                                                                    handleSectionChange(idx, 'tweetUrl', '');
-                                                                    if (!section.youtubeUrl) handleSectionChange(idx, 'youtubeUrl', 'https://');
-                                                                }
-                                                                if (type === 'tweet') {
-                                                                    handleSectionChange(idx, 'imageUrl', '');
-                                                                    handleSectionChange(idx, 'youtubeUrl', '');
-                                                                    if (!section.tweetUrl) handleSectionChange(idx, 'tweetUrl', 'https://');
-                                                                }
-                                                            }}
-                                                            className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded transition-all ${(type === 'image' && !section.youtubeUrl && !section.tweetUrl) ||
-                                                                (type === 'youtube' && section.youtubeUrl) ||
-                                                                (type === 'tweet' && section.tweetUrl)
-                                                                ? 'bg-white dark:bg-gray-700 text-purple-500 shadow-sm'
-                                                                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-                                                                }`}
-                                                        >
-                                                            {type === 'tweet' ? 'X / Tweet' : type}
-                                                        </button>
-                                                    ))}
+                                                {/* Text Content */}
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold font-sans uppercase text-gray-300 tracking-wider mb-2">Content</label>
+                                                        <RichTextEditor
+                                                            content={section.content}
+                                                            onChange={(html) => handleSectionChange(idx, 'content', html)}
+                                                        />
+                                                    </div>
                                                 </div>
 
-                                                {/* Input Area - Conditional Rendering */}
-                                                <div className="flex-grow">
-                                                    {/* Image View */}
-                                                    {(!section.youtubeUrl && !section.tweetUrl) && (
-                                                        <div className="space-y-4 animate-in fade-in duration-300">
-                                                            <ImageUploader
-                                                                label="Section Image"
-                                                                recommendedSize="1200 x 800 (3:2)"
-                                                                currentUrl={section.imageUrl}
-                                                                onUpload={(url) => handleSectionImageUpload(idx, url)}
-                                                            />
-                                                            <div>
-                                                                <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider mb-2">Image Caption</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={section.imageSearchQuery || ''}
-                                                                    onChange={(e) => handleSectionChange(idx, 'imageSearchQuery', e.target.value)}
-                                                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-serif italic text-gray-500 text-center"
-                                                                    placeholder="Enter a caption for the image..."
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                {/* Visuals & Links */}
+                                                <div className="space-y-6 bg-gray-50 dark:bg-gray-900/30 p-6 rounded-xl flex flex-col h-full">
 
-                                                    {/* YouTube View */}
-                                                    {!!section.youtubeUrl && (
-                                                        <div className="space-y-4 animate-in fade-in duration-300">
-                                                            <div>
-                                                                <label className="block text-xs font-bold font-sans uppercase text-red-500 tracking-wider mb-2">YouTube URL</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={section.youtubeUrl}
-                                                                    onChange={(e) => handleSectionChange(idx, 'youtubeUrl', e.target.value)}
-                                                                    className="w-full px-4 py-3 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 focus:ring-2 focus:ring-red-500 outline-none text-red-800 dark:text-red-200 font-mono text-sm"
-                                                                    placeholder="https://youtube.com/watch?v=..."
+                                                    {/* Media Type Tabs */}
+                                                    <div className="flex gap-2 mb-4 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                                                        {(['image', 'youtube', 'tweet'] as const).map((type) => (
+                                                            <button
+                                                                key={type}
+                                                                onClick={() => handleTabChange(idx, type)}
+                                                                className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded transition-all ${activeTab === type
+                                                                    ? 'bg-white dark:bg-gray-700 text-purple-500 shadow-sm'
+                                                                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                                                                    }`}
+                                                            >
+                                                                {type === 'tweet' ? 'X / Tweet' : type}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Input Area - Conditional Rendering */}
+                                                    <div className="flex-grow">
+                                                        {/* Image View */}
+                                                        {activeTab === 'image' && (
+                                                            <div className="space-y-4 animate-in fade-in duration-300">
+                                                                <ImageUploader
+                                                                    label="Section Image"
+                                                                    recommendedSize="1200 x 800 (3:2)"
+                                                                    currentUrl={section.imageUrl}
+                                                                    onUpload={(url) => handleSectionImageUpload(idx, url)}
                                                                 />
-                                                            </div>
-                                                            {/* Preview */}
-                                                            {section.youtubeUrl.includes('v=') && (
-                                                                <div className="aspect-video rounded-lg overflow-hidden bg-black shadow-lg">
-                                                                    <iframe
-                                                                        width="100%"
-                                                                        height="100%"
-                                                                        src={`https://www.youtube.com/embed/${section.youtubeUrl.split('v=')[1]?.split('&')[0]}`}
-                                                                        title="YouTube video player"
-                                                                        frameBorder="0"
-                                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                                        allowFullScreen
-                                                                    ></iframe>
+                                                                <div>
+                                                                    <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider mb-2">Image Caption</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={section.imageSearchQuery || ''}
+                                                                        onChange={(e) => handleSectionChange(idx, 'imageSearchQuery', e.target.value)}
+                                                                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-serif italic text-gray-500 text-center"
+                                                                        placeholder="Enter a caption for the image..."
+                                                                    />
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                            </div>
+                                                        )}
 
-                                                    {/* Tweet View */}
-                                                    {!!section.tweetUrl && (
-                                                        <div className="space-y-4 animate-in fade-in duration-300">
-                                                            <div>
-                                                                <label className="block text-xs font-bold font-sans uppercase text-blue-400 tracking-wider mb-2">X / Tweet URL or Embed Code</label>
-                                                                <textarea
-                                                                    rows={3}
-                                                                    value={section.tweetUrl}
-                                                                    onChange={(e) => {
-                                                                        let val = e.target.value;
-                                                                        // Auto-extract URL from Embed Code
-                                                                        if (val.includes('<blockquote') && val.includes('twitter-tweet')) {
-                                                                            const match = val.match(/href="https:\/\/(twitter|x)\.com\/[^/]+\/status\/(\d+)/);
-                                                                            if (match) {
-                                                                                val = match[0].replace('href="', '');
-                                                                                // notify user? usually implicit is fine, or we can use toast
+                                                        {/* YouTube View */}
+                                                        {activeTab === 'youtube' && (
+                                                            <div className="space-y-4 animate-in fade-in duration-300">
+                                                                <div>
+                                                                    <label className="block text-xs font-bold font-sans uppercase text-red-500 tracking-wider mb-2">YouTube URL</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={section.youtubeUrl || ''}
+                                                                        onChange={(e) => handleSectionChange(idx, 'youtubeUrl', e.target.value)}
+                                                                        className="w-full px-4 py-3 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 focus:ring-2 focus:ring-red-500 outline-none text-red-800 dark:text-red-200 font-mono text-sm"
+                                                                        placeholder="https://youtube.com/watch?v=..."
+                                                                    />
+                                                                </div>
+                                                                {/* Preview */}
+                                                                {section.youtubeUrl && section.youtubeUrl.includes('v=') && (
+                                                                    <div className="aspect-video rounded-lg overflow-hidden bg-black shadow-lg">
+                                                                        <iframe
+                                                                            width="100%"
+                                                                            height="100%"
+                                                                            src={`https://www.youtube.com/embed/${section.youtubeUrl.split('v=')[1]?.split('&')[0]}`}
+                                                                            title="YouTube video player"
+                                                                            frameBorder="0"
+                                                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                                            allowFullScreen
+                                                                        ></iframe>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Tweet View */}
+                                                        {activeTab === 'tweet' && (
+                                                            <div className="space-y-4 animate-in fade-in duration-300">
+                                                                <div>
+                                                                    <label className="block text-xs font-bold font-sans uppercase text-blue-400 tracking-wider mb-2">X / Tweet URL or Embed Code</label>
+                                                                    <textarea
+                                                                        rows={3}
+                                                                        value={section.tweetUrl || ''}
+                                                                        onChange={(e) => {
+                                                                            let val = e.target.value;
+                                                                            // Auto-extract URL from Embed Code
+                                                                            if (val.includes('<blockquote') && val.includes('twitter-tweet')) {
+                                                                                const match = val.match(/href="https:\/\/(twitter|x)\.com\/[^/]+\/status\/(\d+)/);
+                                                                                if (match) {
+                                                                                    val = match[0].replace('href="', '');
+                                                                                }
                                                                             }
-                                                                        }
-                                                                        handleSectionChange(idx, 'tweetUrl', val);
-                                                                    }}
-                                                                    className="w-full px-4 py-3 rounded-lg border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/10 focus:ring-2 focus:ring-blue-500 outline-none text-blue-800 dark:text-blue-200 font-mono text-sm resize-none"
-                                                                    placeholder="Paste the URL or the full <blockquote ...> embed code here..."
-                                                                />
+                                                                            handleSectionChange(idx, 'tweetUrl', val);
+                                                                        }}
+                                                                        className="w-full px-4 py-3 rounded-lg border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/10 focus:ring-2 focus:ring-blue-500 outline-none text-blue-800 dark:text-blue-200 font-mono text-sm resize-none"
+                                                                        placeholder="Paste the URL or the full <blockquote ...> embed code here..."
+                                                                    />
+                                                                </div>
+                                                                <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 text-center flex items-center justify-center gap-2">
+                                                                    <span className="text-xl">ℹ️</span>
+                                                                    <p className="text-xs text-blue-500 text-left">
+                                                                        System optimizes Embed Codes to standard components for performance. <br />
+                                                                        Preview will load in the live article.
+                                                                    </p>
+                                                                </div>
                                                             </div>
-                                                            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 text-center flex items-center justify-center gap-2">
-                                                                <span className="text-xl">ℹ️</span>
-                                                                <p className="text-xs text-blue-500 text-left">
-                                                                    System optimizes Embed Codes to standard components for performance. <br />
-                                                                    Preview will load in the live article.
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Affiliate Links - Always Visible at Bottom */}
-                                                <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4 mt-auto">
-                                                    <div>
-                                                        <label className="block text-xs font-bold uppercase text-blue-500 mb-1">🛒 Product Link</label>
-                                                        <input
-                                                            type="url"
-                                                            value={section.productUrl || ''}
-                                                            onChange={(e) => handleSectionChange(idx, 'productUrl', e.target.value)}
-                                                            className="w-full px-3 py-2 rounded-lg border border-blue-100 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800 text-xs text-blue-800"
-                                                            placeholder="https://amazon.com/..."
-                                                        />
+                                                        )}
                                                     </div>
-                                                    <div>
-                                                        <label className="block text-xs font-bold uppercase text-purple-500 mb-1">✨ CTA Text</label>
-                                                        <input
-                                                            type="text"
-                                                            value={section.buttonText || ''}
-                                                            onChange={(e) => handleSectionChange(idx, 'buttonText', e.target.value)}
-                                                            className="w-full px-3 py-2 rounded-lg border border-purple-100 bg-purple-50 dark:bg-purple-900/10 dark:border-purple-800 text-xs text-purple-800 font-serif italic"
-                                                            placeholder="Claim your match..."
-                                                        />
+
+                                                    {/* Affiliate Links - Always Visible at Bottom */}
+                                                    <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4 mt-auto">
+                                                        <div>
+                                                            <label className="block text-xs font-bold uppercase text-blue-500 mb-1">🛒 Product Link</label>
+                                                            <input
+                                                                type="url"
+                                                                value={section.productUrl || ''}
+                                                                onChange={(e) => handleSectionChange(idx, 'productUrl', e.target.value)}
+                                                                className="w-full px-3 py-2 rounded-lg border border-blue-100 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800 text-xs text-blue-800"
+                                                                placeholder="https://amazon.com/..."
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-bold uppercase text-purple-500 mb-1">✨ CTA Text</label>
+                                                            <input
+                                                                type="text"
+                                                                value={section.buttonText || ''}
+                                                                onChange={(e) => handleSectionChange(idx, 'buttonText', e.target.value)}
+                                                                className="w-full px-3 py-2 rounded-lg border border-purple-100 bg-purple-50 dark:bg-purple-900/10 dark:border-purple-800 text-xs text-purple-800 font-serif italic"
+                                                                placeholder="Claim your match..."
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                                    )}
+                                </div>
+                            );
+                        })}
 
                         <button
                             onClick={() => {
