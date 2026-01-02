@@ -5,7 +5,6 @@ import ConsentBanner from "@/components/ConsentBanner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ToastProvider } from "@/context/ToastContext";
-import BackgroundGrid from "@/components/BackgroundGrid";
 
 // Configure Fonts
 const mono = JetBrains_Mono({
@@ -50,20 +49,16 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className={`${mono.variable} ${montserrat.variable} antialiased text-gray-200 selection:bg-green-500 selection:text-black bg-black/0`}>
-                <BackgroundGrid />
+            <body className={`${mono.variable} ${montserrat.variable} antialiased text-gray-200 selection:bg-green-500 selection:text-black bg-black`}>
+                <ToastProvider>
+                    <Navbar />
 
-                <div className="relative z-10">
-                    <ToastProvider>
-                        <Navbar />
+                    <div className="pt-0 min-h-screen font-sans">
+                        {children}
+                    </div>
 
-                        <div className="pt-0 min-h-screen font-sans">
-                            {children}
-                        </div>
-
-                        <Footer />
-                    </ToastProvider>
-                </div>
+                    <Footer />
+                </ToastProvider>
                 <ConsentBanner />
             </body>
         </html>
