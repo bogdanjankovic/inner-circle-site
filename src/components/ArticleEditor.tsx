@@ -217,7 +217,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     };
 
     return (
-        <div className="space-y-8 max-w-7xl mx-auto">
+        <div className="space-y-8 max-w-[95%] mx-auto">
             {/* Header Controls */}
             <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 sticky top-4 z-50">
                 <div className="flex items-center gap-4">
@@ -366,38 +366,34 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                             </div>
 
                                             {/* Visuals & Links */}
-                                            <div className="space-y-6 bg-gray-50 dark:bg-gray-900/30 p-6 rounded-xl">
+                                            <div className="space-y-6 bg-gray-50 dark:bg-gray-900/30 p-6 rounded-xl flex flex-col h-full">
 
-                                                {/* Media Type Switching */}
-                                                <div className="flex gap-2 mb-4">
+                                                {/* Media Type Tabs */}
+                                                <div className="flex gap-2 mb-4 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
                                                     {(['image', 'youtube', 'tweet'] as const).map((type) => (
                                                         <button
                                                             key={type}
                                                             onClick={() => {
-                                                                // Clear others when switching? Or just hide?
-                                                                // Let's clear others to avoid ambiguity
-                                                                if (type === 'image') handleSectionChange(idx, 'youtubeUrl', '');
-                                                                if (type === 'image') handleSectionChange(idx, 'tweetUrl', '');
-
-                                                                if (type === 'youtube') handleSectionChange(idx, 'imageUrl', '');
-                                                                if (type === 'youtube') handleSectionChange(idx, 'tweetUrl', '');
-
-                                                                if (type === 'tweet') handleSectionChange(idx, 'imageUrl', '');
-                                                                if (type === 'tweet') handleSectionChange(idx, 'youtubeUrl', '');
-
-                                                                // We actually need a local state to track current tab if fields are empty, 
-                                                                // but usually the presence of a field dictates the type. 
-                                                                // For now, let's just use the buttons to set the focused field.
-
-                                                                // Actually better: just buttons to switch 'active' view, 
-                                                                // and setting a value clears others. 
+                                                                if (type === 'image') {
+                                                                    handleSectionChange(idx, 'youtubeUrl', '');
+                                                                    handleSectionChange(idx, 'tweetUrl', '');
+                                                                }
+                                                                if (type === 'youtube') {
+                                                                    handleSectionChange(idx, 'imageUrl', '');
+                                                                    handleSectionChange(idx, 'tweetUrl', '');
+                                                                    if (!section.youtubeUrl) handleSectionChange(idx, 'youtubeUrl', 'https://');
+                                                                }
+                                                                if (type === 'tweet') {
+                                                                    handleSectionChange(idx, 'imageUrl', '');
+                                                                    handleSectionChange(idx, 'youtubeUrl', '');
+                                                                    if (!section.tweetUrl) handleSectionChange(idx, 'tweetUrl', 'https://');
+                                                                }
                                                             }}
-                                                            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded border transition-all ${(type === 'image' && section.imageUrl) ||
+                                                            className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded transition-all ${(type === 'image' && !section.youtubeUrl && !section.tweetUrl) ||
                                                                     (type === 'youtube' && section.youtubeUrl) ||
-                                                                    (type === 'tweet' && section.tweetUrl) ||
-                                                                    (!section.imageUrl && !section.youtubeUrl && !section.tweetUrl && type === 'image') // Default
-                                                                    ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-purple-500 shadow-sm'
-                                                                    : 'border-transparent text-gray-400 hover:text-gray-600'
+                                                                    (type === 'tweet' && section.tweetUrl)
+                                                                    ? 'bg-white dark:bg-gray-700 text-purple-500 shadow-sm'
+                                                                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                                                                 }`}
                                                         >
                                                             {type === 'tweet' ? 'X / Tweet' : type}
@@ -405,173 +401,82 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                                     ))}
                                                 </div>
 
-                                                {/* Image Input */}
-                                                {(!section.youtubeUrl && !section.tweetUrl) && (
-                                                    <ImageUploader
-                                                        label="Section Image"
-                                                        recommendedSize="1200 x 800 (3:2)"
-                                                        currentUrl={section.imageUrl}
-                                                        onUpload={(url) => handleSectionImageUpload(idx, url)}
-                                                    />
-                                                )}
-
-                                                {/* YouTube Input */}
-                                                {(section.youtubeUrl || (!section.imageUrl && !section.tweetUrl && false)) && (
-                                                    // Logic above is flawed for switching. 
-                                                    // Let's rely on a simpler approach: Show inputs based on what is active, 
-                                                    // OR show a selector that sets a UI state for this section.
-                                                    // Since we don't have per-section UI state easily without componentizing SectionEditor, 
-                                                    // let's just show all options but collapsed, or standard inputs?
-                                                    // No, tabs are cleaner.
-                                                    // Let's infer 'active tab' from data, defaulting to Image.
-                                                    null
-                                                )}
-
-                                                {/* Real impl with tabs logic: */}
-                                                {(() => {
-                                                    const activeTab = section.youtubeUrl ? 'youtube' : section.tweetUrl ? 'tweet' : 'image';
-
-                                                    // We need a way to force switch even if empty. 
-                                                    // We can stick this in a small sub-component or just use a state array 
-                                                    // defined at the top level? No, too messy.
-                                                    // Let's just Render ALL inputs but style them as tabs? 
-                                                    // Or better: Just conditional rendering based on manual selection. 
-                                                    // We can add a `_ui_mediaTab` to the UISection type!
-
-                                                    return (
-                                                        <>
-                                                            {/* We need to update UISection type first to support _ui_activeTab. 
-                                                                Pending that, I'll just show inputs conditionally. 
-                                                                
-                                                                Actually, I will update UISection type in the next step or assume I can cast.
-                                                                Let's update the type in ArticleEditor first.
-                                                            */}
-                                                        </>
-                                                    );
-                                                })()}
-
-                                                {/* 
-                                                   TEMPORARY: I will use a simple "Selector" that just conditional renders 
-                                                   based on which field has data. If all empty, show Image.
-                                                   Buttons will explicitly set a 'dummy' value or clear others to force the view.
-                                                */}
-
-                                                {/* Image View */}
-                                                {(!section.youtubeUrl && !section.tweetUrl) && (
-                                                    <>
-                                                        <ImageUploader
-                                                            label="Section Image"
-                                                            recommendedSize="1200 x 800 (3:2)"
-                                                            currentUrl={section.imageUrl}
-                                                            onUpload={(url) => handleSectionImageUpload(idx, url)}
-                                                        />
-                                                        <div>
-                                                            <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider mb-2">Image Caption</label>
-                                                            <input
-                                                                type="text"
-                                                                value={section.imageSearchQuery || ''}
-                                                                onChange={(e) => handleSectionChange(idx, 'imageSearchQuery', e.target.value)}
-                                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-serif italic text-gray-500 text-center"
-                                                                placeholder="Enter a caption for the image..."
+                                                {/* Input Area - Conditional Rendering */}
+                                                <div className="flex-grow">
+                                                    {/* Image View */}
+                                                    {(!section.youtubeUrl && !section.tweetUrl) && (
+                                                        <div className="space-y-4 animate-in fade-in duration-300">
+                                                            <ImageUploader
+                                                                label="Section Image"
+                                                                recommendedSize="1200 x 800 (3:2)"
+                                                                currentUrl={section.imageUrl}
+                                                                onUpload={(url) => handleSectionImageUpload(idx, url)}
                                                             />
-                                                        </div>
-                                                    </>
-                                                )}
-
-                                                {/* YouTube View */}
-                                                {!!section.youtubeUrl && (
-                                                    <div className="space-y-4">
-                                                        <div>
-                                                            <label className="block text-xs font-bold font-sans uppercase text-red-500 tracking-wider mb-2">YouTube URL</label>
-                                                            <input
-                                                                type="text"
-                                                                value={section.youtubeUrl}
-                                                                onChange={(e) => handleSectionChange(idx, 'youtubeUrl', e.target.value)}
-                                                                className="w-full px-4 py-3 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 focus:ring-2 focus:ring-red-500 outline-none text-red-800 dark:text-red-200 font-mono text-sm"
-                                                                placeholder="https://youtube.com/watch?v=..."
-                                                            />
-                                                        </div>
-                                                        {/* Preview */}
-                                                        {section.youtubeUrl.includes('v=') && (
-                                                            <div className="aspect-video rounded-lg overflow-hidden bg-black">
-                                                                <iframe
-                                                                    width="100%"
-                                                                    height="100%"
-                                                                    src={`https://www.youtube.com/embed/${section.youtubeUrl.split('v=')[1]?.split('&')[0]}`}
-                                                                    title="YouTube video player"
-                                                                    frameBorder="0"
-                                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                                    allowFullScreen
-                                                                ></iframe>
+                                                            <div>
+                                                                <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider mb-2">Image Caption</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={section.imageSearchQuery || ''}
+                                                                    onChange={(e) => handleSectionChange(idx, 'imageSearchQuery', e.target.value)}
+                                                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 text-xs font-serif italic text-gray-500 text-center"
+                                                                    placeholder="Enter a caption for the image..."
+                                                                />
                                                             </div>
-                                                        )}
-                                                        <button
-                                                            onClick={() => handleSectionChange(idx, 'youtubeUrl', '')}
-                                                            className="text-xs text-red-500 underline"
-                                                        >
-                                                            Remove Video
-                                                        </button>
-                                                    </div>
-                                                )}
-
-                                                {/* Tweet View */}
-                                                {!!section.tweetUrl && (
-                                                    <div className="space-y-4">
-                                                        <div>
-                                                            <label className="block text-xs font-bold font-sans uppercase text-blue-400 tracking-wider mb-2">X / Tweet URL</label>
-                                                            <input
-                                                                type="text"
-                                                                value={section.tweetUrl}
-                                                                onChange={(e) => handleSectionChange(idx, 'tweetUrl', e.target.value)}
-                                                                className="w-full px-4 py-3 rounded-lg border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/10 focus:ring-2 focus:ring-blue-500 outline-none text-blue-800 dark:text-blue-200 font-mono text-sm"
-                                                                placeholder="https://x.com/user/status/..."
-                                                            />
                                                         </div>
-                                                        <p className="text-[10px] text-gray-400">Preview not available in editor</p>
-                                                        <button
-                                                            onClick={() => handleSectionChange(idx, 'tweetUrl', '')}
-                                                            className="text-xs text-blue-500 underline"
-                                                        >
-                                                            Remove Tweet
-                                                        </button>
-                                                    </div>
-                                                )}
+                                                    )}
 
-                                                {/* Type Switcher (When empty or to switch) */}
-                                                <div className="pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-2">
-                                                    <button
-                                                        onClick={() => {
-                                                            handleSectionChange(idx, 'youtubeUrl', '');
-                                                            handleSectionChange(idx, 'tweetUrl', '');
-                                                            // Keep image if exists, else it's already default
-                                                        }}
-                                                        className="text-[10px] uppercase font-bold text-gray-400 hover:text-purple-500 transition-colors"
-                                                    >
-                                                        Image
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            handleSectionChange(idx, 'imageUrl', '');
-                                                            handleSectionChange(idx, 'tweetUrl', '');
-                                                            if (!section.youtubeUrl) handleSectionChange(idx, 'youtubeUrl', 'https://');
-                                                        }}
-                                                        className="text-[10px] uppercase font-bold text-gray-400 hover:text-red-500 transition-colors"
-                                                    >
-                                                        YouTube
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            handleSectionChange(idx, 'imageUrl', '');
-                                                            handleSectionChange(idx, 'youtubeUrl', '');
-                                                            if (!section.tweetUrl) handleSectionChange(idx, 'tweetUrl', 'https://');
-                                                        }}
-                                                        className="text-[10px] uppercase font-bold text-gray-400 hover:text-blue-400 transition-colors"
-                                                    >
-                                                        X / Tweet
-                                                    </button>
+                                                    {/* YouTube View */}
+                                                    {!!section.youtubeUrl && (
+                                                        <div className="space-y-4 animate-in fade-in duration-300">
+                                                            <div>
+                                                                <label className="block text-xs font-bold font-sans uppercase text-red-500 tracking-wider mb-2">YouTube URL</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={section.youtubeUrl}
+                                                                    onChange={(e) => handleSectionChange(idx, 'youtubeUrl', e.target.value)}
+                                                                    className="w-full px-4 py-3 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 focus:ring-2 focus:ring-red-500 outline-none text-red-800 dark:text-red-200 font-mono text-sm"
+                                                                    placeholder="https://youtube.com/watch?v=..."
+                                                                />
+                                                            </div>
+                                                            {/* Preview */}
+                                                            {section.youtubeUrl.includes('v=') && (
+                                                                <div className="aspect-video rounded-lg overflow-hidden bg-black shadow-lg">
+                                                                    <iframe
+                                                                        width="100%"
+                                                                        height="100%"
+                                                                        src={`https://www.youtube.com/embed/${section.youtubeUrl.split('v=')[1]?.split('&')[0]}`}
+                                                                        title="YouTube video player"
+                                                                        frameBorder="0"
+                                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                                        allowFullScreen
+                                                                    ></iframe>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Tweet View */}
+                                                    {!!section.tweetUrl && (
+                                                        <div className="space-y-4 animate-in fade-in duration-300">
+                                                            <div>
+                                                                <label className="block text-xs font-bold font-sans uppercase text-blue-400 tracking-wider mb-2">X / Tweet URL</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={section.tweetUrl}
+                                                                    onChange={(e) => handleSectionChange(idx, 'tweetUrl', e.target.value)}
+                                                                    className="w-full px-4 py-3 rounded-lg border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/10 focus:ring-2 focus:ring-blue-500 outline-none text-blue-800 dark:text-blue-200 font-mono text-sm"
+                                                                    placeholder="https://x.com/user/status/..."
+                                                                />
+                                                            </div>
+                                                            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 text-center">
+                                                                <p className="text-xs text-blue-500">Twitter embed will appear in preview/live.</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
 
-                                                <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4">
+                                                {/* Affiliate Links - Always Visible at Bottom */}
+                                                <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4 mt-auto">
                                                     <div>
                                                         <label className="block text-xs font-bold uppercase text-blue-500 mb-1">🛒 Product Link</label>
                                                         <input
