@@ -1,48 +1,50 @@
+
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
     title: 'About Protocol | BLEXOUT',
-    description: 'The mission behind BLEXOUT: High-performance tech analysis.',
+    description: 'The mission behind BLEXOUT Protocol.',
 };
 
 export default function AboutPage() {
     return (
-        <div className="min-h-screen pt-32 pb-20 bg-black text-gray-300 font-sans">
-            <div className="max-w-3xl mx-auto px-6">
-                <h1 className="text-4xl font-mono font-bold mb-12 text-white">About Protocol</h1>
+        <div className="min-h-screen pt-32 pb-20 px-6 max-w-4xl mx-auto font-sans text-gray-300">
+            <div className="mb-12 border-l-4 border-green-500 pl-6">
+                <h1 className="text-4xl md:text-6xl font-black text-white mb-2 uppercase tracking-tighter">Mission Status</h1>
+                <p className="font-mono text-green-500 text-sm tracking-widest uppercase">:: Optimization / Biohacking / High-Performance</p>
+            </div>
 
-                <div className="prose prose-invert prose-green max-w-none text-lg leading-relaxed">
-                    <p className="font-mono text-green-500 mb-8">
-                        // MISSION: DECODE_PERFORMANCE
-                    </p>
+            <div className="prose prose-invert prose-xl max-w-none leading-relaxed">
+                <p className="text-2xl text-white font-light">
+                    Protocol is a system for the modern operator.
+                </p>
 
-                    <p>
-                        BLEXOUT is an elite analysis hub for gamers, creators, and professionals who demand the absolute limit from their technology and games.
-                    </p>
+                <p>
+                    In an age of signal decay and noise, we provide **clean data**. We analyze high-performance hardware, cognitive enhancement strategies, and financial optimization vectors.
+                </p>
 
-                    <p>
-                        In a sea of generic "tech news" and AI-generated fluff, BLEXOUT stands as a bastion of
-                        <strong> specification-focused analysis</strong>. We don't care about the marketing hype. We care about:
-                    </p>
+                <div className="grid md:grid-cols-2 gap-8 my-12 not-prose">
+                    <div className="bg-white/5 p-8 border border-white/10 rounded-lg">
+                        <h3 className="text-xl font-bold text-white mb-4">The Objective</h3>
+                        <p className="text-base text-gray-400">
+                            To filter out inefficiency. We test, verify, and report on tools that maintain your competitive edge.
+                        </p>
+                    </div>
+                    <div className="bg-white/5 p-8 border border-white/10 rounded-lg">
+                        <h3 className="text-xl font-bold text-white mb-4">The Standard</h3>
+                        <p className="text-base text-gray-400">
+                            Absolute performance. If it doesn't quantifiable improve your output, it doesn't make the Protocol.
+                        </p>
+                    </div>
+                </div>
 
-                    <ul className="border-l-2 border-green-500 pl-6 space-y-4 my-8 font-mono text-sm">
-                        <li>:: Thermal Performance & Acoustics</li>
-                        <li>:: Price-to-Frame Ratios</li>
-                        <li>:: Input Latency & Response Times</li>
-                        <li>:: Game Mechanics & Optimization Deep Dives</li>
-                        <li>:: Long-term Build Quality</li>
-                    </ul>
+                <p>
+                    Operated by BLEXOUT.
+                </p>
 
-                    <p>
-                        Our reviews acts as a "Protocol" — a standard operating procedure for validating whether a piece of hardware
-                        deserves a spot in your setup.
-                    </p>
-
-                    <h3 className="text-white font-bold mt-12 mb-4">Editorial Integrity</h3>
-                    <p>
-                        While we use affiliate links to support our operations, our recommendations are driven purely by data.
-                        If a product overheats, throttles, or fails to deliver, we say so.
-                    </p>
+                <div className="mt-12 p-6 bg-black border border-white/10 rounded-lg flex items-center justify-between">
+                    <span className="font-mono text-xs text-green-500 uppercase tracking-widest">Status: ACTIVE</span>
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                 </div>
             </div>
         </div>

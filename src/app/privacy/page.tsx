@@ -1,54 +1,55 @@
+
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
     title: 'Privacy Policy | BLEXOUT',
-    description: 'Privacy Policy and Terms of Service for BLEXOUT.',
+    description: 'Privacy Policy for BLEXOUT.',
+    robots: {
+        index: false,
+        follow: true
+    }
 };
 
 export default function PrivacyPage() {
     return (
-        <div className="min-h-screen pt-32 pb-20 bg-black text-gray-300 font-sans">
-            <div className="max-w-3xl mx-auto px-6">
-                <h1 className="text-4xl font-mono font-bold mb-12 text-white">Privacy Policy</h1>
+        <div className="min-h-screen pt-32 pb-20 px-6 max-w-4xl mx-auto font-sans text-gray-300">
+            <h1 className="text-4xl font-black text-white mb-8 border-b border-white/10 pb-6 uppercase tracking-tight">Privacy Policy</h1>
 
-                <div className="prose prose-invert prose-green max-w-none">
-                    <p className="text-sm font-mono text-gray-500 mb-8">Last Updated: {new Date().toLocaleDateString()}</p>
+            <div className="prose prose-invert prose-lg max-w-none">
+                <p className="lead text-xl text-gray-400">
+                    Effective Date: {new Date().getFullYear()}-01-01
+                </p>
 
-                    <section className="mb-12">
-                        <h2 className="text-xl font-bold text-white mb-4">1. Introduction</h2>
-                        <p>
-                            Welcome to BLEXOUT ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy.
-                            This Privacy Policy explains how we collect, use, disclosure, and safeguard your information when you visit our website.
-                        </p>
-                    </section>
+                <p>
+                    BLEXOUT ("Protocol", "we", "us") respects your privacy. This policy outlines how we handle data.
+                </p>
 
-                    <section className="mb-12">
-                        <h2 className="text-xl font-bold text-white mb-4">2. Affiliate Disclosure</h2>
-                        <p className="p-4 border border-green-500/20 bg-green-500/5 rounded">
-                            <strong>FTC Disclosure:</strong> BLEXOUT participates in the Amazon Services LLC Associates Program and other affiliate advertising programs.
-                            If you click on a link to a product and make a purchase, we may earn a small commission at no extra cost to you.
-                            This supports our testing and editorial work.
-                        </p>
-                    </section>
+                <h3>1. Data Collection</h3>
+                <p>
+                    We collect minimal data to improve system performance.
+                    <strong> Protocol Metrics</strong>: We track page views, geographical region (City/Country), and session duration anonymously.
+                    No personally identifiable information (PII) is stored without explicit consent (e.g., Newsletter Signup).
+                </p>
 
-                    <section className="mb-12">
-                        <h2 className="text-xl font-bold text-white mb-4">3. Advertising & Cookies</h2>
-                        <p>
-                            We may use third-party advertising companies (such as Google AdSense) to serve ads when you visit the Site.
-                            These companies may use cookies to understand your interests and serve ads about goods and services of interest to you.
-                        </p>
-                        <ul className="list-disc pl-6 space-y-2 mt-4">
-                            <li><strong>Google AdSense:</strong> Google uses cookies (including the DoubleClick cookie) to serve ads based on your visit to our site and other sites on the Internet.</li>
-                            <li><strong>Opt-Out:</strong> You may opt out of personalized advertising by visiting <a href="https://myadcenter.google.com/" className="text-green-500 hover:underline" target="_blank" rel="noopener">Google Ad Center</a> or by visiting <a href="https://optout.aboutads.info/" className="text-green-500 hover:underline" target="_blank" rel="noopener">aboutads.info</a>.</li>
-                        </ul>
-                    </section>
+                <h3>2. Cookies & Local Storage</h3>
+                <p>
+                    We use local storage for user preferences (UI state, read progress). Third-party vendors, including Google, use cookies to serve ads based on your prior visits.
+                </p>
 
-                    <section className="mb-12">
-                        <h2 className="text-xl font-bold text-white mb-4">4. Analytics</h2>
-                        <p>
-                            We use proprietary analytics to track basic visitor data (country, page views, duration) to improve our content. This data is anonymized and stored securely.
-                        </p>
-                    </section>
+                <h3>3. Third-Party Links</h3>
+                <p>
+                    BLEXOUT participates in affiliate marketing programs. Clicking on outgoing links to hardware or software vendors may track your click for commission attribution. We do not control these external sites.
+                </p>
+
+                <h3>4. Rights via GDPR/CCPA</h3>
+                <p>
+                    You have the right to request deletion of your data. Contact `admin@blexout.com` for inquiries.
+                </p>
+
+                <div className="mt-12 p-6 bg-white/5 border border-white/10 rounded-lg">
+                    <p className="text-sm font-mono text-gray-500 mb-0">
+                        System ID: PRIVACY-{new Date().getFullYear()} // END OF FILE
+                    </p>
                 </div>
             </div>
         </div>
