@@ -1,22 +1,47 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { getHistoricalAnalytics } from '@/lib/metrics';
+import { getAnalyticsInRange } from '@/lib/metrics';
 
 export const runtime = 'edge';
 
 export async function GET(req: NextRequest) {
     try {
-        const stats = await getHistoricalAnalytics(30); // Last 30 days
+        const { searchParams } = new URL(req.url);
+        const startParam = searchParams.get('start');
+        const endParam = searchParams.get('end');
+
+        let startDate: Date;
+        let endDate: Date;
+
+        const today = new Date();
+
+        if (startParam && endParam) {
+            startDate = new Date(startParam);
+            endDate = new Date(endParam);
+        } else {
+            // Default: Last 30 Days
+            endDate = new Date(today);
+            startDate = new Date(today);
+            startDate.setDate(today.getDate() - 30);
+        }
+
+        const stats = await getAnalyticsInRange(startDate, endDate);
 
         // Process into CSV
-        const header = ['Date', 'Visitors', 'Total Views', 'Top Country', 'Top Outbound Link'];
-        const rows = stats.map(day => [
-            day.date,
-            day.visitors,
-            day.totalViews,
-            day.topCountries.length > 0 ? day.topCountries[0].country : '',
-            day.topClicks.length > 0 ? day.topClicks[0].url : ''
-        ]);
+        const header = ['Date', 'Visitors', 'Total Views', 'Top Countries (Signals)', 'Top Outbound Targets'];
+        const rows = stats.map(day => {
+            // Format Top 3 as "US (50) | GB (20) | CA (10)"
+            const countryStr = day.topCountries.map(c => `${c.country} (${c.count})`).join(' | ');
+            // Format Top 3 Clicks as "url (count)"
+            const clickStr = day.topClicks.map(c => `${c.url.replace('https://', '')} (${c.count})`).join(' | ');
+
+            return [
+                day.date,
+                day.visitors,
+                day.totalViews,
+                countryStr,
+                clickStr
+            ];
+        });
 
         const csvContent = [
             header.join(','),
@@ -27,7 +52,7 @@ export async function GET(req: NextRequest) {
             status: 200,
             headers: {
                 'Content-Type': 'text/csv',
-                'Content-Disposition': `attachment; filename="protocol-analytics-${new Date().toISOString().split('T')[0]}.csv"`,
+                'Content-Disposition': `attachment; filename="protocol-analytics-${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}.csv"`,
             },
         });
 
