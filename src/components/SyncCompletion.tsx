@@ -47,7 +47,7 @@ export default function SyncCompletion() {
                         initial={{ y: 50, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 50, opacity: 0 }}
-                        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4 md:px-0"
+                        className="fixed bottom-12 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-50 md:w-full md:max-w-sm"
                     >
                         <div className="bg-black/95 backdrop-blur-xl border border-green-500 p-4 md:p-6 rounded-lg shadow-[0_0_50px_rgba(34,197,94,0.3)] flex items-center justify-center md:justify-start gap-4 md:gap-6 w-full">
                             <div className="relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0 flex items-center justify-center">
