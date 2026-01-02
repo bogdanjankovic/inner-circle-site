@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { Article, ArticleSection as Section } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
+import RichTextEditor from './RichTextEditor';
 
 interface ArticleEditorProps {
     article: Article;

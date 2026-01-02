@@ -9,30 +9,15 @@ interface SmartContentProps {
 }
 
 export default function SmartContent({ content, glossary }: SmartContentProps) {
-    // 1. Identify all terms present in this specific content chunk to avoid useless regex work
-    const presentTerms = Object.keys(glossary).filter(term => content.includes(term));
-
-    if (presentTerms.length === 0) {
-        return <p>{content}</p>;
-    }
-
-    // 2. Build a regex pattern to match any of the terms
-    // Use word boundaries \b to avoid matching partial words (e.g. "FPS" in "FPSO")
-    // Escape special characters in terms just in case
-    const pattern = new RegExp(`\\b(${presentTerms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'g');
-
-    // 3. Split parts
-    const parts = content.split(pattern);
+    // If content wraps simple HTML (p tags), we might want to still parse it for terms.
+    // However, robustly parsing HTML to inject React components (Tooltips) requires html-react-parser.
+    // For now, to support the Rich Text Editor, we prioritize rendering the HTML correctly.
+    // Tooltips will safely degrade to just rendering the text unless we add a complex parser later.
 
     return (
-        <p>
-            {parts.map((part, i) => {
-                // If the part matches a key in glossary, render tooltip
-                if (glossary[part]) {
-                    return <IntelTooltip key={i} termStr={part} definition={glossary[part]} />;
-                }
-                return <span key={i}>{part}</span>;
-            })}
-        </p>
+        <div
+            className="prose prose-invert prose-lg max-w-none text-gray-300 [&>p]:leading-relaxed [&>ul]:my-4 [&>h2]:text-white [&>h2]:mt-8 [&>h2]:mb-4 [&>a]:text-green-500 [&>a]:underline hover:[&>a]:text-green-400"
+            dangerouslySetInnerHTML={{ __html: content }}
+        />
     );
 }
