@@ -230,24 +230,32 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     const handleTabChange = (idx: number, type: 'image' | 'youtube' | 'tweet' | 'table') => {
         setSectionMediaTabs(prev => ({ ...prev, [idx]: type }));
 
-        // Enforce mutual exclusivity by clearing other fields
-        if (type === 'image') {
-            handleSectionChange(idx, 'youtubeUrl', '');
-            handleSectionChange(idx, 'tweetUrl', '');
-            handleSectionChange(idx, 'tableData', ''); // Clear table
-        } else if (type === 'youtube') {
-            handleSectionChange(idx, 'imageUrl', '');
-            handleSectionChange(idx, 'tweetUrl', '');
-            handleSectionChange(idx, 'tableData', '');
-        } else if (type === 'tweet') {
-            handleSectionChange(idx, 'imageUrl', '');
-            handleSectionChange(idx, 'youtubeUrl', '');
-            handleSectionChange(idx, 'tableData', '');
-        } else if (type === 'table') {
-            handleSectionChange(idx, 'imageUrl', '');
-            handleSectionChange(idx, 'youtubeUrl', '');
-            handleSectionChange(idx, 'tweetUrl', '');
-        }
+        setSections(prevSections => {
+            const newSections = [...prevSections];
+            const section = { ...newSections[idx] };
+
+            // Enforce mutual exclusivity by clearing other fields
+            if (type === 'image') {
+                section.youtubeUrl = '';
+                section.tweetUrl = '';
+                section.tableData = []; // Clear table
+            } else if (type === 'youtube') {
+                section.imageUrl = '';
+                section.tweetUrl = '';
+                section.tableData = [];
+            } else if (type === 'tweet') {
+                section.imageUrl = '';
+                section.youtubeUrl = '';
+                section.tableData = [];
+            } else if (type === 'table') {
+                section.imageUrl = '';
+                section.youtubeUrl = '';
+                section.tweetUrl = '';
+            }
+
+            newSections[idx] = section;
+            return newSections;
+        });
     };
 
     return (
