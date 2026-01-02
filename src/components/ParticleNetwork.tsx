@@ -1,142 +1,89 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function ParticleNetwork() {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [dimensions, setDimensions] = useState({ width: 1000, height: 1000 });
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        let animationFrameId: number;
-        let particles: Particle[] = [];
-        let mouse = { x: -9999, y: -9999 };
-
-        // Configuration
-        const particleCount = Math.min((window.innerWidth * window.innerHeight) / 15000, 100); // Responsive count
-        const connectionDistance = 150;
-        const mouseDistance = 200;
-
-        class Particle {
-            x: number;
-            y: number;
-            vx: number;
-            vy: number;
-            size: number;
-
-            constructor() {
-                this.x = Math.random() * canvas!.width;
-                this.y = Math.random() * canvas!.height;
-                // Random slow velocity
-                this.vx = (Math.random() - 0.5) * 0.5;
-                this.vy = (Math.random() - 0.5) * 0.5;
-                this.size = Math.random() * 2 + 1;
-            }
-
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-
-                // Bounce off edges
-                if (this.x < 0 || this.x > canvas!.width) this.vx *= -1;
-                if (this.y < 0 || this.y > canvas!.height) this.vy *= -1;
-            }
-
-            draw() {
-                if (!ctx) return;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'; // Boosted visibility
-                ctx.fill();
-            }
-        }
-
-        const init = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            particles = [];
-            for (let i = 0; i < particleCount; i++) {
-                particles.push(new Particle());
-            }
-        };
-
-        const animate = () => {
-            if (!ctx) return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Update and draw particles
-            particles.forEach((particle, index) => {
-                particle.update();
-                particle.draw();
-
-                // Connect to other particles
-                for (let j = index + 1; j < particles.length; j++) {
-                    const other = particles[j];
-                    const dx = particle.x - other.x;
-                    const dy = particle.y - other.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < connectionDistance) {
-                        ctx.beginPath();
-                        ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 * (1 - distance / connectionDistance)})`; // Boosted line opacity
-                        ctx.lineWidth = 1;
-                        ctx.moveTo(particle.x, particle.y);
-                        ctx.lineTo(other.x, other.y);
-                        ctx.stroke();
-                    }
-                }
-
-                // Connect to mouse
-                const dx = particle.x - mouse.x;
-                const dy = particle.y - mouse.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < mouseDistance) {
-                    ctx.beginPath();
-                    // Green connection for mouse interaction
-                    ctx.strokeStyle = `rgba(34, 197, 94, ${0.4 * (1 - distance / mouseDistance)})`;
-                    ctx.lineWidth = 1.5;
-                    ctx.moveTo(particle.x, particle.y);
-                    ctx.lineTo(mouse.x, mouse.y);
-                    ctx.stroke();
-                }
-            });
-
-            animationFrameId = requestAnimationFrame(animate);
-        };
+        setDimensions({ width: window.innerWidth, height: window.innerHeight });
+        setMounted(true);
 
         const handleResize = () => {
-            init();
+            setDimensions({ width: window.innerWidth, height: window.innerHeight });
         };
 
-        const handleMouseMove = (e: MouseEvent) => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
-        };
-
-        // Initialize
-        init();
-        animate();
-
-        // Listeners
         window.addEventListener('resize', handleResize);
-        window.addEventListener('mousemove', handleMouseMove);
-
-        return () => {
-            cancelAnimationFrame(animationFrameId);
-            window.removeEventListener('resize', handleResize);
-            window.removeEventListener('mousemove', handleMouseMove);
-        };
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    if (!mounted) return <div className="fixed inset-0 -z-10 bg-black" />;
+
+    // Deterministic random generation for stable hydration
+    const nodeCount = 40;
+    const nodes = Array.from({ length: nodeCount }).map((_, i) => ({
+        id: i,
+        x: Math.random() * dimensions.width,
+        y: Math.random() * dimensions.height,
+        size: Math.random() * 2 + 2,
+    }));
+
+    // Generate connections
+    const connections = [];
+    for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+            const dx = nodes[i].x - nodes[j].x;
+            const dy = nodes[i].y - nodes[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            // Connect close nodes
+            if (dist < 200) {
+                connections.push({
+                    id: `${i}-${j}`,
+                    x1: nodes[i].x,
+                    y1: nodes[i].y,
+                    x2: nodes[j].x,
+                    y2: nodes[j].y,
+                    opacity: 1 - dist / 200
+                });
+            }
+        }
+    }
+
     return (
-        <canvas
-            ref={canvasRef}
-            className="fixed inset-0 z-0 bg-black pointer-events-none"
-        />
+        <div className="fixed inset-0 -z-10 bg-black overflow-hidden pointer-events-none">
+            <svg
+                className="absolute inset-0 w-full h-full opacity-60"
+                viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+            >
+                {/* Connections */}
+                {connections.map(conn => (
+                    <line
+                        key={conn.id}
+                        x1={conn.x1}
+                        y1={conn.y1}
+                        x2={conn.x2}
+                        y2={conn.y2}
+                        stroke="rgba(255, 255, 255, 0.2)"
+                        strokeWidth="1"
+                    />
+                ))}
+
+                {/* Nodes */}
+                {nodes.map(node => (
+                    <circle
+                        key={node.id}
+                        cx={node.x}
+                        cy={node.y}
+                        r={node.size}
+                        fill="rgba(255, 255, 255, 0.5)"
+                    />
+                ))}
+            </svg>
+
+            {/* Subtle Gradient Overlay to fade edges */}
+            <div className="absolute inset-0 bg-radial-gradient from-transparent to-black opacity-80" />
+        </div>
     );
 }
