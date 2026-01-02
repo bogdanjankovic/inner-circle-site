@@ -15,8 +15,6 @@ export default function BackgroundGrid() {
                 }}
             />
 
-            {/* Scanline for retro CRT feel */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_4px)] bg-[size:100%_4px] pointer-events-none" />
         </div>
     );
 }

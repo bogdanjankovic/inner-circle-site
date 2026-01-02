@@ -36,8 +36,13 @@ export default function RevealImage({ src, alt, className = "", priority = false
                 transition={{ duration: 1.2 }}
             />
 
-            {/* HUD: Scanlines (CSS Only) */}
-            <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] z-10 opacity-20" />
+            {/* HUD: Animated Scanning Beam */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
+                <div className="w-full h-[2px] bg-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-[scan_3s_linear_infinite]" />
+            </div>
+
+            {/* HUD: Static Fine Mesh Overlay */}
+            <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(0,0,0,0)_2px,rgba(0,0,0,0.2)_1px)] bg-[size:100%_3px] z-10 opacity-30" />
             <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/60 via-transparent to-black/30 z-10" />
 
             {/* HUD: Corner Brackets */}
