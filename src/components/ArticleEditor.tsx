@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { Article, ArticleSection as Section } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
+import { useModal } from '@/context/ModalContext'; // Added
 import RichTextEditor from './RichTextEditor';
 
 interface ArticleEditorProps {
@@ -115,6 +116,7 @@ function ImageUploader({
 export default function ArticleEditor({ article }: ArticleEditorProps) {
     const router = useRouter();
     const { success, error } = useToast();
+    const { showConfirm } = useModal(); // Added
     const [title, setTitle] = useState(article.title);
     const [author, setAuthor] = useState(article.author || 'Protocol Officer');
     const [excerpt, setExcerpt] = useState(article.excerpt);
@@ -320,8 +322,9 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                         </span>
                                     </div>
                                     <button
-                                        onClick={() => {
-                                            if (confirm('Are you sure you want to remove this section?')) {
+                                        onClick={async () => {
+                                            const confirmed = await showConfirm('Are you sure you want to remove this section?');
+                                            if (confirmed) {
                                                 const newSections = sections.filter((_, i) => i !== idx);
                                                 setSections(newSections);
                                             }

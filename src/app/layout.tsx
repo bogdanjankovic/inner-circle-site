@@ -5,6 +5,8 @@ import ConsentBanner from "@/components/ConsentBanner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ToastProvider } from "@/context/ToastContext";
+import { ModalProvider } from "@/context/ModalContext";
+import ModalContainer from "@/components/ui/ModalContainer";
 
 // Configure Fonts
 const mono = JetBrains_Mono({
@@ -52,13 +54,16 @@ export default function RootLayout({
             <body className={`${mono.variable} ${montserrat.variable} antialiased text-gray-200 selection:bg-green-500 selection:text-black bg-transparent`}>
                 <div className="relative z-10">
                     <ToastProvider>
-                        <Navbar />
+                        <ModalProvider>
+                            <Navbar />
 
-                        <div className="pt-0 min-h-screen font-sans">
-                            {children}
-                        </div>
+                            <div className="pt-0 min-h-screen font-sans">
+                                {children}
+                            </div>
 
-                        <Footer />
+                            <Footer />
+                            <ModalContainer />
+                        </ModalProvider>
                     </ToastProvider>
                 </div>
                 <ConsentBanner />

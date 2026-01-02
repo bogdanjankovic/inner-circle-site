@@ -2,10 +2,12 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useModal } from '@/context/ModalContext';
 
 export default function CreateManualButton() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const { showAlert } = useModal();
 
     const handleCreateWrapper = async () => {
         setIsLoading(true);
@@ -19,7 +21,7 @@ export default function CreateManualButton() {
             }
         } catch (error) {
             console.error(error);
-            alert('Error creating draft');
+            await showAlert('Failed to create a new draft. Please try again.');
             setIsLoading(false);
         }
     };

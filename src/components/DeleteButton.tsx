@@ -3,13 +3,21 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useModal } from '@/context/ModalContext';
 
 export default function DeleteButton({ slug }: { slug: string }) {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const { showConfirm, showAlert } = useModal();
 
     const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this article?')) return;
+        const confirmed = await showConfirm('Are you sure you want to delete this article? This action cannot be undone.', {
+            title: 'Delete Protocol',
+            confirmText: 'Delete',
+            cancelText: 'Cancel'
+        });
+
+        if (!confirmed) return;
 
         setLoading(true);
         try {
@@ -22,10 +30,10 @@ export default function DeleteButton({ slug }: { slug: string }) {
             if (res.ok) {
                 router.refresh();
             } else {
-                alert('Failed to delete');
+                await showAlert('Failed to delete the article.');
             }
         } catch (e) {
-            alert('Error deleting');
+            await showAlert('System error while deleting.');
         } finally {
             setLoading(false);
         }
