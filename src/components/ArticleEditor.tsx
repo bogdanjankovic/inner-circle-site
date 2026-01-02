@@ -230,18 +230,23 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     const handleTabChange = (idx: number, type: 'image' | 'youtube' | 'tweet' | 'table') => {
         setSectionMediaTabs(prev => ({ ...prev, [idx]: type }));
 
-        // Optional: Clear data when switching? User asked for "switch back", implying mode switch.
-        // To be safe and avoid "overlap", we can clear the others.
+        // Enforce mutual exclusivity by clearing other fields
         if (type === 'image') {
             handleSectionChange(idx, 'youtubeUrl', '');
             handleSectionChange(idx, 'tweetUrl', '');
+            handleSectionChange(idx, 'tableData', ''); // Clear table
         } else if (type === 'youtube') {
             handleSectionChange(idx, 'imageUrl', '');
             handleSectionChange(idx, 'tweetUrl', '');
-            // Initialize if empty to ensure it sticks? Not needed if we use state.
+            handleSectionChange(idx, 'tableData', '');
         } else if (type === 'tweet') {
             handleSectionChange(idx, 'imageUrl', '');
             handleSectionChange(idx, 'youtubeUrl', '');
+            handleSectionChange(idx, 'tableData', '');
+        } else if (type === 'table') {
+            handleSectionChange(idx, 'imageUrl', '');
+            handleSectionChange(idx, 'youtubeUrl', '');
+            handleSectionChange(idx, 'tweetUrl', '');
         }
     };
 
