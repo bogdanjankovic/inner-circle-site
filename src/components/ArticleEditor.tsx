@@ -217,16 +217,17 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     };
 
     // UI State for tabs per section
-    const [sectionMediaTabs, setSectionMediaTabs] = useState<Record<number, 'image' | 'youtube' | 'tweet'>>({});
+    const [sectionMediaTabs, setSectionMediaTabs] = useState<Record<number, 'image' | 'youtube' | 'tweet' | 'table'>>({});
 
     const getActiveTab = (idx: number, section: Section) => {
         if (sectionMediaTabs[idx]) return sectionMediaTabs[idx];
+        if (section.tableData && section.tableData.length > 0) return 'table';
         if (section.youtubeUrl) return 'youtube';
         if (section.tweetUrl) return 'tweet';
         return 'image';
     };
 
-    const handleTabChange = (idx: number, type: 'image' | 'youtube' | 'tweet') => {
+    const handleTabChange = (idx: number, type: 'image' | 'youtube' | 'tweet' | 'table') => {
         setSectionMediaTabs(prev => ({ ...prev, [idx]: type }));
 
         // Optional: Clear data when switching? User asked for "switch back", implying mode switch.
@@ -405,7 +406,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
 
                                                     {/* Media Type Tabs */}
                                                     <div className="flex gap-2 mb-4 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-                                                        {(['image', 'youtube', 'tweet'] as const).map((type) => (
+                                                        {(['image', 'youtube', 'tweet', 'table'] as const).map((type) => (
                                                             <button
                                                                 key={type}
                                                                 onClick={() => handleTabChange(idx, type)}
@@ -503,6 +504,66 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                                                         Preview will load in the live article.
                                                                     </p>
                                                                 </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Table View */}
+                                                        {activeTab === 'table' && (
+                                                            <div className="space-y-4 animate-in fade-in duration-300">
+                                                                <div>
+                                                                    <label className="block text-xs font-bold font-sans uppercase text-green-500 tracking-wider mb-2">Paste Table Data (Excel/Sheets)</label>
+                                                                    <textarea
+                                                                        rows={5}
+                                                                        // Show raw TSV if editing, or convert back for display? 
+                                                                        // Better to perhaps keep a separate rawText state? 
+                                                                        // For now, let's just make it a "Input" area that populates the tableData
+                                                                        placeholder="Paste cells directly from Google Sheets or Excel..."
+                                                                        className="w-full px-4 py-3 rounded-lg border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-900/10 focus:ring-2 focus:ring-green-500 outline-none text-green-800 dark:text-green-200 font-mono text-xs resize-none whitespace-pre"
+                                                                        onChange={(e) => {
+                                                                            const rawInfo = e.target.value;
+                                                                            // Split by newlines, then tabs
+                                                                            const rows = rawInfo.split(/\r?\n/).filter(r => r.trim() !== '');
+                                                                            const tableData = rows.map(r => r.split('\t'));
+                                                                            // Update Section State
+                                                                            // We need to cast because handleSectionChange expects string usually.
+                                                                            // We need a specific handler or just ignore TS for a sec or update the function signature
+                                                                            // Let's update handleSectionChange signature or use setSections directly here for complexity
+                                                                            const newSections = [...sections];
+                                                                            newSections[idx] = { ...newSections[idx], tableData };
+                                                                            setSections(newSections);
+                                                                        }}
+                                                                    />
+                                                                </div>
+
+                                                                {section.tableData && section.tableData.length > 0 && (
+                                                                    <div className="overflow-x-auto border border-green-200 dark:border-green-900/30 rounded-lg">
+                                                                        <table className="w-full text-left border-collapse text-xs">
+                                                                            <thead>
+                                                                                <tr className="bg-green-100 dark:bg-green-900/20">
+                                                                                    {section.tableData[0].map((header, hIdx) => (
+                                                                                        <th key={hIdx} className="p-2 border-b border-r border-green-200 dark:border-green-900/30 last:border-r-0 font-bold text-green-800 dark:text-green-200 font-sans uppercase tracking-wider">
+                                                                                            {header}
+                                                                                        </th>
+                                                                                    ))}
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                {section.tableData.slice(1).map((row, rIdx) => (
+                                                                                    <tr key={rIdx} className="border-b border-green-100 dark:border-green-900/10 last:border-b-0 hover:bg-green-50 dark:hover:bg-green-900/5 transition-colors">
+                                                                                        {row.map((cell, cIdx) => (
+                                                                                            <td key={cIdx} className="p-2 border-r border-green-100 dark:border-green-900/10 last:border-r-0 text-gray-600 dark:text-gray-300 font-mono">
+                                                                                                {cell}
+                                                                                            </td>
+                                                                                        ))}
+                                                                                    </tr>
+                                                                                ))}
+                                                                            </tbody>
+                                                                        </table>
+                                                                        <div className="p-2 bg-green-50 dark:bg-green-900/10 text-[10px] text-center text-green-600 dark:text-green-400 font-mono">
+                                                                            {section.tableData.length - 1} Rows &times; {section.tableData[0].length} Columns
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>

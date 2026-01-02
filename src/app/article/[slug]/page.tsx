@@ -210,6 +210,31 @@ export default async function ArticlePage(props: PageProps) {
                                                 </figcaption>
                                             )}
                                         </figure>
+                                    ) : section.tableData && section.tableData.length > 0 ? (
+                                        <figure className="my-8 overflow-x-auto border border-white/10 rounded-lg">
+                                            <table className="w-full text-left border-collapse text-sm font-mono">
+                                                <thead>
+                                                    <tr className="bg-white/5 border-b border-white/10">
+                                                        {section.tableData[0].map((header, hIdx) => (
+                                                            <th key={hIdx} className="p-4 font-bold text-gray-300 uppercase tracking-wider border-r border-white/10 last:border-r-0 whitespace-nowrap">
+                                                                {header}
+                                                            </th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {section.tableData.slice(1).map((row, rIdx) => (
+                                                        <tr key={rIdx} className="border-b border-white/5 last:border-b-0 hover:bg-white/5 transition-colors">
+                                                            {row.map((cell, cIdx) => (
+                                                                <td key={cIdx} className="p-4 text-gray-400 border-r border-white/5 last:border-r-0">
+                                                                    {cell}
+                                                                </td>
+                                                            ))}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </figure>
                                     ) : null}
 
                                     {/* Section Content */}

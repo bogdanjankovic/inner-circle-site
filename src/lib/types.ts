@@ -26,6 +26,7 @@ export interface ArticleSection {
     tweetUrl?: string;   // New: X/Twitter Post
     productUrl?: string; // For affiliate buttons
     buttonText?: string; // Custom button text
+    tableData?: string[][]; // 2D Array for Tables
 }
 
 export interface TermDefinition {
