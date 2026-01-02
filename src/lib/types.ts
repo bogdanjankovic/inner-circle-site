@@ -22,6 +22,8 @@ export interface ArticleSection {
     imageUrl?: string;
     imageCaption?: string;
     imageSearchQuery?: string;
+    youtubeUrl?: string; // New: YouTube Video
+    tweetUrl?: string;   // New: X/Twitter Post
     productUrl?: string; // For affiliate buttons
     buttonText?: string; // Custom button text
 }

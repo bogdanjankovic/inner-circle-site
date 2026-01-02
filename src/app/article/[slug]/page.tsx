@@ -1,6 +1,7 @@
 // This file renders the actual article
 import Link from 'next/link';
 import { Metadata } from 'next';
+import { Tweet } from 'react-tweet';
 import { notFound } from 'next/navigation';
 import { getPostBySlug, getPublishedPosts, getGlossary } from '@/lib/storage'; // Re-added getGlossary
 import { getMetrics } from '@/lib/metrics';
@@ -172,8 +173,30 @@ export default async function ArticlePage(props: PageProps) {
                                         {section.heading}
                                     </h2>
 
-                                    {/* Section Specific Image (Top for Products) */}
-                                    {section.imageUrl && (
+                                    {/* Section Media (Image / YouTube / Tweet) */}
+                                    {/* Priority: YouTube > Tweet > Image */}
+
+                                    {section.youtubeUrl && section.youtubeUrl.includes('v=') ? (
+                                        <figure className="my-8 border border-white/10 bg-white/5 p-1 rounded-sm">
+                                            <div className="aspect-video w-full bg-black">
+                                                <iframe
+                                                    width="100%"
+                                                    height="100%"
+                                                    src={`https://www.youtube.com/embed/${section.youtubeUrl.split('v=')[1]?.split('&')[0]}`}
+                                                    title={section.heading}
+                                                    frameBorder="0"
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                    allowFullScreen
+                                                ></iframe>
+                                            </div>
+                                        </figure>
+                                    ) : section.tweetUrl ? (
+                                        <figure className="my-8 flex justify-center">
+                                            <div className="w-full max-w-[550px] dark">
+                                                <Tweet id={section.tweetUrl.split('/').pop() || ''} />
+                                            </div>
+                                        </figure>
+                                    ) : section.imageUrl ? (
                                         <figure className="my-8 border border-white/10 bg-white/5 p-1 rounded-sm">
                                             <div className="h-[500px] w-full">
                                                 <RevealImage
@@ -187,7 +210,7 @@ export default async function ArticlePage(props: PageProps) {
                                                 </figcaption>
                                             )}
                                         </figure>
-                                    )}
+                                    ) : null}
 
                                     {/* Section Content */}
                                     <div className="text-lg md:text-xl text-gray-300 leading-relaxed font-sans">
