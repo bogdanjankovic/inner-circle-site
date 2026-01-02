@@ -390,10 +390,10 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                                                 }
                                                             }}
                                                             className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded transition-all ${(type === 'image' && !section.youtubeUrl && !section.tweetUrl) ||
-                                                                    (type === 'youtube' && section.youtubeUrl) ||
-                                                                    (type === 'tweet' && section.tweetUrl)
-                                                                    ? 'bg-white dark:bg-gray-700 text-purple-500 shadow-sm'
-                                                                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                                                                (type === 'youtube' && section.youtubeUrl) ||
+                                                                (type === 'tweet' && section.tweetUrl)
+                                                                ? 'bg-white dark:bg-gray-700 text-purple-500 shadow-sm'
+                                                                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                                                                 }`}
                                                         >
                                                             {type === 'tweet' ? 'X / Tweet' : type}
@@ -459,17 +459,32 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                                     {!!section.tweetUrl && (
                                                         <div className="space-y-4 animate-in fade-in duration-300">
                                                             <div>
-                                                                <label className="block text-xs font-bold font-sans uppercase text-blue-400 tracking-wider mb-2">X / Tweet URL</label>
-                                                                <input
-                                                                    type="text"
+                                                                <label className="block text-xs font-bold font-sans uppercase text-blue-400 tracking-wider mb-2">X / Tweet URL or Embed Code</label>
+                                                                <textarea
+                                                                    rows={3}
                                                                     value={section.tweetUrl}
-                                                                    onChange={(e) => handleSectionChange(idx, 'tweetUrl', e.target.value)}
-                                                                    className="w-full px-4 py-3 rounded-lg border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/10 focus:ring-2 focus:ring-blue-500 outline-none text-blue-800 dark:text-blue-200 font-mono text-sm"
-                                                                    placeholder="https://x.com/user/status/..."
+                                                                    onChange={(e) => {
+                                                                        let val = e.target.value;
+                                                                        // Auto-extract URL from Embed Code
+                                                                        if (val.includes('<blockquote') && val.includes('twitter-tweet')) {
+                                                                            const match = val.match(/href="https:\/\/(twitter|x)\.com\/[^/]+\/status\/(\d+)/);
+                                                                            if (match) {
+                                                                                val = match[0].replace('href="', '');
+                                                                                // notify user? usually implicit is fine, or we can use toast
+                                                                            }
+                                                                        }
+                                                                        handleSectionChange(idx, 'tweetUrl', val);
+                                                                    }}
+                                                                    className="w-full px-4 py-3 rounded-lg border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/10 focus:ring-2 focus:ring-blue-500 outline-none text-blue-800 dark:text-blue-200 font-mono text-sm resize-none"
+                                                                    placeholder="Paste the URL or the full <blockquote ...> embed code here..."
                                                                 />
                                                             </div>
-                                                            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 text-center">
-                                                                <p className="text-xs text-blue-500">Twitter embed will appear in preview/live.</p>
+                                                            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 text-center flex items-center justify-center gap-2">
+                                                                <span className="text-xl">ℹ️</span>
+                                                                <p className="text-xs text-blue-500 text-left">
+                                                                    System optimizes Embed Codes to standard components for performance. <br />
+                                                                    Preview will load in the live article.
+                                                                </p>
                                                             </div>
                                                         </div>
                                                     )}
