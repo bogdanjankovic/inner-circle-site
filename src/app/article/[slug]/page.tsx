@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         openGraph: {
             title: article.title,
             description: article.excerpt,
-            url: `https://inner-circle-site.vercel.app/article/${slug}`,
+            url: `https://blexout.com/article/${slug}`,
             siteName: 'BLEXOUT',
             images: [
                 {
