@@ -102,7 +102,7 @@ export default async function ArticlePage(props: PageProps) {
                         datePublished: new Date(article.date).toISOString(),
                         author: {
                             '@type': 'Person',
-                            name: 'BLEXOUT',
+                            name: article.author || 'BLEXOUT',
                         },
                         publisher: {
                             '@type': 'Organization',
@@ -138,6 +138,8 @@ export default async function ArticlePage(props: PageProps) {
                         </p>
                         <div className="flex items-center justify-center lg:justify-start gap-4 text-[10px] font-mono font-bold uppercase tracking-widest text-gray-500 border-t border-b border-white/10 py-4">
                             <span>{article.date || 'TBD'}</span>
+                            <span className="text-green-900">//</span>
+                            <span className="text-gray-300">{article.author || 'Protocol Officer'}</span>
                             <span className="text-green-900">//</span>
                             <span>{article.readingTime || '5 MIN READ'}</span>
                         </div>
