@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useArticleState } from '@/context/ArticleStateContext';
 
 export default function SyncCompletion() {
-    const { setFullyRead } = useArticleState();
+    const { setFullyRead, isFullyRead } = useArticleState();
     const [isComplete, setIsComplete] = useState(false);
     const [hasTriggered, setHasTriggered] = useState(false);
 
@@ -17,10 +17,13 @@ export default function SyncCompletion() {
 
         const observer = new IntersectionObserver(
             ([entry]) => {
+                // If it's already read, don't re-trigger the "Sync Complete" modal/animation
+                // The Protocol Brief will simply appear unlocked (handled by its own component)
                 if (entry.isIntersecting) {
-                    setIsComplete(true);
-                    // setFullyRead(true); // Moved to animation completion
-                    setHasTriggered(true);
+                    if (!isFullyRead) {
+                        setIsComplete(true);
+                        setHasTriggered(true);
+                    }
                 }
             },
             {
@@ -31,7 +34,7 @@ export default function SyncCompletion() {
 
         observer.observe(ref);
         return () => observer.disconnect();
-    }, [ref, hasTriggered]);
+    }, [ref, hasTriggered, isFullyRead]);
 
     // Auto-hide after 4 seconds
     useEffect(() => {

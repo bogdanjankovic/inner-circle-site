@@ -12,14 +12,15 @@ export default function ProtocolBrief({ keyPoints }: { keyPoints: string[] }) {
     const [isOpen, setIsOpen] = useState(false);
 
     // Scramble Hook
+    const [initialReadState] = useState(isFullyRead);
     const { displayText, scramble } = useScrambleText("PROTOCOL BRIEF UNLOCKED", 40);
 
-    // Trigger scramble when it becomes unlocked
+    // Trigger scramble ONLY if we were NOT read initially, and then BECAME read.
     useEffect(() => {
-        if (isFullyRead) {
+        if (isFullyRead && !initialReadState) {
             scramble();
         }
-    }, [isFullyRead]);
+    }, [isFullyRead, initialReadState]);
 
     // Fallback if no keyPoints are defined
     if (!keyPoints || keyPoints.length === 0) {
@@ -59,7 +60,7 @@ export default function ProtocolBrief({ keyPoints }: { keyPoints: string[] }) {
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                     </span>
                     <h3 className="text-green-500 font-mono font-bold text-xs uppercase tracking-[0.2em] group-hover:text-green-400 transition-colors">
-                        {displayText}
+                        {initialReadState ? "PROTOCOL BRIEF UNLOCKED" : displayText}
                     </h3>
                 </div>
                 {/* Pulsating Arrow per User Request */}
