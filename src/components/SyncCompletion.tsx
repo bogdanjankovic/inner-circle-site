@@ -85,18 +85,20 @@ export default function SyncCompletion() {
                         </motion.div>
 
                         {/* Data Transfer Animation */}
+                        {/* Data Transfer Animation - Improved Trajectory & Speed */}
                         <motion.div
-                            initial={{ bottom: "40px", left: "50%", scale: 1, opacity: 1 }}
+                            initial={{ bottom: "80px", left: "50%", scale: 1, opacity: 1, x: "-50%" }} // Start centered above modal
                             animate={{
-                                bottom: "50%",
-                                left: "90%", // Move towards sidebar (sticky centered area)
-                                scale: 0.2, // Shrink as if entering the brief
-                                opacity: 0
+                                bottom: "500px", // Approximate sidebar height center
+                                left: "90%", // Move to right sidebar
+                                scale: 0.1, // Fade into brief
+                                opacity: 0,
+                                x: "0%"
                             }}
                             transition={{
-                                duration: 1.2,
+                                duration: 2.5, // Slower per user request
                                 ease: "easeInOut",
-                                delay: 0.2
+                                delay: 0.5
                             }}
                             className="fixed z-[60] w-6 h-6 bg-white rounded-full shadow-[0_0_30px_rgba(34,197,94,0.8)] pointer-events-none"
                         >

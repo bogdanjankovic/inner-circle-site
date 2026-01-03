@@ -12,8 +12,26 @@ const ArticleStateContext = createContext<ArticleStateContextType | undefined>(u
 export function ArticleStateProvider({ children }: { children: ReactNode }) {
     const [isFullyRead, setIsFullyRead] = useState(false);
 
+    // Initial check - hydration safe
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const path = window.location.pathname;
+            const isRead = localStorage.getItem(`read_protocol_${path}`) === 'true';
+            if (isRead) setIsFullyRead(true);
+        }
+    }, []);
+
+    // Wrapper to set and persist
+    const setFullyReadPersistent = (value: boolean) => {
+        setIsFullyRead(value);
+        if (value && typeof window !== 'undefined') {
+            const path = window.location.pathname;
+            localStorage.setItem(`read_protocol_${path}`, 'true');
+        }
+    };
+
     return (
-        <ArticleStateContext.Provider value={{ isFullyRead, setFullyRead: setIsFullyRead }}>
+        <ArticleStateContext.Provider value={{ isFullyRead, setFullyRead: setFullyReadPersistent }}>
             {children}
         </ArticleStateContext.Provider>
     );

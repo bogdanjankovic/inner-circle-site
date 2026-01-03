@@ -40,7 +40,7 @@ export default function AnalyticsExport() {
         setTimeout(() => setDownloading(false), 2000);
 
         // Direct navigation triggers download
-        window.location.href = `/api/admin/export?${params.toString()}`;
+        window.location.href = `/api/admin/export-analytics?${params.toString()}`;
     };
 
     return (

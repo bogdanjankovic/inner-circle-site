@@ -7,14 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProtocolBrief({ keyPoints }: { keyPoints: string[] }) {
     const { isFullyRead } = useArticleState();
+    // Start collapsed even if just unlocked per user request
     const [isOpen, setIsOpen] = useState(false);
 
-    // Auto-open when unlocked
-    useEffect(() => {
-        if (isFullyRead) {
-            setIsOpen(true);
-        }
-    }, [isFullyRead]);
+    // Auto-open logic REMOVED to respect "start collapsed"
+    // useEffect(() => { if (isFullyRead) setIsOpen(true); }, [isFullyRead]);
 
     // Fallback if no keyPoints are defined
     if (!keyPoints || keyPoints.length === 0) {
@@ -56,7 +53,8 @@ export default function ProtocolBrief({ keyPoints }: { keyPoints: string[] }) {
                         Protocol Brief Unlocked
                     </h3>
                 </div>
-                <span className={`text-green-500 text-xs transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+                {/* Pulsating Arrow per User Request */}
+                <span className={`text-green-500 text-xs transition-transform duration-300 ${isOpen ? 'rotate-180' : ''} animate-pulse drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]`}>
                     ▼
                 </span>
             </button>
