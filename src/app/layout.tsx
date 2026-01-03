@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Montserrat } from "next/font/google"; // Import Google Fonts
+import { JetBrains_Mono, Montserrat } from "next/font/google";
 import "./globals.css";
 import ConsentBanner from "@/components/ConsentBanner";
 import Navbar from "@/components/Navbar";
@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import { ToastProvider } from "@/context/ToastContext";
 import { ModalProvider } from "@/context/ModalContext";
 import ModalContainer from "@/components/ui/ModalContainer";
+import { getPublishedPosts } from "@/lib/storage";
 
 // Configure Fonts
 const mono = JetBrains_Mono({
@@ -44,18 +45,20 @@ export const metadata: Metadata = {
     }
 };
 
-export default function RootLayout({
+export default async function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const articles = await getPublishedPosts();
+
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={`${mono.variable} ${montserrat.variable} antialiased text-gray-200 selection:bg-green-500 selection:text-black bg-transparent`}>
                 <div className="relative z-10">
                     <ToastProvider>
                         <ModalProvider>
-                            <Navbar />
+                            <Navbar articles={articles} />
 
                             <div className="pt-0 min-h-screen font-sans">
                                 {children}
