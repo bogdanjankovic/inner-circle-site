@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { slug, title, excerpt, sections, status, tags, imageUrl, imageSearchQuery } = body;
+        const { slug, title, excerpt, sections, status, tags, imageUrl, imageSearchQuery, author, showAffiliateDisclosure } = body;
 
         if (!slug || !title) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -32,9 +32,10 @@ export async function POST(request: NextRequest) {
             date: existingPost?.date || new Date().toISOString(),
             readTime: existingPost?.readTime || "1 min read",
             readingTime: existingPost?.readingTime || '5 min read', // Should recalculate ideally, but keep simple for now
-            author: existingPost?.author || "BLEXOUT System",
+            author: author || existingPost?.author || "BLEXOUT System",
             imageUrl: imageUrl || existingPost?.imageUrl || '',
             imageSearchQuery: imageSearchQuery || existingPost?.imageSearchQuery || '',
+            showAffiliateDisclosure: showAffiliateDisclosure ?? existingPost?.showAffiliateDisclosure,
             isArchived: status === 'archived' // Keep sync
         };
 
