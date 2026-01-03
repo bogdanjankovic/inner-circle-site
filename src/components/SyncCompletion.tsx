@@ -19,7 +19,7 @@ export default function SyncCompletion() {
             ([entry]) => {
                 if (entry.isIntersecting) {
                     setIsComplete(true);
-                    setFullyRead(true);
+                    // setFullyRead(true); // Moved to animation completion
                     setHasTriggered(true);
                 }
             },
@@ -100,6 +100,7 @@ export default function SyncCompletion() {
                                 ease: "easeInOut",
                                 delay: 0.5
                             }}
+                            onAnimationComplete={() => setFullyRead(true)}
                             className="fixed z-[60] w-6 h-6 bg-white rounded-full shadow-[0_0_30px_rgba(34,197,94,0.8)] pointer-events-none"
                         >
                             <motion.div

@@ -5,13 +5,21 @@ import { useArticleState } from '@/context/ArticleStateContext';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { useScrambleText } from '@/hooks/useScrambleText';
+
 export default function ProtocolBrief({ keyPoints }: { keyPoints: string[] }) {
     const { isFullyRead } = useArticleState();
-    // Start collapsed even if just unlocked per user request
     const [isOpen, setIsOpen] = useState(false);
 
-    // Auto-open logic REMOVED to respect "start collapsed"
-    // useEffect(() => { if (isFullyRead) setIsOpen(true); }, [isFullyRead]);
+    // Scramble Hook
+    const { displayText, scramble } = useScrambleText("PROTOCOL BRIEF UNLOCKED", 40);
+
+    // Trigger scramble when it becomes unlocked
+    useEffect(() => {
+        if (isFullyRead) {
+            scramble();
+        }
+    }, [isFullyRead]);
 
     // Fallback if no keyPoints are defined
     if (!keyPoints || keyPoints.length === 0) {
@@ -38,11 +46,12 @@ export default function ProtocolBrief({ keyPoints }: { keyPoints: string[] }) {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="border border-green-500/30 bg-green-500/5 backdrop-blur-sm transition-all duration-300 shadow-[0_0_30px_rgba(34,197,94,0.1)]"
+            className="border border-green-500/30 bg-green-500/5 backdrop-blur-sm transition-all duration-300 shadow-[0_0_30px_rgba(34,197,94,0.1)] animate-in fade-in slide-in-from-bottom-4 duration-700"
         >
+            <div className="absolute inset-0 bg-green-500/10 animate-pulse pointer-events-none" />
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between p-4 hover:bg-green-500/10 transition-colors group"
+                className="w-full flex items-center justify-between p-4 hover:bg-green-500/10 transition-colors group relative z-10"
             >
                 <div className="flex items-center gap-3">
                     <span className="relative flex h-2 w-2">
@@ -50,7 +59,7 @@ export default function ProtocolBrief({ keyPoints }: { keyPoints: string[] }) {
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                     </span>
                     <h3 className="text-green-500 font-mono font-bold text-xs uppercase tracking-[0.2em] group-hover:text-green-400 transition-colors">
-                        Protocol Brief Unlocked
+                        {displayText}
                     </h3>
                 </div>
                 {/* Pulsating Arrow per User Request */}
