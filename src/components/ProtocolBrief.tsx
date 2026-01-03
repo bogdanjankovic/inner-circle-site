@@ -16,7 +16,16 @@ export default function ProtocolBrief({ keyPoints }: { keyPoints: string[] }) {
         }
     }, [isFullyRead]);
 
-    if (!keyPoints || keyPoints.length === 0) return null;
+    // Fallback if no keyPoints are defined
+    if (!keyPoints || keyPoints.length === 0) {
+        return (
+            <div className="border border-white/5 bg-white/5 backdrop-blur-sm p-6 text-center opacity-50 grayscale">
+                <div className="text-[20px] mb-2 opacity-20">⚠️</div>
+                <h3 className="font-mono font-bold text-[10px] text-gray-500 uppercase tracking-widest mb-1">Data Unavailable</h3>
+                <p className="font-mono text-[9px] text-gray-600">Protocol briefing not found.</p>
+            </div>
+        );
+    }
 
     if (!isFullyRead) {
         return (
