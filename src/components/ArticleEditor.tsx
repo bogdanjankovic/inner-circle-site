@@ -422,9 +422,9 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                {/* Main Content Editor - NOW WIDER (3/4 cols) */}
-                <div className="lg:col-span-3 space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Main Content Editor - NOW WIDER (2/3 cols) */}
+                <div className="lg:col-span-2 space-y-8">
 
                     {/* Meta Section */}
                     <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-6">
@@ -736,8 +736,8 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                 </div>
 
                 {/* Sidebar - Cover Image */}
-                <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 sticky top-32">
+                <div className="lg:col-span-1 space-y-8 sticky top-24 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar pt-4">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                         <h3 className="font-serif font-bold text-xl mb-6 text-gray-800 dark:text-white">Cover Appearance</h3>
                         <ImageUploader
                             label="Cover Image"
@@ -751,7 +751,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                     </div>
 
                     {/* Protocol Briefing Widget */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 sticky top-[500px]">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="font-serif font-bold text-xl text-gray-800 dark:text-white">Protocol Brief</h3>
                             <button
