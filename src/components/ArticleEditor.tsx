@@ -341,7 +341,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     };
 
     return (
-        <div className="space-y-8 max-w-[95%] mx-auto">
+        <div className="space-y-8 w-full">
             {/* --- IMPORT MODAL --- */}
             {importModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -422,9 +422,9 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content Editor - NOW WIDER (2/3 cols) */}
-                <div className="lg:col-span-2 space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                {/* Main Content Editor - NOW WIDER (3/5 cols) */}
+                <div className="lg:col-span-3 space-y-8">
 
                     {/* Meta Section */}
                     <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-6">
@@ -736,7 +736,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                 </div>
 
                 {/* Sidebar - Cover Image */}
-                <div className="lg:col-span-1 space-y-8 sticky top-24 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar pt-4">
+                <div className="lg:col-span-2 space-y-8 sticky top-24 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar pt-4">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                         <h3 className="font-serif font-bold text-xl mb-6 text-gray-800 dark:text-white">Cover Appearance</h3>
                         <ImageUploader
