@@ -280,7 +280,8 @@ export default async function ArticlePage(props: PageProps) {
 
                     {/* Sidebar Column - "System Status" */}
                     {/* Sidebar Column - "System Status" */}
-                    <aside className="hidden lg:block space-y-10 border-l border-white/10 pl-12 h-fit sticky top-32">
+                    {/* Sidebar Column - "System Status" - Fixed & Centered */}
+                    <aside className="hidden lg:flex flex-col justify-center gap-10 border-l border-white/10 pl-12 sticky top-0 h-screen overflow-y-auto no-scrollbar py-20">
 
                         {/* Protocol Brief - Sidebar Accordion (Unlocked on Scroll) */}
                         <div className="mb-6">
