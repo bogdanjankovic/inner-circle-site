@@ -283,11 +283,6 @@ export default async function ArticlePage(props: PageProps) {
                     {/* Sidebar Column - "System Status" - Fixed & Centered */}
                     <aside className="hidden lg:flex flex-col justify-center gap-10 border-l border-white/10 pl-12 sticky top-0 h-screen overflow-y-auto no-scrollbar py-20">
 
-                        {/* Protocol Brief - Sidebar Accordion (Unlocked on Scroll) */}
-                        <div className="mb-6">
-                            <ProtocolBrief keyPoints={article.keyPoints || []} />
-                        </div>
-
                         {/* Sidebar Ad 1 */}
                         <div className="bg-white/5 p-6 border border-white/10 backdrop-blur-sm">
                             <div className="flex items-center justify-between mb-6">
@@ -297,6 +292,11 @@ export default async function ArticlePage(props: PageProps) {
                             <div className="flex justify-center grayscale hover:grayscale-0 transition-all">
                                 <AdUnit slotId="sidebar-1" format="rectangle" />
                             </div>
+                        </div>
+
+                        {/* Protocol Brief - Sidebar Accordion (Unlocked on Scroll) */}
+                        <div className="mb-6 relative">
+                            <ProtocolBrief keyPoints={article.keyPoints || []} />
                         </div>
 
                         {/* Trending Widget */}
