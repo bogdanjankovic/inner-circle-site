@@ -807,7 +807,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                                 newPoints[idx] = { ...point, anchorId: e.target.value || undefined };
                                                 setKeyPoints(newPoints);
                                             }}
-                                            className="bg-transparent text-[10px] text-gray-500 font-mono focus:outline-none cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 w-full truncate"
+                                            className="bg-black text-white text-[10px] font-mono focus:outline-none cursor-pointer border border-gray-700 rounded px-2 py-1 w-full truncate"
                                         >
                                             <option value="">-- Unconnected --</option>
                                             {sections.map((s, sIdx) => (
