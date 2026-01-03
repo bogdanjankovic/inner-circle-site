@@ -171,7 +171,7 @@ export default async function ArticlePage(props: PageProps) {
                             {article.sections
                                 .filter(section => section.heading !== 'Protocol Summary') // Hide legacy summaries
                                 .map((section, idx) => (
-                                    <section key={idx} id={`section-${idx}`} className="mb-16 last:mb-0 scroll-mt-32">
+                                    <section key={idx} id={section.id || `section-${idx}`} className="mb-16 last:mb-0 scroll-mt-32">
                                         <h2 className="text-3xl font-mono font-bold mb-6 mt-8 text-white tracking-tight border-b border-white/10 pb-4 inline-block">
                                             {section.heading}
                                         </h2>

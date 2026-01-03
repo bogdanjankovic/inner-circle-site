@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Article, ArticleSection as Section } from '@/lib/types';
+import { Article, ArticleSection as Section, KeyPoint } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
 import { useModal } from '@/context/ModalContext';
 import RichTextEditor from './RichTextEditor';
 import { parseTableData } from '@/lib/csv';
+
+// Helper for ID generation
+const generateId = () => Math.random().toString(36).substr(2, 9);
 
 interface ArticleEditorProps {
     article: Article;
@@ -126,6 +129,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     const [sections, setSections] = useState<UISection[]>(() =>
         article.sections.map(s => ({
             ...s,
+            id: s.id || generateId(), // Ensure persistent ID
             _ui_id: Math.random().toString(36).substr(2, 9),
             _collapsed: false
         }))
@@ -133,7 +137,13 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
 
     const [imageUrl, setImageUrl] = useState(article.imageUrl || '');
     const [showAffiliateDisclosure, setShowAffiliateDisclosure] = useState(article.showAffiliateDisclosure || false);
-    const [keyPoints, setKeyPoints] = useState<string[]>(article.keyPoints || []);
+
+    // Normalize KeyPoints to Objects
+    const [keyPoints, setKeyPoints] = useState<KeyPoint[]>(() => {
+        return (article.keyPoints || []).map(kp =>
+            typeof kp === 'string' ? { text: kp } : kp
+        );
+    });
     const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragReadyIndex, setDragReadyIndex] = useState<number | null>(null);
@@ -230,7 +240,11 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
 
             const data = await res.json();
             if (data.keyPoints) {
-                setKeyPoints(data.keyPoints);
+                // Normalize incoming data to KeyPoint objects
+                const normalizedPoints: KeyPoint[] = data.keyPoints.map((kp: string | KeyPoint) =>
+                    typeof kp === 'string' ? { text: kp } : kp
+                );
+                setKeyPoints(normalizedPoints);
                 success('Protocol Brief generated successfully');
             }
         } catch (e) {
@@ -708,6 +722,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                         content: '',
                                         imageUrl: '',
                                         imageSearchQuery: '',
+                                        id: generateId(), // New persistent ID
                                         _ui_id: Math.random().toString(36).substr(2, 9),
                                         _collapsed: false
                                     }
@@ -755,31 +770,57 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                 </p>
                             )}
                             {keyPoints.map((point, idx) => (
-                                <div key={idx} className="flex gap-2 items-start group">
-                                    <span className="text-[9px] font-mono text-gray-400 mt-2">0{idx + 1}</span>
-                                    <textarea
-                                        value={point}
-                                        onChange={(e) => {
-                                            const newPoints = [...keyPoints];
-                                            newPoints[idx] = e.target.value;
-                                            setKeyPoints(newPoints);
-                                        }}
-                                        rows={2}
-                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded p-2 text-xs font-mono text-gray-600 dark:text-gray-300 focus:ring-1 focus:ring-green-500 outline-none resize-none"
-                                    />
-                                    <button
-                                        onClick={() => {
-                                            const newPoints = keyPoints.filter((_, i) => i !== idx);
-                                            setKeyPoints(newPoints);
-                                        }}
-                                        className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        ×
-                                    </button>
+                                <div key={idx} className="flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-lg group text-xs">
+                                    <div className="flex gap-2 items-start">
+                                        <span className="font-mono text-gray-400 mt-2">0{idx + 1}</span>
+                                        <textarea
+                                            value={point.text}
+                                            onChange={(e) => {
+                                                const newPoints = [...keyPoints];
+                                                newPoints[idx] = { ...point, text: e.target.value };
+                                                setKeyPoints(newPoints);
+                                            }}
+                                            rows={2}
+                                            className="w-full bg-transparent border-none p-1 text-gray-600 dark:text-gray-300 focus:ring-0 outline-none resize-none placeholder-gray-400"
+                                            placeholder="Enter brief point..."
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                const newPoints = keyPoints.filter((_, i) => i !== idx);
+                                                setKeyPoints(newPoints);
+                                            }}
+                                            className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+
+                                    {/* Connection Dropdown */}
+                                    <div className="flex items-center gap-2 pl-6">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-3 h-3 ${point.anchorId ? 'text-green-500' : 'text-gray-300'}`}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                                        </svg>
+                                        <select
+                                            value={point.anchorId || ''}
+                                            onChange={(e) => {
+                                                const newPoints = [...keyPoints];
+                                                newPoints[idx] = { ...point, anchorId: e.target.value || undefined };
+                                                setKeyPoints(newPoints);
+                                            }}
+                                            className="bg-transparent text-[10px] text-gray-500 font-mono focus:outline-none cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 w-full truncate"
+                                        >
+                                            <option value="">-- Unconnected --</option>
+                                            {sections.map((s, sIdx) => (
+                                                <option key={s.id || s._ui_id} value={s.id}>
+                                                    Section {sIdx + 1}: {s.heading}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
                             ))}
                             <button
-                                onClick={() => setKeyPoints([...keyPoints, "New protocol point..."])}
+                                onClick={() => setKeyPoints([...keyPoints, { text: "New protocol point..." }])}
                                 className="w-full py-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-gray-600 border border-dashed border-gray-200 dark:border-gray-700 rounded hover:border-gray-400 transition-colors mt-2"
                             >
                                 + Add Point

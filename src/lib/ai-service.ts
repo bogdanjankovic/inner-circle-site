@@ -243,14 +243,16 @@ export async function generateArticle(topic: string): Promise<Article> {
     }
 }
 
-export async function generateSummary(content: string): Promise<string[]> {
+export async function generateSummary(content: string): Promise<{ text: string, relatedSectionIndex?: number }[]> {
     console.log(`[AI-Service] Generating summary for content length: ${content.length}`);
     const prompt = `
     Role: You are 'BLEXOUT', an elite Gaming Analyst.
     Task: Summarize the provided article content into 5 distinct, punchy 'Protocol Briefings' (key takeaways).
     Tone: Cryptic, tech-elite, futuristic, high-performance.
     Constraint: Max 15 words per point.
-    Format: Return ONLY a valid JSON array of strings. Example: ["Point 1", "Point 2"]
+    Constraint: Identify which SECTION index (0-based) each point relates to most strongly.
+    Format: Return ONLY a valid JSON array of objects. 
+    Schema: [{ "text": "Point content...", "relatedSectionIndex": 0 }]
 
     CONTENT:
     ${content.slice(0, 15000)} // Limit context
@@ -260,15 +262,15 @@ export async function generateSummary(content: string): Promise<string[]> {
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
         const cleanedJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(cleanedJson) as string[];
+        return JSON.parse(cleanedJson) as { text: string, relatedSectionIndex?: number }[];
     } catch (error) {
         console.error("Summary Generation Error:", error);
         return [
-            "Protocol Error: Data Insufficient.",
-            "Manual Override Required.",
-            "System Offline.",
-            "Check Connection.",
-            "Retry Synchronization."
+            { text: "Protocol Error: Data Insufficient." },
+            { text: "Manual Override Required." },
+            { text: "System Offline." },
+            { text: "Check Connection." },
+            { text: "Retry Synchronization." }
         ];
     }
 }

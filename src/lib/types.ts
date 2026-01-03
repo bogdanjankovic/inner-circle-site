@@ -12,11 +12,18 @@ export interface Article {
     isArchived?: boolean;
     tags?: string[];
     showAffiliateDisclosure?: boolean;
-    keyPoints?: string[];
+    keyPoints?: (string | KeyPoint)[];
     imageSearchQuery?: string;
 }
 
+export interface KeyPoint {
+    text: string;
+    anchorId?: string;
+    relatedSectionIndex?: number; // For AI generation context
+}
+
 export interface ArticleSection {
+    id?: string; // Stable UUID for anchoring
     heading: string;
     content: string;
     imageUrl?: string;

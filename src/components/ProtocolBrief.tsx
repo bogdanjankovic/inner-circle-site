@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useArticleState } from '@/context/ArticleStateContext';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { KeyPoint } from '@/lib/types';
 
 import { useScrambleText } from '@/hooks/useScrambleText';
 
-export default function ProtocolBrief({ keyPoints }: { keyPoints: string[] }) {
+export default function ProtocolBrief({ keyPoints }: { keyPoints: (string | KeyPoint)[] }) {
     const { isFullyRead } = useArticleState();
     const [isOpen, setIsOpen] = useState(false);
 
@@ -74,21 +75,28 @@ export default function ProtocolBrief({ keyPoints }: { keyPoints: string[] }) {
                     }`}
             >
                 <ul className="flex flex-col gap-3 p-4 pt-0">
-                    {keyPoints.map((point, idx) => (
-                        <li key={idx}>
-                            <Link
-                                href={`#section-${idx}`}
-                                className="flex items-start gap-3 group/link hover:pl-1 transition-all duration-300 block"
-                            >
-                                <span className="text-green-500/40 font-mono text-[10px] mt-1 group-hover/link:text-green-500 transition-colors">
-                                    0{idx + 1}
-                                </span>
-                                <span className="text-gray-400 font-mono text-xs leading-relaxed group-hover/link:text-white transition-colors border-b border-transparent group-hover/link:border-green-500/30">
-                                    {typeof point === 'object' ? (point as any).text : point}
-                                </span>
-                            </Link>
-                        </li>
-                    ))}
+                    {keyPoints.map((point, idx) => {
+                        const isObject = typeof point === 'object';
+                        const text = isObject ? (point as KeyPoint).text : point as string;
+                        const anchorId = isObject ? (point as KeyPoint).anchorId : undefined;
+                        const href = anchorId ? `#${anchorId}` : `#section-${idx}`;
+
+                        return (
+                            <li key={idx}>
+                                <Link
+                                    href={href}
+                                    className="flex items-start gap-3 group/link hover:pl-1 transition-all duration-300 block"
+                                >
+                                    <span className="text-green-500/40 font-mono text-[10px] mt-1 group-hover/link:text-green-500 transition-colors">
+                                        0{idx + 1}
+                                    </span>
+                                    <span className="text-gray-400 font-mono text-xs leading-relaxed group-hover/link:text-white transition-colors border-b border-transparent group-hover/link:border-green-500/30">
+                                        {text}
+                                    </span>
+                                </Link>
+                            </li>
+                        );
+                    })}
                 </ul>
             </div>
         </motion.div>
