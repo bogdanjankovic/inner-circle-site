@@ -48,6 +48,11 @@ export async function POST(req: NextRequest) {
             pipeline.hincrby(`analytics:${today}:duration`, slug, 30);
         }
 
+        // 2.5 EVENT: COMPLETION
+        if (event === 'completion') {
+            pipeline.hincrby(`analytics:${today}:completions`, slug, 1);
+        }
+
         // 3. EVENT: CLICK (Affiliate/Outbound)
         if (event === 'click') {
             // Track which URL was clicked

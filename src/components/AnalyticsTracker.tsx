@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useRef, useEffect } from 'react';
+import { useArticleState } from '@/context/ArticleStateContext';
 
 export default function AnalyticsTracker({ slug }: { slug: string }) {
+    const { isFullyRead } = useArticleState();
     const hasLogged = useRef(false);
+    const hasCompleted = useRef(false);
     const startTime = useRef(Date.now());
 
     useEffect(() => {
@@ -13,21 +16,19 @@ export default function AnalyticsTracker({ slug }: { slug: string }) {
             sendEvent('pageview', { slug });
         }
 
-        // 2. HEARTBEAT (Duration) & Completion Listener
+        // 2. HEARTBEAT (Duration)
         const heartbeat = setInterval(() => {
             sendEvent('heartbeat', {
                 slug,
-                duration_delta: 30 // Add 30s to total
+                duration_delta: 30
             });
         }, 30000);
 
-        // 3. EVENT LISTENERS
-        const handleCompletion = () => {
-            // Will be triggered by custom event from ArticleStateContext if we wire it up, 
-            // or check localStorage. For now, rely on `sendEvent('completion')` calls from SyncCompletion?
-            // Actually, let's expose a global event or just use the hook in SyncCompletion (easier).
-            // We'll stick to basic ping here.
-        };
+        // 3. COMPLETION LISTENER
+        if (isFullyRead && !hasCompleted.current) {
+            hasCompleted.current = true;
+            sendEvent('completion', { slug });
+        }
 
         const handleUnmount = () => {
             const totalTime = Math.floor((Date.now() - startTime.current) / 1000);
@@ -38,20 +39,18 @@ export default function AnalyticsTracker({ slug }: { slug: string }) {
         };
 
         window.addEventListener('beforeunload', handleUnmount);
-        // Also capture route changes if using Next.js router events (harder in App Router)
 
         return () => {
             clearInterval(heartbeat);
             window.removeEventListener('beforeunload', handleUnmount);
-            // Handle client-side navigation unmount
             handleUnmount();
         };
-    }, [slug]);
+    }, [slug, isFullyRead]);
 
     return null;
 }
 
-function sendEvent(event: 'pageview' | 'heartbeat' | 'click', data: any) {
+function sendEvent(event: 'pageview' | 'heartbeat' | 'click' | 'completion', data: any) {
     if (typeof window === 'undefined') return;
 
     fetch('/api/analytics', {
