@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useArticleState } from '@/context/ArticleStateContext';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { KeyPoint } from '@/lib/types';
 
@@ -79,13 +78,25 @@ export default function ProtocolBrief({ keyPoints }: { keyPoints: (string | KeyP
                         const isObject = typeof point === 'object';
                         const text = isObject ? (point as KeyPoint).text : point as string;
                         const anchorId = isObject ? (point as KeyPoint).anchorId : undefined;
-                        const href = anchorId ? `#${anchorId}` : `#section-${idx}`;
+                        const targetId = anchorId || `section-${idx}`;
+                        const href = `#${targetId}`;
+
+                        const handleScroll = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+                            e.preventDefault();
+                            const element = document.getElementById(targetId);
+                            if (element) {
+                                // Offset for sticky header if needed, but scroll-mt-32 on section handles it
+                                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                window.history.pushState({}, '', href);
+                            }
+                        };
 
                         return (
                             <li key={idx}>
-                                <Link
+                                <a
                                     href={href}
-                                    className="flex items-start gap-3 group/link hover:pl-1 transition-all duration-300 block"
+                                    onClick={handleScroll}
+                                    className="flex items-start gap-3 group/link hover:pl-1 transition-all duration-300 block cursor-pointer"
                                 >
                                     <span className="text-green-500/40 font-mono text-[10px] mt-1 group-hover/link:text-green-500 transition-colors">
                                         0{idx + 1}
@@ -93,7 +104,7 @@ export default function ProtocolBrief({ keyPoints }: { keyPoints: (string | KeyP
                                     <span className="text-gray-400 font-mono text-xs leading-relaxed group-hover/link:text-white transition-colors border-b border-transparent group-hover/link:border-green-500/30">
                                         {text}
                                     </span>
-                                </Link>
+                                </a>
                             </li>
                         );
                     })}
