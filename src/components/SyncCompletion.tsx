@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { useArticleState } from '@/context/ArticleStateContext';
+
 export default function SyncCompletion() {
+    const { setFullyRead } = useArticleState();
     const [isComplete, setIsComplete] = useState(false);
     const [hasTriggered, setHasTriggered] = useState(false);
 
@@ -16,6 +19,7 @@ export default function SyncCompletion() {
             ([entry]) => {
                 if (entry.isIntersecting) {
                     setIsComplete(true);
+                    setFullyRead(true);
                     setHasTriggered(true);
                 }
             },
