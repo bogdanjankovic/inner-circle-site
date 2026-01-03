@@ -32,7 +32,7 @@ export default async function EditPage(props: PageProps) {
                 </div>
             </nav>
 
-            <main className="w-full mx-auto px-4 py-8">
+            <main className="max-w-[1600px] mx-auto px-6 py-12">
                 <ArticleEditor article={post} />
             </main>
         </div>
