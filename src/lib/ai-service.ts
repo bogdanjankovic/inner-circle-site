@@ -242,3 +242,33 @@ export async function generateArticle(topic: string): Promise<Article> {
         } as Article;
     }
 }
+
+export async function generateSummary(content: string): Promise<string[]> {
+    console.log(`[AI-Service] Generating summary for content length: ${content.length}`);
+    const prompt = `
+    Role: You are 'BLEXOUT', an elite Gaming Analyst.
+    Task: Summarize the provided article content into 5 distinct, punchy 'Protocol Briefings' (key takeaways).
+    Tone: Cryptic, tech-elite, futuristic, high-performance.
+    Constraint: Max 15 words per point.
+    Format: Return ONLY a valid JSON array of strings. Example: ["Point 1", "Point 2"]
+
+    CONTENT:
+    ${content.slice(0, 15000)} // Limit context
+    `;
+
+    try {
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+        const cleanedJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanedJson) as string[];
+    } catch (error) {
+        console.error("Summary Generation Error:", error);
+        return [
+            "Protocol Error: Data Insufficient.",
+            "Manual Override Required.",
+            "System Offline.",
+            "Check Connection.",
+            "Retry Synchronization."
+        ];
+    }
+}

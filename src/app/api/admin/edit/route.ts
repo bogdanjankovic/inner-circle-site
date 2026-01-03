@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
             author: author || existingPost?.author || "BLEXOUT System",
             imageUrl: imageUrl || existingPost?.imageUrl || '',
             imageSearchQuery: imageSearchQuery || existingPost?.imageSearchQuery || '',
-            keyPoints: existingPost?.keyPoints || [],
+            keyPoints: body.keyPoints || existingPost?.keyPoints || [],
             showAffiliateDisclosure: showAffiliateDisclosure ?? existingPost?.showAffiliateDisclosure,
             isArchived: status === 'archived' // Keep sync
         };

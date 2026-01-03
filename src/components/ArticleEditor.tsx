@@ -133,6 +133,8 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
 
     const [imageUrl, setImageUrl] = useState(article.imageUrl || '');
     const [showAffiliateDisclosure, setShowAffiliateDisclosure] = useState(article.showAffiliateDisclosure || false);
+    const [keyPoints, setKeyPoints] = useState<string[]>(article.keyPoints || []);
+    const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragReadyIndex, setDragReadyIndex] = useState<number | null>(null);
 
@@ -194,6 +196,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                     tags: article.tags,
                     imageUrl,
                     imageSearchQuery: '',
+                    keyPoints, // Persist key points
                     showAffiliateDisclosure
                 }),
             });
@@ -208,6 +211,33 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
             console.error(e);
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleGenerateSummary = async () => {
+        setIsGeneratingSummary(true);
+        try {
+            // Concatenate all section content to send context
+            const fullContent = sections.map(s => `${s.heading}\n${s.content}`).join('\n\n');
+
+            const res = await fetch('/api/admin/generate-summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: fullContent })
+            });
+
+            if (!res.ok) throw new Error('Generation failed');
+
+            const data = await res.json();
+            if (data.keyPoints) {
+                setKeyPoints(data.keyPoints);
+                success('Protocol Brief generated successfully');
+            }
+        } catch (e) {
+            console.error(e);
+            error('Failed to generate summary');
+        } finally {
+            setIsGeneratingSummary(false);
         }
     };
 
@@ -703,6 +733,58 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                         <p className="text-xs text-gray-400 mt-4 leading-relaxed">
                             This image will be the first thing readers see. Make it expansive and atmospheric.
                         </p>
+                    </div>
+
+                    {/* Protocol Briefing Widget */}
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 sticky top-[500px]">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="font-serif font-bold text-xl text-gray-800 dark:text-white">Protocol Brief</h3>
+                            <button
+                                onClick={handleGenerateSummary}
+                                disabled={isGeneratingSummary}
+                                className="text-[10px] uppercase font-bold tracking-widest bg-green-500/10 text-green-600 hover:bg-green-500 hover:text-white px-3 py-1 rounded transition-colors"
+                            >
+                                {isGeneratingSummary ? 'SYNCING...' : 'GENERATE AI'}
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            {keyPoints.length === 0 && (
+                                <p className="text-xs text-center text-gray-400 py-4 italic">
+                                    No protocol data available.<br />Click Generate to sync.
+                                </p>
+                            )}
+                            {keyPoints.map((point, idx) => (
+                                <div key={idx} className="flex gap-2 items-start group">
+                                    <span className="text-[9px] font-mono text-gray-400 mt-2">0{idx + 1}</span>
+                                    <textarea
+                                        value={point}
+                                        onChange={(e) => {
+                                            const newPoints = [...keyPoints];
+                                            newPoints[idx] = e.target.value;
+                                            setKeyPoints(newPoints);
+                                        }}
+                                        rows={2}
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded p-2 text-xs font-mono text-gray-600 dark:text-gray-300 focus:ring-1 focus:ring-green-500 outline-none resize-none"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            const newPoints = keyPoints.filter((_, i) => i !== idx);
+                                            setKeyPoints(newPoints);
+                                        }}
+                                        className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                onClick={() => setKeyPoints([...keyPoints, "New protocol point..."])}
+                                className="w-full py-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-gray-600 border border-dashed border-gray-200 dark:border-gray-700 rounded hover:border-gray-400 transition-colors mt-2"
+                            >
+                                + Add Point
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
