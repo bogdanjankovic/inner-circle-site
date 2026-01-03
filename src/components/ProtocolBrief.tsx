@@ -62,7 +62,7 @@ export default function ProtocolBrief({ keyPoints }: { keyPoints: string[] }) {
             </button>
 
             <div
-                className={`overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+                className={`overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
                     }`}
             >
                 <ul className="flex flex-col gap-3 p-4 pt-0">
