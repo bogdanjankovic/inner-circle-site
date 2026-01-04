@@ -123,6 +123,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     const [author, setAuthor] = useState(article.author || 'Protocol Officer');
     const [excerpt, setExcerpt] = useState(article.excerpt);
     const [status, setStatus] = useState(article.status || (article.isArchived ? 'archived' : 'published'));
+    const [tags, setTags] = useState<string[]>(article.tags || []);
 
     type UISection = Section & { _ui_id: string; _collapsed?: boolean };
 
@@ -203,7 +204,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                     author,
                     sections: cleanSections,
                     status: finalStatus,
-                    tags: article.tags,
+                    tags, // Use local state
                     imageUrl,
                     imageSearchQuery: '',
                     keyPoints, // Persist key points
@@ -457,6 +458,40 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                                 className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none text-gray-600 dark:text-gray-300 text-lg leading-relaxed resize-none"
                                 placeholder="A brief, intriguing summary..."
                             />
+                        </div>
+
+                        {/* Tags Input */}
+                        <div>
+                            <label className="block text-xs font-bold font-sans uppercase text-gray-400 tracking-wider mb-2">
+                                Categories / Tags <span className="text-gray-500 normal-case font-normal">(Comma separated)</span>
+                            </label>
+                            <div className="space-y-3">
+                                <input
+                                    type="text"
+                                    value={tags.join(', ')}
+                                    onChange={(e) => setTags(e.target.value.split(',').map(t => t.trim()))}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none text-gray-600 dark:text-gray-300 font-mono text-sm"
+                                    placeholder="Hardware, Industry, Guides..."
+                                />
+                                <div className="flex gap-2 flex-wrap">
+                                    {['Hardware', 'Industry', 'Reviews', 'Guides'].map(tag => (
+                                        <button
+                                            key={tag}
+                                            onClick={() => {
+                                                if (!tags.includes(tag)) {
+                                                    setTags([...tags, tag]);
+                                                }
+                                            }}
+                                            className={`px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full border transition-colors ${tags.includes(tag)
+                                                ? 'bg-green-500 text-black border-green-500'
+                                                : 'bg-transparent text-gray-400 border-gray-700 hover:border-green-500 hover:text-green-500'
+                                                }`}
+                                        >
+                                            + {tag}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
 

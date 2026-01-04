@@ -137,7 +137,7 @@ export async function generateArticle(topic: string): Promise<Article> {
   {
     "title": "A precise, outcome-focused headline",
     "excerpt": "A direct summary of the optimization.",
-    "tags": ["Tag1", "Tag2"],
+    "tags": ["Hardware", "Industry", "Reviews", "Guides"], // MUST include at least one of these exact categories if relevant
     "readingTime": "5 min read",
     "imageSearchQuery": "Minimalist tech or lab aesthetic cover image",
     "date": "${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}",

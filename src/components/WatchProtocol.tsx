@@ -148,11 +148,26 @@ export default function WatchProtocol({ article, onClose }: WatchProtocolProps) 
         };
     }, [currentIndex, isPlaying, currentSlide.text, selectedVoice, slides.length, wordOffsets, words.length]);
 
+    // Dedicated Cleanup Effect (Double Safety)
+    useEffect(() => {
+        return () => {
+            console.log("WatchProtocol Unmounting - forcing speech cancel");
+            window.speechSynthesis.cancel();
+        };
+    }, []);
+
+    const handleTermination = () => {
+        console.log("Terminating Protocol...");
+        setIsPlaying(false);
+        window.speechSynthesis.pause(); // Pause immediately
+        window.speechSynthesis.cancel(); // Then cancel
+        onClose();
+    };
 
     // Keyboard Navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape') handleTermination();
             if (e.key === 'ArrowRight') {
                 setCurrentIndex(prev => Math.min(prev + 1, slides.length - 1));
                 setCurrentWordIndex(-1);
@@ -184,7 +199,7 @@ export default function WatchProtocol({ article, onClose }: WatchProtocolProps) 
                     </span>
                     <span className="font-mono text-xs text-gray-500">:: {String(currentIndex + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}</span>
                 </div>
-                <button onClick={onClose} className="group flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+                <button onClick={handleTermination} className="group flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
                     <span className="font-mono text-xs uppercase tracking-widest group-hover:underline">Terminate Protocol</span>
                     <span className="text-xl">×</span>
                 </button>
