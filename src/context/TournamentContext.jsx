@@ -122,32 +122,37 @@ export const TournamentProvider = ({ children }) => {
         const newStats = { ...tournamentStats };
 
         matchData.players.forEach(p => {
-            // 64-bit to 32-bit conversion implicitly handled by API usually, but ensure matching
-            // We use accountId as key.
-            const aid = p.accountId || p.name; // Fallback to name if ID missing (local bot/LAN)
-            if (!aid) return;
+            // STRICT MODE: Only aggregate stats for players mapped to a Registered Tournament Player
+            // This ensures "Tournament Stats" are clean and separate from random pub players.
+            const tid = p.tournamentPlayerId;
+            if (!tid) return;
 
-            if (!newStats[aid]) {
-                newStats[aid] = {
+            if (!newStats[tid]) {
+                newStats[tid] = {
                     matches: 0,
                     kills: 0, deaths: 0, assists: 0,
                     gpm: 0, xpm: 0,
                     heroDamage: 0, towerDamage: 0,
                     roshansKilled: 0, towersKilled: 0, tormentorsKilled: 0,
-                    runesActivated: 0, neutralTokens: 0
+                    runesActivated: 0, neutralTokens: 0,
+                    lastHits: 0, denies: 0, netWorth: 0
                 };
             }
 
-            const s = newStats[aid];
+            const s = newStats[tid];
             s.matches += 1;
             s.kills += (p.kills || 0);
             s.deaths += (p.deaths || 0);
             s.assists += (p.assists || 0);
-            s.gpm += (p.gpm || 0);
+            s.gpm += (p.gpm || 0); // Accumulate for average calculation later
             s.xpm += (p.xpm || 0);
+            s.lastHits += (p.lastHits || 0);
+            s.denies += (p.denies || 0);
+            s.netWorth += (p.netWorth || 0);
+
             s.heroDamage += (p.heroDamage || 0);
             s.towerDamage += (p.towerDamage || 0);
-            s.roshansKilled += (p.roshansKilled || 0);
+            s.roshansKilled += (p.roshans || 0); // Parser uses 'roshans'
             s.towersKilled += (p.towersKilled || 0);
             s.tormentorsKilled += (p.tormentorsKilled || 0);
             s.runesActivated += (p.runesActivated || 0);
