@@ -13,12 +13,11 @@ const AdminUpload = () => {
             const matchData = JSON.parse(jsonInput);
 
             // Basic validation
-            if (!matchData.matchId || !matchData.players) {
+            if (!matchData.matchId && !matchData.players) {
                 throw new Error("Invalid match data format. Missing matchId or players.");
             }
 
-            // Dispatch to context (assuming we have an action for this, or just adding to a list)
-            // For now, let's assume we add it to the 'matches' list
+            // Dispatch to context
             dispatch({ type: 'ADD_MATCH', payload: matchData });
 
             alert("Match uploaded successfully!");
@@ -30,11 +29,11 @@ const AdminUpload = () => {
 
     return (
         <div className="container" style={{ padding: '4rem 1rem', maxWidth: '800px' }}>
-            <h1 style={{ marginBottom: '2rem', color: 'var(--accent)' }}>Admin: Upload Match Stats</h1>
+            <h1 style={{ marginBottom: '2rem', color: 'var(--accent)' }}>Admin: Upload Match Stats (Local)</h1>
 
             <div className="card" style={{ padding: '2rem' }}>
                 <p style={{ marginBottom: '1rem', color: '#ccc' }}>
-                    Paste the JSON output from your local <code>parse_replay.js</code> script here.
+                    Paste the JSON output from your local parser script here.
                 </p>
 
                 {error && (
@@ -53,7 +52,7 @@ const AdminUpload = () => {
                 <textarea
                     value={jsonInput}
                     onChange={(e) => setJsonInput(e.target.value)}
-                    placeholder='{ "matchId": 12345, "winner": "Radiant", "players": [...] }'
+                    placeholder='{ "matchId": 123, "winner": "Radiant", "players": [...] }'
                     style={{
                         width: '100%',
                         height: '300px',

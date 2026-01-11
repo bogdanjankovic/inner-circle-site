@@ -12,6 +12,7 @@ import Tournaments from './pages/Tournaments';
 import Matches from './pages/Matches';
 import Results from './pages/Results';
 import Admin from './pages/Admin';
+import AdminUpload from './pages/AdminUpload';
 
 function App() {
   return (
