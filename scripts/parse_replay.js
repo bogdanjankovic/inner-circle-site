@@ -1,5 +1,8 @@
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 const fs = require('fs');
 const rapier = require('odota/rapier');
+
 
 const filePath = process.argv[2];
 
