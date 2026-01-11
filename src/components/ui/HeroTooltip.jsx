@@ -8,13 +8,21 @@ const useHeroMap = () => {
     const [heroMap, setHeroMap] = useState(cachedHeroes || {});
 
     useEffect(() => {
-        if (!cachedHeroes) {
+        // If we don't have cached heroes, or the cache is empty/invalid (retry mechanism)
+        if (!cachedHeroes || Object.keys(cachedHeroes).length === 0) {
             fetchHeroConstants().then(data => {
-                cachedHeroes = data;
-                setHeroMap(data);
+                if (data) {
+                    cachedHeroes = data;
+                    setHeroMap(data);
+                }
             });
+        } else {
+            // If we already have cache but state is empty (rare case), sync it
+            if (Object.keys(heroMap).length === 0) {
+                setHeroMap(cachedHeroes);
+            }
         }
-    }, []);
+    }, [heroMap]);
 
     return heroMap;
 };
@@ -23,9 +31,17 @@ export const HeroImage = ({ heroId, style }) => {
     const heroMap = useHeroMap();
     const heroData = heroMap[heroId];
 
+    // Debug log for specific missing heroes or general check
+    if (!heroData && heroId) {
+        console.warn(`[HeroImage] Hero ID ${heroId} not found in map. Map size: ${Object.keys(heroMap).length}`);
+    } else if (heroData && !heroData.img) {
+        console.warn(`[HeroImage] Hero ID ${heroId} found but missing 'img' property.`, heroData);
+    }
+
     // OpenDota constants provide paths like "/apps/dota2/images/dota_react/heroes/icons/antimage.png?"
-    const imgSrc = heroData?.icon
-        ? `https://cdn.cloudflare.steamstatic.com${heroData.icon}`
+    // User requested to use 'img' property
+    const imgSrc = heroData?.img
+        ? `https://cdn.cloudflare.steamstatic.com${heroData.img}`
         : null;
 
     if (imgSrc) {
@@ -43,6 +59,10 @@ export const HeroImage = ({ heroId, style }) => {
     // Safety check: if heroId is undefined/null, render empty spacer
     if (!heroId) {
         return <div style={{ width: '40px', height: '40px', background: 'transparent', ...style }}></div>;
+    }
+
+    if (!imgSrc) {
+        // console.log(`Missing icon for hero ${heroId}. Map size: ${Object.keys(heroMap).length}`);
     }
 
     return (

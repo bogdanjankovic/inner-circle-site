@@ -3,6 +3,7 @@ import { useTournament } from '../context/TournamentContext';
 import { HeroImage } from '../components/ui/HeroTooltip';
 import RankDisplay from '../components/ui/RankDisplay';
 import ImageUpload from '../components/ui/ImageUpload';
+import { fetchHeroConstants, fetchPlayerData } from '../services/dotaApi';
 
 const EditTeamModal = ({ team, onClose, onSave }) => {
     const [name, setName] = useState(team.name);
@@ -71,9 +72,14 @@ const EditTeamModal = ({ team, onClose, onSave }) => {
     );
 };
 
+// Helper for delay
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 const Admin = () => {
     const { pendingTeams, approveTeam, rejectTeam, teams, deleteTeam, updateTeam } = useTournament();
     const [editingTeam, setEditingTeam] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
+    const [refreshStatus, setRefreshStatus] = useState('');
 
     const handleApprove = (id) => {
         if (window.confirm('Da li ste sigurni da želite da odobrite ovaj tim?')) {
@@ -89,9 +95,77 @@ const Admin = () => {
 
     const handleDelete = (id) => deleteTeam(id);
 
+    const handleForceRefresh = async () => {
+        if (!confirm("Ovo će osvežiti podatke. Proces traje duže zbog API limita (poštujemo OpenDota). Nastaviti?")) return;
+
+        setRefreshing(true);
+        setRefreshStatus('Starting...');
+        try {
+            // 1. Refresh Heroes Map
+            setRefreshStatus('Fetching Heroes...');
+            await fetchHeroConstants(true);
+
+            // 2. Refresh Active Teams (Sequential to avoid 429)
+            let totalProcessed = 0;
+            const allPlayersCount = teams.reduce((acc, t) => acc + t.players.length, 0);
+
+            for (const team of teams) {
+                setRefreshStatus(`Updating Team: ${team.name}...`);
+
+                const newPlayers = [];
+                for (const p of team.players) {
+                    setRefreshStatus(`Refreshing: ${p.personaName} (${Math.round((totalProcessed / allPlayersCount) * 100)}%)`);
+
+                    try {
+                        // Fetch with throttle
+                        await delay(1200); // 1.2s delay to be safe (OpenDota free tier limits ~60/min)
+                        const freshData = await fetchPlayerData(p.steamId, true); // Force refresh
+
+                        if (freshData.valid) {
+                            newPlayers.push({ ...p, ...freshData, isCaptain: p.isCaptain });
+                        } else {
+                            console.warn(`Failed to refresh ${p.personaName}, keeping old data.`);
+                            newPlayers.push(p);
+                        }
+                    } catch (err) {
+                        console.error(`Error processing ${p.personaName}`, err);
+                        newPlayers.push(p);
+                    }
+                    totalProcessed++;
+                }
+
+                // Update Context for this team
+                updateTeam(team.id, { ...team, players: newPlayers });
+            }
+
+            setRefreshStatus('Done!');
+            alert("Podaci osveženi! (Heroji, Aktivni Timovi)");
+
+        } catch (e) {
+            console.error(e);
+            alert("Greška pri osvežavanju: " + e.message);
+        } finally {
+            setRefreshing(false);
+            setRefreshStatus('');
+        }
+    };
+
     return (
         <div className="container" style={{ padding: '4rem 0' }}>
-            <h1 style={{ marginBottom: '2rem' }}>Admin Panel</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h1>Admin Panel</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {refreshStatus && <span style={{ color: 'var(--accent)', fontStyle: 'italic' }}>{refreshStatus}</span>}
+                    <button
+                        onClick={handleForceRefresh}
+                        className="btn"
+                        disabled={refreshing}
+                        style={{ background: 'var(--accent)', opacity: refreshing ? 0.7 : 1, cursor: refreshing ? 'wait' : 'pointer' }}
+                    >
+                        {refreshing ? 'Osvežavanje...' : '🔄 Osveži Sve Podatke'}
+                    </button>
+                </div>
+            </div>
 
             {editingTeam && (
                 <EditTeamModal
@@ -102,7 +176,6 @@ const Admin = () => {
             )}
 
             <div className="card" style={{ marginBottom: '3rem' }}>
-                {/* ... Pending Teams Section (Unchanged logic, just ensure imports match) ... */}
                 <h2 style={{ color: 'var(--accent)', marginBottom: '1rem' }}>Zahtevi za Registraciju ({pendingTeams.length})</h2>
                 {pendingTeams.length === 0 ? (
                     <p style={{ color: '#888' }}>Nema timova na čekanju.</p>

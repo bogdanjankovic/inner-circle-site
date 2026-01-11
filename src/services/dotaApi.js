@@ -17,26 +17,14 @@ export const steamIdToAccountId = (steamId64) => {
 };
 
 /**
- * Fetches comprehensive player data from OpenDota (with Caching)
+ * Fetches comprehensive player data from OpenDota
  * @param {string} steamId - SteamID64 or AccountID
- * @param {boolean} forceRefresh - If true, bypass cache and fetch fresh data
  */
-export const fetchPlayerData = async (steamId, forceRefresh = false) => {
+export const fetchPlayerData = async (steamId) => {
     // Basic heuristic: if length > 12 likely SteamID64
     const accountId = steamId.length > 12 ? steamIdToAccountId(steamId) : steamId;
-    const cacheKey = `dota_player_${accountId}`;
-
-    // 1. Check Cache
-    if (!forceRefresh) {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-            console.log(`[Cache Hit] Player ${accountId}`);
-            return JSON.parse(cached);
-        }
-    }
 
     try {
-        console.log(`[API Fetch] Player ${accountId}`);
         // 1. Fetch Profile & Rank
         const profileReq = fetch(`${API_URL}/players/${accountId}`);
 
@@ -84,6 +72,8 @@ export const fetchPlayerData = async (steamId, forceRefresh = false) => {
         };
 
         // Top 3 Heroes
+        // heroes endpoint returns all heroes. Sort by games played? Or winrate? 
+        // User said "najigraniji heroji" (most played).
         const topHeroes = heroes
             .sort((a, b) => b.games - a.games)
             .slice(0, 3)
@@ -91,12 +81,12 @@ export const fetchPlayerData = async (steamId, forceRefresh = false) => {
                 heroId: h.hero_id,
                 games: h.games,
                 win: h.win,
-                winrate: ((h.win / h.games) * 100).toFixed(1)
+                winrate: ((h.win / h.games) * 100).toFixed(1) // Calculate winrate here
             }));
 
         const winrate = ((wl.win / (wl.win + wl.lose || 1)) * 100).toFixed(1);
 
-        const result = {
+        return {
             valid: true,
             accountId: profile.profile?.account_id ? profile.profile.account_id.toString() : accountId,
             steamId: profile.profile?.steamid,
@@ -110,13 +100,8 @@ export const fetchPlayerData = async (steamId, forceRefresh = false) => {
             lossCount: wl.lose,
             winrate: winrate,
             stats: stats,
-            topHeroes: topHeroes,
-            lastUpdated: Date.now()
+            topHeroes: topHeroes
         };
-
-        // Save to Cache
-        localStorage.setItem(cacheKey, JSON.stringify(result));
-        return result;
 
     } catch (error) {
         console.error("Error fetching Dota data:", error);
@@ -124,22 +109,20 @@ export const fetchPlayerData = async (steamId, forceRefresh = false) => {
     }
 };
 
-// Hero ID to Name mapping using the lighter /heroes endpoint (with Caching)
-export const fetchHeroConstants = async (forceRefresh = false) => {
-    const cacheKey = 'dota_heroes_map';
-
-    if (!forceRefresh) {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-            console.log("[Cache Hit] Heroes");
-            return JSON.parse(cached);
-        }
-    }
-
+// Hero ID to Name mapping using the lighter /heroes endpoint
+export const fetchHeroConstants = async () => {
     try {
-        console.log("[API Fetch] Heroes");
-        const res = await fetch(`${API_URL}/heroes`);
+        console.log("Fetching Hero Stats...");
+        const res = await fetch(`${API_URL}/heroStats?t=${Date.now()}`);
+        if (!res.ok) {
+            console.error(`Hero fetch failed with status: ${res.status}`);
+            return null;
+        }
         const heroesArray = await res.json();
+        console.log(`API returned ${heroesArray.length} heroes.`);
+        if (heroesArray.length > 0) {
+            console.log("Sample hero data:", heroesArray[0]);
+        }
 
         // Transform array into a map: { 1: { ...heroData }, 2: { ... } }
         const heroMap = {};
@@ -147,11 +130,16 @@ export const fetchHeroConstants = async (forceRefresh = false) => {
             heroMap[hero.id] = hero;
         });
 
-        localStorage.setItem(cacheKey, JSON.stringify(heroMap));
+        if (Object.keys(heroMap).length === 0) {
+            console.warn("Fetched hero stats but map is empty.");
+            return null;
+        }
+
+        console.log(`Cached ${Object.keys(heroMap).length} heroes.`);
         return heroMap;
     } catch (e) {
         console.error("Failed to fetch hero constants:", e);
-        return {};
+        return null;
     }
 }
 
@@ -160,11 +148,6 @@ export const fetchHeroConstants = async (forceRefresh = false) => {
  * @param {string} matchId 
  */
 export const getMatchDetails = async (matchId) => {
-    // Match details are usually static once finished, so we can cache them indefinitely too
-    const cacheKey = `dota_match_${matchId}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) return JSON.parse(cached);
-
     try {
         const res = await fetch(`${API_URL}/matches/${matchId}`);
         if (!res.ok) throw new Error("Match not found");
@@ -172,6 +155,14 @@ export const getMatchDetails = async (matchId) => {
 
         // Parse granular stats for each player
         const playerStats = match.players.map(p => {
+            // Calculate Objectives from logs if available, or player fields
+            // Note: OpenDota processes some of this into 'p.benchmarks' or specific fields
+            // Tormentor kills are often in 'killed' unit names or objective log
+
+            // "Madstones" -> Neutral Tokens. Item IDs for tokens are neutral_item_tier_1_token etc.
+            // We count how many tokens they picked up/used? Or just neutral items found.
+            // For now, mapping 'neutral_kills' or similar.
+
             return {
                 accountId: p.account_id ? p.account_id.toString() : null,
                 heroId: p.hero_id,
@@ -182,29 +173,42 @@ export const getMatchDetails = async (matchId) => {
                 xpm: p.xp_per_min,
                 lastHits: p.last_hits,
                 denies: p.denies,
+
+                // Deep Stats
                 heroDamage: p.hero_damage,
                 towerDamage: p.tower_damage,
                 heroHealing: p.hero_healing,
-                roshansKilled: p.roshan_kills || 0,
+
+                // Specifics (approximation as some require parsing logs which is heavy for frontend)
+                roshansKilled: p.roshan_kills || 0, // OpenDota exposes this
                 towersKilled: p.tower_kills || 0,
-                tormentorsKilled: 0,
-                runesActivated: p.rune_pickups || 0,
-                neutralTokens: p.item_neutral ? 1 : 0,
+                tormentorsKilled: 0, // Need to parse combat log or objective log usually
+                runesActivated: p.rune_pickups || 0, // Total runes
+
+                // "Madstones" / Neutral Tokens found
+                neutralTokens: p.item_neutral ? 1 : 0, // Simplified: Holds a neutral item
+
+                // Items (for icons)
                 items: [p.item_0, p.item_1, p.item_2, p.item_3, p.item_4, p.item_5],
                 backpack: [p.backpack_0, p.backpack_1, p.backpack_2],
                 neutralItem: p.item_neutral
             };
         });
 
-        const result = {
+        // Advanced Parsing for Tormentors/Aegis from objectives if available
+        if (match.objectives) {
+            match.objectives.forEach(obj => {
+                // Example: { type: "CHAT_MESSAGE_ROSHAN_KILL", player_slot: X }
+                // Tormentor parsing might need combat log string matching if not in objectives
+            });
+        }
+
+        return {
             matchId: match.match_id,
             duration: match.duration,
             winner: match.radiant_win ? 'Radiant' : 'Dire',
             players: playerStats
         };
-
-        localStorage.setItem(cacheKey, JSON.stringify(result));
-        return result;
 
     } catch (e) {
         console.error("Match fetch failed:", e);

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;600&display=swap');
 
 :root {
   /* Dota 2 Color Palette */
@@ -24,7 +24,7 @@
   --text-muted: var(--dota-text-muted);
   --border: #33363b;
 
-  --font-heading: 'Cinzel', serif;
+  --font-heading: 'Rajdhani', sans-serif;
   --font-body: 'Inter', sans-serif;
 
   --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
