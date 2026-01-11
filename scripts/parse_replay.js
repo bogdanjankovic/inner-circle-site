@@ -14,50 +14,51 @@ if (!filePath) {
 const buffer = fs.readFileSync(filePath);
 
 // Basic Stats Storage
-const players = {};
-let matchId = Date.now(); // Fallback if not found
-let winner = 'Unknown';
-
-// Initialize Parser
-// The module exports the Parser class directly.
-const parser = new rapier(buffer);
-
-// Listen for Game Events (This assumes rapier emits 'combatlog' or entity updates)
-// Note: rapier is low-level. For true stats we need to track entity values.
-// Since rapier is limited, we will simulate the extraction structure for this MVP.
-// In a real scenario with 'clarity' (Java), we would get much more details.
-
-// Mocking extraction for demonstration since 'rapier' entity support is experimental.
-// If you use 'clarity-js' or similar, you can hook into OnEntityUpdated.
-
-console.error("Parsing started... (This is a simplified implementation)");
-
-// ... Logic to extract stats ...
-// Since pure JS parsing of entities is complex/incomplete in free libs, 
-// we will structure the output so the user sees what SHOULD be produced.
-
-const output = {
-    matchId: matchId,
+// Output structure
+const result = {
+    matchId: 0,
     timestamp: Date.now(),
-    winner: "Radiant", // Placeholder
-    players: [
-        // Example Player Structure
-        {
-            accountId: 12345678, // Steam ID 32
-            heroId: 1, // Anti-Mage
-            kills: 10,
-            deaths: 2,
-            assists: 5,
-            gpm: 600,
-            xpm: 700,
-            heroDamage: 25000,
-            towerDamage: 5000,
-            lastHits: 300,
-            denies: 20,
-            netWorth: 20000
-        }
-    ]
+    winner: "Unknown",
+    players: []
 };
 
-console.log(JSON.stringify(output, null, 2));
-console.error("Done! Copy the JSON above.");
+// Listen for the 'file info' message which contains the scoreboard at the end of the replay
+parser.on('CDemoFileInfo', (msg) => {
+    // This packet usually contains the full game summary
+    const info = msg.game_info.dota;
+
+    result.matchId = info.match_id || 0;
+    result.winner = info.game_winner === 2 ? "Radiant" : "Dire";
+    result.timestamp = info.end_time || Date.now();
+
+    // Map players from the playback info
+    if (info.player_info) {
+        result.players = info.player_info.map(p => ({
+            accountId: p.account_id || 0, // SteamID
+            heroId: p.hero_id || 0,
+            heroName: p.hero_name, // Typically internal name like 'npc_dota_hero_...'
+            kills: p.kills || 0,
+            deaths: p.deaths || 0,
+            assists: p.assists || 0,
+            gpm: p.gold_per_min || 0,
+            xpm: p.xp_per_min || 0,
+            team: p.game_team === 2 ? 'Radiant' : 'Dire'
+        }));
+    }
+});
+
+// Handling execution
+try {
+    parser.start();
+} catch (e) {
+    // If it fails or finishes (some parsers throw on end or EOF)
+}
+
+// Check if we found data
+if (result.matchId === 0) {
+    console.error("Warning: Could not find CDemoFileInfo. The replay might be incomplete or the parser missed the summary.");
+    // Fallback or exit?
+}
+
+console.log(JSON.stringify(result, null, 2));
+console.error("Parsing complete.");
