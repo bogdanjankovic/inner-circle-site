@@ -1,30 +1,97 @@
 import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+
 
 const Home = () => {
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrolled = window.scrollY;
+            const bg = document.querySelector('.parallax-bg');
+            if (bg) {
+                bg.style.transform = `translateY(${scrolled * 0.5}px)`;
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
     return (
         <div>
             {/* Hero Section */}
-            <section style={{
-                minHeight: '600px',
-                display: 'flex',
-                alignItems: 'center',
-                backgroundImage: 'linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url("https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota2_social.jpg")',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                textAlign: 'center'
-            }}>
-                <div className="container">
-                    <h1 style={{ fontSize: '3.5rem', marginBottom: '1rem', textShadow: '0 0 20px rgba(0,0,0,0.8)' }}>
-                        <span style={{ color: 'var(--accent)' }}>Dokaži se</span> na bojnom polju
+            {/* Hero Section with Parallax */}
+            <section
+                style={{
+                    position: 'relative',
+                    height: '80vh',
+                    minHeight: '600px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    marginTop: '-64px' // Pull behind transparent navbar if needed
+                }}
+            >
+                {/* Parallax Background */}
+                <div
+                    className="parallax-bg"
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundImage: 'url("https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota2_social.jpg")',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        zIndex: -1,
+                        willChange: 'transform'
+                    }}
+                />
+
+                {/* Gradient Overlay for Readability */}
+                <div style={{
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 50%, #000 100%)',
+                    zIndex: 0
+                }} />
+
+                <div className="container" style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+                    <h1 style={{
+                        fontSize: '5rem',
+                        marginBottom: '1rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '4px',
+                        textShadow: '0 0 30px rgba(163, 51, 27, 0.6), 0 0 10px #000'
+                    }}>
+                        <span style={{ color: '#fff', display: 'block', fontSize: '2rem', letterSpacing: '8px', marginBottom: '0.5rem' }}>Dobrodošli u</span>
+                        <span style={{
+                            background: 'linear-gradient(to bottom, #fff 0%, #ccc 50%, #666 100%)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            filter: 'drop-shadow(0 0 5px rgba(0,0,0,0.8))'
+                        }}>Battleground</span>
                     </h1>
-                    <p style={{ fontSize: '1.2rem', color: '#ccc', marginBottom: '2rem', maxWidth: '700px', margin: '0 auto 2rem' }}>
-                        Prijavi svoj tim za najveću regionalnu Dota 2 ligu. Prati rezultate, statistiku i osvoji vredne nagrade.
+
+                    <div style={{ width: '100px', height: '4px', background: 'var(--dota-red)', margin: '2rem auto', boxShadow: '0 0 10px var(--dota-red)' }}></div>
+
+                    <p style={{
+                        fontSize: '1.4rem',
+                        color: '#ddd',
+                        marginBottom: '3rem',
+                        maxWidth: '800px',
+                        margin: '0 auto 3rem',
+                        textShadow: '0 2px 4px #000'
+                    }}>
+                        Pridruži se eliti. Prijavi tim, dominiraj ligom i osvoji titulu šampiona regiona.
                     </p>
-                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                        <Link to="/register" className="btn" style={{ fontSize: '1.2rem', padding: '1rem 2rem' }}>
+
+                    <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center' }}>
+                        <Link to="/register" className="btn btn-primary" style={{ transform: 'scale(1.1)' }}>
                             Prijavi ekipu
                         </Link>
-                        <Link to="/tournaments" className="btn" style={{ background: 'var(--bg-card)', borderColor: '#fff' }}>
+                        <Link to="/tournaments" className="btn btn-secondary">
                             Gledaj turnire
                         </Link>
                     </div>
