@@ -41,7 +41,7 @@ const Home = () => {
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        backgroundImage: 'url("https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota2_social.jpg")',
+                        backgroundImage: 'url("https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/blog/733/header.jpg")', // High-res New Frontiers update art
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         zIndex: -1,

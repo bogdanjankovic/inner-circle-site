@@ -68,9 +68,17 @@ const Navbar = () => {
 
             {/* Inline Styles for simplicity in this file for responsive overrides */}
             <style>{`
-        .desktop-menu { display: flex; gap: 1.5rem; alignItems: center; }
+        .desktop-menu { display: flex; gap: 1.5rem; align-items: center; height: 100%; }
         .mobile-toggle { display: none; cursor: pointer; }
-        .nav-link { font-weight: 600; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.5px; }
+        .nav-link { 
+            font-weight: 600; 
+            text-transform: uppercase; 
+            font-size: 0.9rem; 
+            letter-spacing: 0.5px; 
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
         .nav-link:hover { color: var(--accent); }
 
         @media (max-width: 968px) {
