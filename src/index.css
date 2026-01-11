@@ -1,0 +1,208 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;600&display=swap');
+
+:root {
+  /* Dota 2 Color Palette */
+  --dota-red: #a3331b;
+  --dota-red-dark: #7a2210;
+  --dota-orange: #d95b28;
+  --dota-black: #000000;
+  --dota-gray-dark: #121417;
+  --dota-gray: #1e2126;
+  --dota-gray-light: #2b3038;
+  --dota-silver: #c0c0c0;
+  --dota-text: #e6e6e6;
+  --dota-text-muted: #9a9a9a;
+
+  /* Semantic Variables */
+  --bg-main: var(--dota-black);
+  --bg-secondary: var(--dota-gray-dark);
+  --bg-card: var(--dota-gray);
+  --bg-card-hover: var(--dota-gray-light);
+  --accent: var(--dota-red);
+  --accent-hover: var(--dota-red-dark);
+  --text-main: var(--dota-text);
+  --text-muted: var(--dota-text-muted);
+  --border: #33363b;
+
+  --font-heading: 'Cinzel', serif;
+  --font-body: 'Inter', sans-serif;
+
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --glow-red: 0 0 10px rgba(163, 51, 27, 0.5);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.6;
+  min-height: 100vh;
+  /* subtle background texture or gradient can be added here */
+  background-image: radial-gradient(circle at top center, #252a33 0%, #000000 70%);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+/* Utilities */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, var(--dota-red) 0%, var(--dota-red-dark) 100%);
+  color: #fff;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  text-transform: uppercase;
+  border: 1px solid var(--accent);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.btn:hover {
+  filter: brightness(1.1);
+  box-shadow: var(--glow-red);
+}
+
+.card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+input,
+select,
+textarea {
+  background-color: var(--dota-gray-dark);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 0.75rem;
+  width: 100%;
+  font-family: var(--font-body);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(163, 51, 27, 0.2);
+}
+
+/* Tooltip Styles */
+.hero-tooltip-container {
+  position: relative;
+  cursor: help;
+}
+
+.hero-tooltip {
+  visibility: hidden;
+  width: 220px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--accent);
+  color: #fff;
+  text-align: center;
+  padding: 10px;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 10;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+.hero-tooltip-container:hover .hero-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.hero-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: var(--accent) transparent transparent transparent;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background-color: var(--bg-secondary);
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  position: relative;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+}
+
+.close-modal {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
