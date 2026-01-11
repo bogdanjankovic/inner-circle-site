@@ -36,6 +36,7 @@ function App() {
           <Route path="/matches" element={<Matches />} />
           <Route path="/results" element={<Results />} />
           <Route path="/admin" element={<Admin />} /> {/* Added Route for Admin */}
+          <Route path="/admin/upload" element={<AdminUpload />} />
         </Routes>
       </main>
       <Footer />

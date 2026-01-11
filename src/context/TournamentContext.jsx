@@ -136,10 +136,22 @@ export const TournamentProvider = ({ children }) => {
         alert("Statistika uspešno ažurirana!");
     };
 
+    // Dispatch function to handle actions
+    const dispatch = (action) => {
+        switch (action.type) {
+            case 'ADD_MATCH':
+                processMatchStats(action.payload);
+                break;
+            default:
+                console.warn("Unknown action:", action.type);
+        }
+    };
+
     return (
         <TournamentContext.Provider value={{
             teams, pendingTeams, registerTeam, approveTeam, rejectTeam, deleteTeam, updateTeam,
-            tournaments, activeTournament, createTournament, tournamentStats, processMatchStats
+            tournaments, activeTournament, createTournament, tournamentStats, processMatchStats,
+            dispatch // Expose dispatch
         }}>
             {children}
         </TournamentContext.Provider>
