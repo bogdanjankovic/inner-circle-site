@@ -162,100 +162,29 @@ export const TournamentProvider = ({ children }) => {
     const dispatch = (action) => {
         switch (action.type) {
             case 'ADD_MATCH':
-                // Match History Persistence
-                const [matchHistory, setMatchHistory] = useState(() => {
-                    try {
-                        const saved = localStorage.getItem('dota_match_history');
-                        return saved ? JSON.parse(saved) : [];
-                    } catch (e) {
-                        return [];
-                    }
-                });
+                processMatchStats(action.payload);
+                break;
+            default:
+                console.warn("Unknown action:", action.type);
+        }
+    };
 
-                useEffect(() => {
-                    localStorage.setItem('dota_match_history', JSON.stringify(matchHistory));
-                }, [matchHistory]);
+    return (
+        <TournamentContext.Provider value={{
+            teams, pendingTeams, registerTeam, approveTeam, rejectTeam, deleteTeam, updateTeam,
+            tournaments, activeTournament, createTournament, tournamentStats, processMatchStats,
+            matchHistory, // Expose matchHistory
+            dispatch
+        }}>
+            {children}
+        </TournamentContext.Provider>
+    );
+};
 
-                // ... (rest of stats logic)
-
-                const processMatchStats = (matchData) => {
-                    if (!matchData || !matchData.players) return;
-
-                    // Save to History
-                    setMatchHistory(prev => {
-                        // Deduplicate by matchId
-                        if (prev.some(m => m.matchId === matchData.matchId)) return prev;
-                        // Add to beginning of list (newest first)
-                        return [matchData, ...prev];
-                    });
-
-                    const newStats = { ...tournamentStats };
-
-                    matchData.players.forEach(p => {
-                        // ... (existing logic)
-                        // 64-bit to 32-bit conversion implicitly handled by API usually, but ensure matching
-                        // We use accountId as key.
-                        const aid = p.accountId;
-                        if (!aid) return;
-
-                        if (!newStats[aid]) {
-                            newStats[aid] = {
-                                matches: 0,
-                                kills: 0, deaths: 0, assists: 0,
-                                gpm: 0, xpm: 0,
-                                heroDamage: 0, towerDamage: 0,
-                                roshansKilled: 0, towersKilled: 0, tormentorsKilled: 0,
-                                runesActivated: 0, neutralTokens: 0
-                            };
-                        }
-
-                        const s = newStats[aid];
-                        s.matches += 1;
-                        s.kills += p.kills;
-                        s.deaths += p.deaths;
-                        s.assists += p.assists;
-                        s.gpm += p.gpm; // We will avg this later or keep sum
-                        s.xpm += p.xpm;
-                        s.heroDamage += p.heroDamage;
-                        s.towerDamage += p.towerDamage;
-                        s.roshansKilled += p.roshansKilled;
-                        s.towersKilled += p.towersKilled;
-                        s.tormentorsKilled += p.tormentorsKilled;
-                        s.runesActivated += p.runesActivated;
-                        s.neutralTokens += p.neutralTokens;
-                    });
-
-                    setTournamentStats(newStats);
-                    alert("Utakmica sačuvana i statistika ažurirana!");
-                };
-
-                // Dispatch function to handle actions
-                const dispatch = (action) => {
-                    switch (action.type) {
-                        case 'ADD_MATCH':
-                            processMatchStats(action.payload);
-                            break;
-                        default:
-                            console.warn("Unknown action:", action.type);
-                    }
-                };
-
-                return (
-                    <TournamentContext.Provider value={{
-                        teams, pendingTeams, registerTeam, approveTeam, rejectTeam, deleteTeam, updateTeam,
-                        tournaments, activeTournament, createTournament, tournamentStats, processMatchStats,
-                        matchHistory, // Expose matchHistory
-                        dispatch
-                    }}>
-                        {children}
-                    </TournamentContext.Provider>
-                );
-        };
-
-        export const useTournament = () => {
-            const context = useContext(TournamentContext);
-            if (!context) {
-                throw new Error('useTournament must be used within a TournamentProvider');
-            }
-            return context;
-        };
+export const useTournament = () => {
+    const context = useContext(TournamentContext);
+    if (!context) {
+        throw new Error('useTournament must be used within a TournamentProvider');
+    }
+    return context;
+};
