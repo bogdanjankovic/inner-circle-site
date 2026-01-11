@@ -1,7 +1,7 @@
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const fs = require('fs');
-const rapier = require('odota/rapier');
+const rapier = require('rapier');
 
 
 const filePath = process.argv[2];
@@ -19,7 +19,8 @@ let matchId = Date.now(); // Fallback if not found
 let winner = 'Unknown';
 
 // Initialize Parser
-const parser = rapier.createParser(buffer);
+// The module exports the Parser class directly.
+const parser = new rapier(buffer);
 
 // Listen for Game Events (This assumes rapier emits 'combatlog' or entity updates)
 // Note: rapier is low-level. For true stats we need to track entity values.
