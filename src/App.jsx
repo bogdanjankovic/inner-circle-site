@@ -15,6 +15,7 @@ import Admin from './pages/Admin';
 import AdminUpload from './pages/AdminUpload';
 
 function App() {
+  console.log("Current App Version: 1.1 (Includes AdminUpload fix)");
   return (
     <div className="app-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
