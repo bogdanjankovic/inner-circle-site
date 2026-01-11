@@ -109,38 +109,81 @@ export const fetchPlayerData = async (steamId) => {
     }
 };
 
+// Singleton promise to prevent race conditions when multiple components mount simultaneously
+let heroFetchPromise = null;
+
 // Hero ID to Name mapping using the lighter /heroes endpoint
 export const fetchHeroConstants = async () => {
+    // 1. Check Memory Cache (fastest) - handled by caller usually, but good to have here too if we export a getter.
+    // For now we rely on localStorage as the persistence layer.
+
+    // 2. Check LocalStorage
     try {
-        console.log("Fetching Hero Stats...");
-        const res = await fetch(`${API_URL}/heroStats?t=${Date.now()}`);
-        if (!res.ok) {
-            console.error(`Hero fetch failed with status: ${res.status}`);
-            return null;
+        const localData = localStorage.getItem('dota_hero_stats');
+        if (localData) {
+            const parsed = JSON.parse(localData);
+            // Optional: Check expiry (e.g. 1 day)
+            // const age = Date.now() - parsed.timestamp;
+            // if (age < 86400000) return parsed.data;
+            if (parsed && Object.keys(parsed).length > 0) {
+                return parsed;
+            }
         }
-        const heroesArray = await res.json();
-        console.log(`API returned ${heroesArray.length} heroes.`);
-        if (heroesArray.length > 0) {
-            console.log("Sample hero data:", heroesArray[0]);
-        }
-
-        // Transform array into a map: { 1: { ...heroData }, 2: { ... } }
-        const heroMap = {};
-        heroesArray.forEach(hero => {
-            heroMap[hero.id] = hero;
-        });
-
-        if (Object.keys(heroMap).length === 0) {
-            console.warn("Fetched hero stats but map is empty.");
-            return null;
-        }
-
-        console.log(`Cached ${Object.keys(heroMap).length} heroes.`);
-        return heroMap;
     } catch (e) {
-        console.error("Failed to fetch hero constants:", e);
-        return null;
+        console.warn("Failed to read hero stats from localStorage", e);
     }
+
+    // 3. Check for existing in-flight request
+    if (heroFetchPromise) {
+        return heroFetchPromise;
+    }
+
+    // 4. Fetch from Network
+    heroFetchPromise = (async () => {
+        try {
+            console.log("Fetching Hero Stats from API...");
+            // Removed cache-busting timestamp to allow browser caching
+            const res = await fetch(`${API_URL}/heroStats`);
+
+            if (res.status === 429) {
+                console.error("Rate limited (429) fetching heroes.");
+                return null;
+            }
+
+            if (!res.ok) {
+                console.error(`Hero fetch failed with status: ${res.status}`);
+                return null;
+            }
+
+            const heroesArray = await res.json();
+
+            // Transform array into a map: { 1: { ...heroData }, 2: { ... } }
+            const heroMap = {};
+            heroesArray.forEach(hero => {
+                heroMap[hero.id] = hero;
+            });
+
+            if (Object.keys(heroMap).length === 0) {
+                return null;
+            }
+
+            // Save to LocalStorage
+            try {
+                localStorage.setItem('dota_hero_stats', JSON.stringify(heroMap));
+            } catch (storageErr) {
+                console.warn("Quota exceeded likely, couldn't save heroes to storage.");
+            }
+
+            return heroMap;
+        } catch (e) {
+            console.error("Failed to fetch hero constants:", e);
+            return null;
+        } finally {
+            heroFetchPromise = null; // Reset promise so we can retry later if failed
+        }
+    })();
+
+    return heroFetchPromise;
 }
 
 /**
