@@ -22,6 +22,9 @@ const result = {
     players: []
 };
 
+// Initialize Parser
+const parser = new rapier(buffer);
+
 // Listen for the 'file info' message which contains the scoreboard at the end of the replay
 parser.on('CDemoFileInfo', (msg) => {
     // This packet usually contains the full game summary
