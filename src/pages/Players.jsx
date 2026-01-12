@@ -118,7 +118,7 @@ const Players = () => {
                 <PlayerModal
                     player={selectedPlayer}
                     onClose={() => setSelectedPlayer(null)}
-                    stats={selectedPlayer.data?.accountId ? tournamentStats[selectedPlayer.data.accountId] : null}
+                    stats={selectedPlayer.steamId ? tournamentStats[selectedPlayer.steamId] : null}
                 />
             )}
 
@@ -166,8 +166,8 @@ const Players = () => {
                     </thead>
                     <tbody>
                         {allPlayers.length > 0 ? allPlayers.map((player, idx) => {
-                            const tStats = player.accountId && tournamentStats[player.accountId]
-                                ? tournamentStats[player.accountId]
+                            const tStats = player.steamId && tournamentStats[player.steamId]
+                                ? tournamentStats[player.steamId]
                                 : { matches: 0, kills: 0, deaths: 0, assists: 0, roshansKilled: 0, tormentorsKilled: 0, runesActivated: 0, neutralTokens: 0 };
 
                             return (
