@@ -158,7 +158,7 @@ const AbilityBuildGrid = ({ teamName, players }) => {
 }
 
 const MatchDetails = ({ match }) => {
-    if (!match) return <div>No match data</div>;
+    if (!match || !match.players) return <div style={{ padding: '1rem', color: '#888' }}>No match details available</div>;
 
     const radiantPlayers = match.players.filter(p => p.team === 'Radiant');
     const direPlayers = match.players.filter(p => p.team === 'Dire');

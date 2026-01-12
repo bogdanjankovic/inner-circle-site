@@ -96,7 +96,7 @@ const Results = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {match.players.sort((a, b) => (a.team === 'Radiant' ? 0 : 1) - (b.team === 'Radiant' ? 0 : 1)).map((p, idx) => (
+                                                {(match.players || []).sort((a, b) => (a.team === 'Radiant' ? 0 : 1) - (b.team === 'Radiant' ? 0 : 1)).map((p, idx) => (
                                                     <tr key={idx} style={{ borderBottom: '1px solid #222' }}>
                                                         <td style={{ padding: '0.5rem', color: p.team === 'Radiant' ? '#4caf50' : '#f44336', fontWeight: p.tournamentPlayerId ? 'bold' : 'normal' }}>
                                                             {getPlayerName(p)}
