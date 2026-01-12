@@ -280,7 +280,7 @@ export const TournamentProvider = ({ children }) => {
 
         let bracket = tournament.bracket_data;
         // Find the bracket match
-        const matchIdx = bracket.findIndex(m => m.matchId === bracketMatchId);
+        const matchIdx = bracket.findIndex(m => m.matchId.toString() === bracketMatchId.toString());
         if (matchIdx === -1) return;
 
         const winnerTeamId = realMatchData.winner === 'Radiant' ? realMatchData.radiantTeamId : realMatchData.direTeamId;
