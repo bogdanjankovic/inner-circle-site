@@ -111,10 +111,20 @@ const AdminUpload = () => {
                     {activeTournament && (
                         <div style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid var(--accent)', background: 'rgba(255,255,255,0.05)' }}>
                             <h3 style={{ color: 'var(--accent)' }}>Links to Tournament: {activeTournament.name}</h3>
-                            <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Select which tournament slot this match belongs to (optional).</p>
+                            <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Select which tournament slot this match belongs to (optional). This will auto-select teams.</p>
                             <select
                                 value={bracketMatchId}
-                                onChange={e => setBracketMatchId(e.target.value)}
+                                onChange={e => {
+                                    const mId = e.target.value;
+                                    setBracketMatchId(mId);
+                                    if (mId) {
+                                        const match = availableBracketMatches.find(m => m.matchId.toString() === mId.toString());
+                                        if (match) {
+                                            if (match.team1) setRadiantTeamId(match.team1.id);
+                                            if (match.team2) setDireTeamId(match.team2.id);
+                                        }
+                                    }
+                                }}
                                 style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }}
                             >
                                 <option value="">-- Just a Regular Match (No Bracket Link) --</option>

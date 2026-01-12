@@ -20,7 +20,7 @@ const Results = () => {
         if (p.tournamentPlayerId && teams) {
             for (const t of teams) {
                 // Match by steamId, not id
-                const found = t.players?.find(tp => tp.steamId === p.tournamentPlayerId);
+                const found = t.players?.find(tp => (tp.steamId === p.tournamentPlayerId) || (tp.steamId === p.steamId));
                 if (found) return found.personaName || found.name;
             }
         }
@@ -67,7 +67,7 @@ const Results = () => {
                                     {/* Radiant Team */}
                                     <div style={{ textAlign: 'right' }}>
                                         <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: isRadiantWin ? '#4caf50' : 'white' }}>
-                                            {match.radiantTeamName || 'Radiant'} {isRadiantWin && '🏆'}
+                                            {match.radiantTeamName || teams?.find(t => t.id === match.radiantTeamId)?.name || 'Radiant'} {isRadiantWin && '🏆'}
                                         </div>
                                         <div style={{ fontSize: '0.8rem', color: '#4caf50' }}>Radiant</div>
                                     </div>
@@ -81,7 +81,7 @@ const Results = () => {
                                     {/* Dire Team */}
                                     <div style={{ textAlign: 'left' }}>
                                         <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: !isRadiantWin ? '#f44336' : 'white' }}>
-                                            {!isRadiantWin && '🏆'} {match.direTeamName || 'Dire'}
+                                            {!isRadiantWin && '🏆'} {match.direTeamName || teams?.find(t => t.id === match.direTeamId)?.name || 'Dire'}
                                         </div>
                                         <div style={{ fontSize: '0.8rem', color: '#f44336' }}>Dire</div>
                                     </div>
