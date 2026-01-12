@@ -19,7 +19,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>SimpleParser</mainClass>
+                  <mainClass>GuiParser</mainClass>
                 </transformer>
               </transformers>
             </configuration>

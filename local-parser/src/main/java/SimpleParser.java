@@ -39,7 +39,7 @@ public class SimpleParser {
         SimpleParser parser = new SimpleParser(args[0]);
         // Try header first for metadata
         parser.readHeader(args[0]);
-        parser.run();
+        System.out.println(parser.run());
         System.exit(0);
     }
 
@@ -68,7 +68,7 @@ public class SimpleParser {
         }
     }
 
-    public void run() {
+    public String run() {
         // Polling Strategy: Seek through replay in 5-second intervals
         int stepSec = 5;
         int stepTicks = stepSec * 30;
@@ -76,8 +76,7 @@ public class SimpleParser {
         int currentTick = 0;
         int steps = 0;
         while (currentTick <= lastTick) {
-            if (steps++ % 30 == 0)
-                System.err.println("Processing: " + currentTick + "/" + lastTick);
+            // Optional: Report progress if we had a callback
             try {
                 runner.seek(currentTick);
                 checkAbilities();
@@ -92,7 +91,7 @@ public class SimpleParser {
                 currentTick = lastTick;
         }
 
-        extractStats();
+        return extractStats();
     }
 
     private void checkAbilities() {
@@ -180,7 +179,7 @@ public class SimpleParser {
         }
     }
 
-    private void extractStats() {
+    private String extractStats() {
         Entities entities = runner.getContext().getProcessor(Entities.class);
 
         Entity pr = getEntity("PlayerResource");
@@ -206,8 +205,7 @@ public class SimpleParser {
         }
 
         if (pr == null) {
-            System.err.println("{\"error\": \"PlayerResource entity not found\"}");
-            return;
+            return "{\"error\": \"PlayerResource entity not found\"}";
         }
 
         StringBuilder json = new StringBuilder();
@@ -356,7 +354,7 @@ public class SimpleParser {
         json.append("\n  ]\n");
         json.append("}");
 
-        System.out.println(json.toString());
+        return json.toString();
     }
 
     private String escape(String s) {
