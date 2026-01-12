@@ -39,6 +39,13 @@ export const TournamentProvider = ({ children }) => {
                 setMatchHistory(flatMatches);
                 recalculateStats(flatMatches);
             }
+
+            const { data: tourneyData } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
+            if (tourneyData) {
+                setTournaments(tourneyData);
+                const active = tourneyData.find(t => t.status === 'active');
+                if (active) setActiveTournament(active);
+            }
         } catch (error) {
             console.error("Error fetching data:", error);
         }
@@ -185,11 +192,107 @@ export const TournamentProvider = ({ children }) => {
         }
     };
 
-    // Client-side transient logic
-    const createTournament = (name, matches) => {
-        const tournament = { id: Date.now(), name, matches, status: 'ongoing' };
-        setActiveTournament(tournament);
-        setTournaments(prev => [...prev, tournament]);
+    // --- Tournaments ---
+
+    const fetchTournaments = async () => {
+        const { data } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
+        if (data) {
+            setTournaments(data);
+            const active = data.find(t => t.status === 'active');
+            setActiveTournament(active || null);
+        }
+    };
+
+    // Helper to advance bracket
+    const advanceBracket = (bracket, matchId, winnerTeamId) => {
+        const newBracket = [...bracket];
+        const matchIndex = newBracket.findIndex(m => m.matchId === matchId);
+        if (matchIndex === -1) return newBracket;
+
+        newBracket[matchIndex].winner = winnerTeamId;
+
+        // Logic to move winner to next round
+        // Simple binary tree assumption: match N feeds into match (totalMatches - (matchesPerRound/2) ... complex general logic)
+        // For now, we'll assume the Admin manually edits the next match, OR we implement a 'nextMatchId' pointer.
+        // Let's rely on manual bracket editing for advanced progression for now, or simple assumption:
+        // If we have a 'nextMatchId' in the object, use it.
+        const finishedMatch = newBracket[matchIndex];
+        if (finishedMatch.nextMatchId) {
+            const nextMatchIndex = newBracket.findIndex(m => m.matchId === finishedMatch.nextMatchId);
+            if (nextMatchIndex !== -1) {
+                // Determine if it's team1 or team2 slot based on seed or prior arrangement? 
+                // We'll just fill the first empty slot for simplicity, or strict check.
+                if (!newBracket[nextMatchIndex].team1) {
+                    newBracket[nextMatchIndex].team1 = winnerTeamId === finishedMatch.team1.id ? finishedMatch.team1 : finishedMatch.team2;
+                } else if (!newBracket[nextMatchIndex].team2) {
+                    newBracket[nextMatchIndex].team2 = winnerTeamId === finishedMatch.team1.id ? finishedMatch.team1 : finishedMatch.team2;
+                }
+            }
+        }
+        return newBracket;
+    };
+
+    const saveTournament = async (name, bracketData) => {
+        const { data, error } = await supabase.from('tournaments').insert([{
+            name,
+            status: 'draft',
+            bracket_data: bracketData
+        }]).select();
+
+        if (error) {
+            alert("Error creating tournament");
+            console.error(error);
+        } else {
+            setTournaments(prev => [data[0], ...prev]);
+        }
+    };
+
+    const updateTournament = async (id, updates) => {
+        // Optimistic
+        setTournaments(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+        if (activeTournament?.id === id) setActiveTournament(prev => ({ ...prev, ...updates }));
+
+        await supabase.from('tournaments').update(updates).eq('id', id);
+    };
+
+    const deleteTournament = async (id) => {
+        if (!confirm("Are you sure?")) return;
+        setTournaments(prev => prev.filter(t => t.id !== id));
+        if (activeTournament?.id === id) setActiveTournament(null);
+        await supabase.from('tournaments').delete().eq('id', id);
+    };
+
+    const publishTournament = async (id) => {
+        // Set all others to 'completed' or 'archived' if we only allow 1 active? 
+        // For now just set this one active.
+        await updateTournament(id, { status: 'active' });
+        // Optionally fetch again to ensure consistency
+        fetchTournaments();
+    };
+
+    const linkMatchToTournament = async (tournamentId, bracketMatchId, realMatchData) => {
+        const tournament = tournaments.find(t => t.id === tournamentId);
+        if (!tournament) return;
+
+        let bracket = tournament.bracket_data;
+        // Find the bracket match
+        const matchIdx = bracket.findIndex(m => m.matchId === bracketMatchId);
+        if (matchIdx === -1) return;
+
+        const winnerTeamId = realMatchData.winner === 'Radiant' ? realMatchData.radiantTeamId : realMatchData.direTeamId;
+
+        // Update the specific match in bracket
+        bracket[matchIdx] = {
+            ...bracket[matchIdx],
+            realMatchId: realMatchData.matchId,
+            winner: winnerTeamId,
+            status: 'completed'
+        };
+
+        // Advance winner logic (simplified for immediate needs)
+        const updatedBracket = advanceBracket(bracket, bracketMatchId, winnerTeamId);
+
+        await updateTournament(tournamentId, { bracket_data: updatedBracket });
     };
 
     const dispatch = (action) => {
@@ -205,7 +308,8 @@ export const TournamentProvider = ({ children }) => {
     return (
         <TournamentContext.Provider value={{
             teams, pendingTeams, registerTeam, approveTeam, rejectTeam, deleteTeam, updateTeam,
-            tournaments, activeTournament, createTournament, tournamentStats, processMatchStats,
+            tournaments, activeTournament, createTournament: saveTournament, updateTournament, deleteTournament, publishTournament, linkMatchToTournament,
+            tournamentStats, processMatchStats,
             matchHistory,
             deleteMatch,
             dispatch

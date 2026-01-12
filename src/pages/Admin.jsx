@@ -107,7 +107,7 @@ const EditMatchModal = ({ match, onClose, onSave }) => {
 };
 
 const Admin = () => {
-    const { pendingTeams, approveTeam, rejectTeam, teams, deleteTeam, updateTeam, matchHistory, deleteMatch } = useTournament();
+    const { pendingTeams, approveTeam, rejectTeam, teams, deleteTeam, updateTeam, matchHistory, deleteMatch, createTournament, tournaments, activeTournament, deleteTournament, publishTournament } = useTournament();
     const [editingTeam, setEditingTeam] = useState(null);
     const [editingMatch, setEditingMatch] = useState(null);
     const [activeTab, setActiveTab] = useState('teams');
@@ -193,6 +193,20 @@ const Admin = () => {
                     }}
                 >
                     Rezultati (Matches)
+                </button>
+                <button
+                    onClick={() => setActiveTab('tournaments')}
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        borderBottom: activeTab === 'tournaments' ? '2px solid var(--accent)' : 'none',
+                        color: activeTab === 'tournaments' ? 'var(--accent)' : '#888',
+                        padding: '1rem',
+                        fontSize: '1.2rem',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Turniri (Manage)
                 </button>
             </div>
 
@@ -336,6 +350,86 @@ const Admin = () => {
                             </li>
                         ))}
                     </ul>
+                </div>
+            )}
+
+            {activeTab === 'tournaments' && (
+                <div style={{ display: 'grid', gap: '2rem' }}>
+                    {/* Create New Tournament */}
+                    <div className="card">
+                        <h2 style={{ color: 'var(--accent)' }}>Create New Tournament</h2>
+                        <p style={{ color: '#888', marginBottom: '1rem' }}>Generates a bracket for all currently registered teams ({teams.length}).</p>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <input
+                                type="text"
+                                placeholder="Tournament Name (e.g. Winter Cup 2024)"
+                                id="newTourneyName"
+                                style={{ padding: '0.5rem', flex: 1 }}
+                            />
+                            <button className="btn" onClick={() => {
+                                const name = document.getElementById('newTourneyName').value;
+                                if (!name) return alert("Enter a name");
+                                if (teams.length < 2) return alert("Need at least 2 teams!");
+
+                                // Logic from Tournaments.jsx (we can refactor to a helper, but duplicating for safety/speed now)
+                                const getTeamMMR = (team) => {
+                                    let total = 0, count = 0;
+                                    if (!team.players) return 0;
+                                    team.players.forEach(p => { if (p.rankTier) { total += p.rankTier; count++; } });
+                                    return count > 0 ? total / count : 0;
+                                };
+                                const sortedTeams = [...teams].sort((a, b) => getTeamMMR(b) - getTeamMMR(a));
+                                const round1 = [];
+                                const pool = [...sortedTeams];
+                                while (pool.length >= 2) {
+                                    const strong = pool.shift();
+                                    const weak = pool.pop();
+                                    round1.push({
+                                        matchId: Date.now() + Math.random(),
+                                        team1: strong,
+                                        team2: weak,
+                                        winner: null,
+                                        isPlaceholder: false
+                                    });
+                                }
+                                createTournament(name, round1); // Calls saveTournament
+                            }}>Generate Draft</button>
+                        </div>
+                    </div>
+
+                    {/* Active Tournament */}
+                    {activeTournament && (
+                        <div className="card" style={{ border: '1px solid #4caf50' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <h2 style={{ color: '#4caf50' }}>ACTIVE: {activeTournament.name}</h2>
+                                <button className="btn" onClick={() => deleteTournament(activeTournament.id)} style={{ background: '#f44336' }}>Delete Active</button>
+                            </div>
+                            <p>Bracket matches: {activeTournament.bracket_data?.length || 0}</p>
+                        </div>
+                    )}
+
+                    {/* Drafts List */}
+                    <div className="card">
+                        <h3>Drafts / History</h3>
+                        {tournaments.filter(t => t.status !== 'active').length === 0 ? <p>No other tournaments.</p> : (
+                            <ul style={{ listStyle: 'none', padding: 0 }}>
+                                {tournaments.filter(t => t.status !== 'active').map(t => (
+                                    <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                            <strong>{t.name}</strong> <span style={{ fontSize: '0.8rem', color: '#888' }}>({t.status})</span>
+                                            <div style={{ fontSize: '0.8rem', color: '#666' }}>{new Date(t.created_at).toLocaleDateString()}</div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                            {t.status === 'draft' && (
+                                                <button className="btn" onClick={() => publishTournament(t.id)}>PUBLISH (Go Live)</button>
+                                            )}
+                                            <button className="btn" onClick={() => deleteTournament(t.id)} style={{ background: '#f44336', padding: '0.3rem 0.8rem', fontSize: '0.8rem' }}>Delete</button>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
                 </div>
             )}
         </div>

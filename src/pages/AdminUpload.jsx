@@ -29,6 +29,10 @@ const AdminUpload = () => {
         }
     };
 
+    // Link to Tournament Stats
+    const { activeTournament, linkMatchToTournament } = useTournament();
+    const [bracketMatchId, setBracketMatchId] = useState('');
+
     const handleSave = () => {
         if (!parsedData) return;
 
@@ -48,7 +52,30 @@ const AdminUpload = () => {
             players: finalPlayers
         };
 
-        dispatch({ type: 'ADD_MATCH', payload: finalMatch });
+        // If bracket match selected, link it. Otherwise just add standard match
+        if (bracketMatchId && activeTournament) {
+            // This also saves the match to history internally within the context logic if we implemented it that way,
+            // BUT our linkMatchToTournament only updates the bracket JSON in the plan.
+            // We need to SAVE the match first, then LINK it? 
+            // Actually, linkMatchToTournament in context updates the bracket to point to the REAL match ID.
+            // So we must: 1. Add Match (get ID), 2. Link.
+            // The dispatch('ADD_MATCH') doesn't return the ID easily in the current reducer, 
+            // but processMatchStats is async. 
+            // Refactor: call processMatchStats directly.
+
+            // However, processMatchStats in context uses matchData.matchId (from parser).
+            // So we know the ID: finalMatch.matchId
+
+            dispatch({ type: 'ADD_MATCH', payload: finalMatch });
+
+            // Wait a moment or trust optimistic?
+            // Let's call the link directly
+            linkMatchToTournament(activeTournament.id, bracketMatchId, finalMatch);
+            alert("Match linked to Tournament Bracket!");
+        } else {
+            dispatch({ type: 'ADD_MATCH', payload: finalMatch });
+        }
+
         navigate('/results'); // Go to results to see it
     };
 
@@ -57,6 +84,9 @@ const AdminUpload = () => {
         const team = teams.find(t => t.id === teamId);
         return team ? team.players : [];
     };
+
+    // Get unplayed matches from active tournament
+    const availableBracketMatches = activeTournament ? activeTournament.bracket_data.filter(m => !m.winner) : [];
 
     return (
         <div className="container" style={{ padding: '4rem 1rem', maxWidth: '1000px' }}>
@@ -78,6 +108,25 @@ const AdminUpload = () => {
                 </div>
             ) : (
                 <div className="card">
+                    {activeTournament && (
+                        <div style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid var(--accent)', background: 'rgba(255,255,255,0.05)' }}>
+                            <h3 style={{ color: 'var(--accent)' }}>Links to Tournament: {activeTournament.name}</h3>
+                            <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Select which tournament slot this match belongs to (optional).</p>
+                            <select
+                                value={bracketMatchId}
+                                onChange={e => setBracketMatchId(e.target.value)}
+                                style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }}
+                            >
+                                <option value="">-- Just a Regular Match (No Bracket Link) --</option>
+                                {availableBracketMatches.map(m => {
+                                    const t1 = m.team1 ? m.team1.name : 'TBD';
+                                    const t2 = m.team2 ? m.team2.name : 'TBD';
+                                    return <option key={m.matchId} value={m.matchId}>{t1} vs {t2} (ID: {m.matchId})</option>
+                                })}
+                            </select>
+                        </div>
+                    )}
+
                     <div style={{ display: 'flex', gap: '2rem', marginBottom: '2rem' }}>
                         <div style={{ flex: 1 }}>
                             <h3 style={{ color: '#4caf50' }}>Radiant Team</h3>
