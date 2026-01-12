@@ -116,8 +116,10 @@ const AdminUpload = () => {
                                         onChange={(e) => setPlayerMapping({ ...playerMapping, [p.steamId || p.name]: e.target.value })}
                                     >
                                         <option value="">-- Map to Registered Player --</option>
-                                        {getTeamPlayers(radiantTeamId).map(tp => (
-                                            <option key={tp.id} value={tp.id}>{tp.nickname} ({tp.role})</option>
+                                        {getTeamPlayers(radiantTeamId).map((tp, i) => (
+                                            <option key={tp.steamId || i} value={tp.steamId}>
+                                                {tp.personaName || tp.name || 'Unknown'} {tp.isCaptain ? '(C)' : ''}
+                                            </option>
                                         ))}
                                     </select>
                                 </div>
@@ -136,8 +138,10 @@ const AdminUpload = () => {
                                         onChange={(e) => setPlayerMapping({ ...playerMapping, [p.steamId || p.name]: e.target.value })}
                                     >
                                         <option value="">-- Map to Registered Player --</option>
-                                        {getTeamPlayers(direTeamId).map(tp => (
-                                            <option key={tp.id} value={tp.id}>{tp.nickname} ({tp.role})</option>
+                                        {getTeamPlayers(direTeamId).map((tp, i) => (
+                                            <option key={tp.steamId || i} value={tp.steamId}>
+                                                {tp.personaName || tp.name || 'Unknown'} {tp.isCaptain ? '(C)' : ''}
+                                            </option>
                                         ))}
                                     </select>
                                 </div>
