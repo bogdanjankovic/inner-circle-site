@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useTournament } from '../context/TournamentContext';
 import { HeroImage } from '../components/ui/HeroTooltip';
@@ -6,18 +7,14 @@ import ImageUpload from '../components/ui/ImageUpload';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
-// ... EditTeamModal code remains same, skipping for brevity ...
 const EditTeamModal = ({ team, onClose, onSave }) => {
-    // ... (unchanged)
     const [name, setName] = useState(team.name);
     const [logo, setLogo] = useState(team.logo);
-    // Deep copy players to avoid mutating context directly before save
     const [players, setPlayers] = useState(JSON.parse(JSON.stringify(team.players)));
 
     const handlePlayerChange = (idx, field, value) => {
         const newPlayers = [...players];
         if (field === 'personaName') newPlayers[idx].personaName = value;
-        // Allows simple text editing for now. Full SteamID fetch in edit mode is complex, keeping it simple.
         setPlayers(newPlayers);
     };
 
@@ -75,9 +72,44 @@ const EditTeamModal = ({ team, onClose, onSave }) => {
     );
 };
 
+const EditMatchModal = ({ match, onClose, onSave }) => {
+    const [winner, setWinner] = useState(match.winner || 'Radiant');
+
+    const handleSave = () => {
+        onSave({ ...match, winner });
+        onClose();
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose} style={{ zIndex: 3000 }}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                <button className="close-modal" onClick={onClose}>&times;</button>
+                <h2>Edit Match Result</h2>
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <p style={{ marginBottom: '0.5rem', color: '#888' }}>Match ID: {match.matchId}</p>
+                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Winner</label>
+                    <select
+                        value={winner}
+                        onChange={(e) => setWinner(e.target.value)}
+                        style={{ width: '100%', padding: '0.5rem', background: '#333', color: 'white', border: '1px solid #555' }}
+                    >
+                        <option value="Radiant">Radiant</option>
+                        <option value="Dire">Dire</option>
+                    </select>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                    <button onClick={onClose} className="btn" style={{ background: '#666' }}>Cancel</button>
+                    <button onClick={handleSave} className="btn" style={{ background: '#4caf50' }}>Save Changes</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const Admin = () => {
     const { pendingTeams, approveTeam, rejectTeam, teams, deleteTeam, updateTeam, matchHistory, deleteMatch } = useTournament();
     const [editingTeam, setEditingTeam] = useState(null);
+    const [editingMatch, setEditingMatch] = useState(null);
     const [activeTab, setActiveTab] = useState('teams');
     const [session, setSession] = useState(null);
     const navigate = useNavigate();
@@ -98,9 +130,7 @@ const Admin = () => {
         return () => subscription.unsubscribe();
     }, [navigate]);
 
-    if (!session) {
-        return null; // Or a loading spinner
-    }
+    if (!session) return null;
 
     const handleApprove = (id) => {
         if (window.confirm('Da li ste sigurni da želite da odobrite ovaj tim?')) {
@@ -117,11 +147,24 @@ const Admin = () => {
     const handleDelete = (id) => deleteTeam(id);
     const handleDeleteMatch = (id) => deleteMatch(id);
 
+    const handleUpdateMatch = async (updatedMatch) => {
+        const { error } = await supabase
+            .from('matches')
+            .update({ winner: updatedMatch.winner })
+            .eq('match_id', updatedMatch.matchId.toString());
+
+        if (error) {
+            alert("Error updating match: " + error.message);
+        } else {
+            alert("Match updated! Refreshing...");
+            window.location.reload();
+        }
+    };
+
     return (
         <div className="container" style={{ padding: '4rem 0' }}>
             <h1 style={{ marginBottom: '2rem' }}>Admin Panel</h1>
 
-            {/* Admin Navigation Tabs */}
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #333' }}>
                 <button
                     onClick={() => setActiveTab('teams')}
@@ -161,6 +204,14 @@ const Admin = () => {
                 />
             )}
 
+            {editingMatch && (
+                <EditMatchModal
+                    match={editingMatch}
+                    onClose={() => setEditingMatch(null)}
+                    onSave={handleUpdateMatch}
+                />
+            )}
+
             {activeTab === 'teams' && (
                 <>
                     <div className="card" style={{ marginBottom: '3rem' }}>
@@ -181,7 +232,7 @@ const Admin = () => {
                                                 <img src={team.logo} alt={team.name} style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover' }} />
                                                 <div>
                                                     <h3 style={{ margin: 0 }}>{team.name}</h3>
-                                                    <small style={{ color: '#aaa' }}>Registrovan: {new Date(team.registeredAt).toLocaleString()}</small>
+                                                    <small style={{ color: '#aaa' }}>Registrovan: {new Date(team.registeredAt || Date.now()).toLocaleString()}</small>
                                                 </div>
                                             </div>
                                             <div style={{ display: 'flex', gap: '1rem' }}>
@@ -189,7 +240,6 @@ const Admin = () => {
                                                 <button onClick={() => handleReject(team.id)} className="btn" style={{ backgroundColor: '#f44336', padding: '0.5rem 1.5rem' }}>Odbij</button>
                                             </div>
                                         </div>
-                                        {/* Roster display simplified for brevity in this view if needed, keeping original complexity is fine */}
                                         <h4 style={{ marginBottom: '0.5rem', borderBottom: '1px solid #444' }}>Roster</h4>
                                         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                             {team.players.map((p, idx) => (
@@ -267,13 +317,22 @@ const Admin = () => {
                                         ID: {m.matchId} | Winner: <span style={{ fontWeight: 'bold' }}>{m.winner}</span> | {new Date(m.timestamp).toLocaleString()}
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => handleDeleteMatch(m.matchId)}
-                                    className="btn"
-                                    style={{ fontSize: '0.9rem', padding: '0.3rem 1rem', background: '#f44336' }}
-                                >
-                                    Delete
-                                </button>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <button
+                                        onClick={() => setEditingMatch(m)}
+                                        className="btn"
+                                        style={{ fontSize: '0.9rem', padding: '0.3rem 1rem' }}
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteMatch(m.matchId)}
+                                        className="btn"
+                                        style={{ fontSize: '0.9rem', padding: '0.3rem 1rem', background: '#f44336' }}
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
                             </li>
                         ))}
                     </ul>

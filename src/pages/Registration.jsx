@@ -81,6 +81,28 @@ const Registration = () => {
         };
 
         registerTeam(teamData);
+
+        // Email Notification
+        import('@emailjs/browser').then(emailjs => {
+            emailjs.send(
+                'service_raks9ru',
+                'template_hiqp7a7',
+                {
+                    team_name: teamName,
+                    captain_name: teamData.players.find(p => p.isCaptain)?.personaName || 'Unknown',
+                    // Add other template params here if your template uses them
+                },
+                'LkypNxLC7y1iwLqa1'
+            ).then(
+                () => {
+                    console.log('Admin notified via email.');
+                },
+                (error) => {
+                    console.error('Email notification failed:', error);
+                }
+            );
+        });
+
         alert('Tim je uspešno registrovan! Vaš tim čeka odobrenje administratora pre nego što postane vidljiv.');
         navigate('/teams');
     };
