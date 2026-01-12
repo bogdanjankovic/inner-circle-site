@@ -13,9 +13,10 @@ import Matches from './pages/Matches';
 import Results from './pages/Results';
 import Admin from './pages/Admin';
 import AdminUpload from './pages/AdminUpload';
+import Login from './pages/Login';
 
 function App() {
-  console.log("Current App Version: 1.1 (Includes AdminUpload fix)");
+  console.log("Current App Version: 1.3 (Supabase + Auth)");
   return (
     <div className="app-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
@@ -37,8 +38,9 @@ function App() {
           <Route path="/tournaments" element={<Tournaments />} />
           <Route path="/matches" element={<Matches />} />
           <Route path="/results" element={<Results />} />
-          <Route path="/admin" element={<Admin />} /> {/* Added Route for Admin */}
+          <Route path="/admin" element={<Admin />} />
           <Route path="/admin/upload" element={<AdminUpload />} />
+          <Route path="/login" element={<Login />} />
         </Routes>
       </main>
       <Footer />

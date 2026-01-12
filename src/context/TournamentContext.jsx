@@ -1,115 +1,51 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 const TournamentContext = createContext();
 
 export const TournamentProvider = ({ children }) => {
-    // Initialize teams from localStorage or empty array
-    const [teams, setTeams] = useState(() => {
-        try {
-            const saved = localStorage.getItem('dota_teams');
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            console.error("Failed to load teams", e);
-            return [];
-        }
-    });
+    const [teams, setTeams] = useState([]);
+    const [pendingTeams, setPendingTeams] = useState([]);
+    const [matchHistory, setMatchHistory] = useState([]);
+    const [tournamentStats, setTournamentStats] = useState({});
 
-    const [tournamentStats, setTournamentStats] = useState(() => {
-        try {
-            const saved = localStorage.getItem('dota_tournament_stats');
-            return saved ? JSON.parse(saved) : {}; // Key: AccountID, Value: { kills, deaths, ... }
-        } catch (e) {
-            return {};
-        }
-    });
-
+    // In-memory (not DB) for now, as tournaments are transient in this logic
     const [tournaments, setTournaments] = useState([]);
     const [activeTournament, setActiveTournament] = useState(null);
 
-    // Persist teams to localStorage whenever they change
+    // Initial Fetch
     useEffect(() => {
-        localStorage.setItem('dota_teams', JSON.stringify(teams));
-    }, [teams]);
+        fetchData();
+    }, []);
 
-    useEffect(() => {
-        localStorage.setItem('dota_tournament_stats', JSON.stringify(tournamentStats));
-    }, [tournamentStats]);
-
-    const [matchHistory, setMatchHistory] = useState(() => {
+    const fetchData = async () => {
         try {
-            const saved = localStorage.getItem('dota_match_history');
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            return [];
+            const { data: teamsData } = await supabase.from('teams').select('*');
+            if (teamsData) setTeams(teamsData);
+
+            const { data: pendingData } = await supabase.from('pending_teams').select('*');
+            if (pendingData) setPendingTeams(pendingData);
+
+            const { data: matchesData } = await supabase.from('matches').select('*').order('timestamp', { ascending: false });
+            if (matchesData) {
+                // Parse the data column if needed, but our table struct has data as jsonb. 
+                // However, our app acts on the flattened object. 
+                // The 'data' column contains the JSON.
+                // We need to map it back to the flat format used by the app.
+                const flatMatches = matchesData.map(m => ({
+                    ...m.data, // Spread the original JSON
+                    matchId: m.match_id // Ensure ID consistency
+                }));
+                setMatchHistory(flatMatches);
+                recalculateStats(flatMatches);
+            }
+        } catch (error) {
+            console.error("Error fetching data:", error);
         }
-    });
-
-    useEffect(() => {
-        localStorage.setItem('dota_match_history', JSON.stringify(matchHistory));
-    }, [matchHistory]);
-
-    // Initialize pending teams
-    const [pendingTeams, setPendingTeams] = useState(() => {
-        try {
-            const saved = localStorage.getItem('dota_pending_teams');
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            return [];
-        }
-    });
-
-    // Persist pending teams
-    useEffect(() => {
-        localStorage.setItem('dota_pending_teams', JSON.stringify(pendingTeams));
-    }, [pendingTeams]);
-
-    const registerTeam = (teamData) => {
-        const newTeam = {
-            id: Date.now().toString(),
-            name: teamData.name,
-            logo: teamData.logo || 'https://via.placeholder.com/150?text=Team',
-            players: teamData.players,
-            captainId: teamData.captainId,
-            registeredAt: new Date().toISOString(),
-            stats: { wins: 0, losses: 0, winrate: 0, matchesPlayed: [] }
-        };
-
-        // Add to PENDING instead of TEAMS
-        setPendingTeams((prev) => [...prev, newTeam]);
-        return newTeam;
-    };
-
-    const approveTeam = (teamId) => {
-        const teamToApprove = pendingTeams.find(t => t.id === teamId);
-        if (teamToApprove) {
-            setTeams(prev => [...prev, teamToApprove]);
-            setPendingTeams(prev => prev.filter(t => t.id !== teamId));
-        }
-    };
-
-    const rejectTeam = (teamId) => {
-        setPendingTeams(prev => prev.filter(t => t.id !== teamId));
-    };
-
-    const deleteTeam = (teamId) => {
-        if (window.confirm('POTVRDA BRISANJA: Da li ste sigurni? Ovo je nepovratno.')) {
-            setTeams(prev => prev.filter(t => t.id !== teamId));
-        }
-    };
-
-    const updateTeam = (teamId, updatedData) => {
-        setTeams(prev => prev.map(t => t.id === teamId ? { ...t, ...updatedData } : t));
-    };
-
-    const createTournament = (name, matches) => {
-        const tournament = { id: Date.now(), name, matches, status: 'ongoing' };
-        setActiveTournament(tournament);
-        setTournaments(prev => [...prev, tournament]);
     };
 
     const recalculateStats = (history) => {
         const newStats = {};
-
         history.forEach(match => {
             if (!match.players) return;
             match.players.forEach(p => {
@@ -148,37 +84,114 @@ export const TournamentProvider = ({ children }) => {
                 s.neutralTokens += (p.neutralTokens || 0);
             });
         });
-
         setTournamentStats(newStats);
     };
 
-    const processMatchStats = (matchData) => {
-        if (!matchData || !matchData.players) return;
+    const registerTeam = async (teamData) => {
+        const newTeam = {
+            id: Date.now().toString(),
+            name: teamData.name,
+            logo: teamData.logo || 'https://via.placeholder.com/150?text=Team',
+            players: teamData.players,
+            captain_id: teamData.captainId,
+            stats: { wins: 0, losses: 0, winrate: 0, matchesPlayed: [] }
+        };
 
-        setMatchHistory(prev => {
-            // Deduplicate
-            if (matchData.matchId && prev.some(m => m.matchId === matchData.matchId)) {
-                alert("Match already exists!");
-                return prev;
-            }
-            const newHistory = [matchData, ...prev];
-            recalculateStats(newHistory); // Recalculate everything
-            alert("Utakmica uspesno sačuvana!");
-            return newHistory;
-        });
+        const { error } = await supabase.from('pending_teams').insert([newTeam]);
+
+        if (error) {
+            console.error("Error registering team:", error);
+            alert("Error registering team.");
+        } else {
+            setPendingTeams((prev) => [...prev, newTeam]);
+        }
+        return newTeam;
     };
 
-    const deleteMatch = (matchId) => {
-        if (window.confirm("DA LI STE SIGURNI? Ovo će obrisati meč i ponovo izračunati statistiku.")) {
-            setMatchHistory(prev => {
-                const newHistory = prev.filter(m => m.matchId !== matchId);
-                recalculateStats(newHistory);
-                return newHistory;
-            });
+    const approveTeam = async (teamId) => {
+        const teamToApprove = pendingTeams.find(t => t.id === teamId);
+        if (teamToApprove) {
+            // Transaction-like: Insert to teams, delete from pending
+            const { error: insertError } = await supabase.from('teams').insert([teamToApprove]);
+            if (!insertError) {
+                await supabase.from('pending_teams').delete().eq('id', teamId);
+                setTeams(prev => [...prev, teamToApprove]);
+                setPendingTeams(prev => prev.filter(t => t.id !== teamId));
+            }
         }
     };
 
-    // Dispatch function to handle actions
+    const rejectTeam = async (teamId) => {
+        await supabase.from('pending_teams').delete().eq('id', teamId);
+        setPendingTeams(prev => prev.filter(t => t.id !== teamId));
+    };
+
+    const deleteTeam = async (teamId) => {
+        if (window.confirm('POTVRDA BRISANJA: Da li ste sigurni? Ovo je nepovratno.')) {
+            await supabase.from('teams').delete().eq('id', teamId);
+            setTeams(prev => prev.filter(t => t.id !== teamId));
+        }
+    };
+
+    const updateTeam = async (teamId, updatedData) => {
+        // Optimistic update
+        setTeams(prev => prev.map(t => t.id === teamId ? { ...t, ...updatedData } : t));
+        await supabase.from('teams').update(updatedData).eq('id', teamId);
+    };
+
+    // --- Matches ---
+
+    const processMatchStats = async (matchData) => {
+        if (!matchData || !matchData.players) return;
+
+        // Check deduplication in state first
+        if (matchData.matchId && matchHistory.some(m => m.matchId === matchData.matchId?.toString())) {
+            alert("Match already exists!");
+            return;
+        }
+
+        // Prepare for DB
+        const matchRow = {
+            match_id: matchData.matchId.toString(),
+            winner: matchData.winner,
+            timestamp: matchData.timestamp,
+            duration: matchData.duration,
+            radiant_team_id: matchData.radiantTeamId,
+            dire_team_id: matchData.direTeamId,
+            data: matchData
+        };
+
+        const { error } = await supabase.from('matches').insert([matchRow]);
+
+        if (error) {
+            console.error("Error adding match:", error);
+            alert("Error saving match to database.");
+        } else {
+            const newHistory = [matchData, ...matchHistory];
+            setMatchHistory(newHistory);
+            recalculateStats(newHistory);
+            alert("Utakmica uspesno sačuvana!");
+        }
+    };
+
+    const deleteMatch = async (matchId) => {
+        if (window.confirm("DA LI STE SIGURNI? Ovo će obrisati meč i ponovo izračunati statistiku.")) {
+            const { error } = await supabase.from('matches').delete().eq('match_id', matchId.toString());
+            if (!error) {
+                const newHistory = matchHistory.filter(m => m.matchId.toString() !== matchId.toString());
+                setMatchHistory(newHistory);
+                recalculateStats(newHistory);
+            }
+        }
+    };
+
+    // Client-side transient logic
+    const createTournament = (name, matches) => {
+        const tournament = { id: Date.now(), name, matches, status: 'ongoing' };
+        setActiveTournament(tournament);
+        setTournaments(prev => [...prev, tournament]);
+    };
+
     const dispatch = (action) => {
         switch (action.type) {
             case 'ADD_MATCH':
@@ -193,7 +206,7 @@ export const TournamentProvider = ({ children }) => {
         <TournamentContext.Provider value={{
             teams, pendingTeams, registerTeam, approveTeam, rejectTeam, deleteTeam, updateTeam,
             tournaments, activeTournament, createTournament, tournamentStats, processMatchStats,
-            matchHistory, // Expose matchHistory
+            matchHistory,
             deleteMatch,
             dispatch
         }}>

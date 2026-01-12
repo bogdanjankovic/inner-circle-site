@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTournament } from '../context/TournamentContext';
 import { HeroImage } from '../components/ui/HeroTooltip';
 import RankDisplay from '../components/ui/RankDisplay';
 import ImageUpload from '../components/ui/ImageUpload';
+import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
+// ... EditTeamModal code remains same, skipping for brevity ...
 const EditTeamModal = ({ team, onClose, onSave }) => {
+    // ... (unchanged)
     const [name, setName] = useState(team.name);
     const [logo, setLogo] = useState(team.logo);
     // Deep copy players to avoid mutating context directly before save
@@ -74,7 +78,29 @@ const EditTeamModal = ({ team, onClose, onSave }) => {
 const Admin = () => {
     const { pendingTeams, approveTeam, rejectTeam, teams, deleteTeam, updateTeam, matchHistory, deleteMatch } = useTournament();
     const [editingTeam, setEditingTeam] = useState(null);
-    const [activeTab, setActiveTab] = useState('teams'); // 'teams' | 'results'
+    const [activeTab, setActiveTab] = useState('teams');
+    const [session, setSession] = useState(null);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+            if (!session) navigate('/login');
+        });
+
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session);
+            if (!session) navigate('/login');
+        });
+
+        return () => subscription.unsubscribe();
+    }, [navigate]);
+
+    if (!session) {
+        return null; // Or a loading spinner
+    }
 
     const handleApprove = (id) => {
         if (window.confirm('Da li ste sigurni da želite da odobrite ovaj tim?')) {
