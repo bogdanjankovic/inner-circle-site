@@ -18,7 +18,7 @@ const Matches = () => {
                 <div className="card">Nema zakazanih mečeva.</div>
             ) : (
                 <div style={{ display: 'grid', gap: '1rem' }}>
-                    {activeTournament.matches.map(m => (
+                    {(activeTournament.bracket_data || []).map(m => (
                         <div key={m.matchId} className="card" style={{ padding: 0, overflow: 'hidden' }}>
                             <div
                                 style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: '#15191f' }}

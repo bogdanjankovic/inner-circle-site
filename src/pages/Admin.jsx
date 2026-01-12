@@ -110,6 +110,7 @@ const Admin = () => {
     const { pendingTeams, approveTeam, rejectTeam, teams, deleteTeam, updateTeam, matchHistory, deleteMatch, createTournament, tournaments, activeTournament, deleteTournament, publishTournament } = useTournament();
     const [editingTeam, setEditingTeam] = useState(null);
     const [editingMatch, setEditingMatch] = useState(null);
+    const [viewingTournament, setViewingTournament] = useState(null);
     const [activeTab, setActiveTab] = useState('teams');
     const [session, setSession] = useState(null);
     const navigate = useNavigate();
@@ -410,18 +411,21 @@ const Admin = () => {
 
                     {/* Drafts List */}
                     <div className="card">
-                        <h3>Drafts / History</h3>
-                        {tournaments.filter(t => t.status !== 'active').length === 0 ? <p>No other tournaments.</p> : (
+                        <h3>Drafts / Turniri</h3>
+                        {tournaments.length === 0 ? <p>No tournaments found.</p> : (
                             <ul style={{ listStyle: 'none', padding: 0 }}>
-                                {tournaments.filter(t => t.status !== 'active').map(t => (
+                                {tournaments.map(t => (
                                     <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div>
                                             <strong>{t.name}</strong> <span style={{ fontSize: '0.8rem', color: '#888' }}>({t.status})</span>
                                             <div style={{ fontSize: '0.8rem', color: '#666' }}>{new Date(t.created_at).toLocaleDateString()}</div>
                                         </div>
                                         <div style={{ display: 'flex', gap: '1rem' }}>
+                                            <button className="btn" onClick={() => setViewingTournament(t)} style={{ background: '#2196f3' }}>
+                                                Manage / Edit
+                                            </button>
                                             {t.status === 'draft' && (
-                                                <button className="btn" onClick={() => publishTournament(t.id)}>PUBLISH (Go Live)</button>
+                                                <button className="btn" onClick={() => publishTournament(t.id)}>PUBLISH</button>
                                             )}
                                             <button className="btn" onClick={() => deleteTournament(t.id)} style={{ background: '#f44336', padding: '0.3rem 0.8rem', fontSize: '0.8rem' }}>Delete</button>
                                         </div>
@@ -430,6 +434,120 @@ const Admin = () => {
                             </ul>
                         )}
                     </div>
+
+                    {/* Tournament Editor / Details Modal or Section */}
+                    {viewingTournament && (
+                        <div className="modal-overlay" style={{
+                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                            background: 'rgba(0,0,0,0.9)', zIndex: 1000, overflowY: 'auto', padding: '2rem'
+                        }}>
+                            <div className="card" style={{ maxWidth: '900px', margin: '0 auto', position: 'relative' }}>
+                                <button
+                                    onClick={() => setViewingTournament(null)}
+                                    style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'transparent', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}
+                                >
+                                    &times;
+                                </button>
+
+                                <h2 style={{ color: 'var(--accent)' }}>Manage Tournament</h2>
+
+                                <div style={{ marginBottom: '2rem' }}>
+                                    <label style={{ display: 'block', color: '#888', marginBottom: '0.5rem' }}>Tournament Name</label>
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <input
+                                            type="text"
+                                            value={viewingTournament.name}
+                                            onChange={(e) => setViewingTournament({ ...viewingTournament, name: e.target.value })}
+                                            style={{ flex: 1, padding: '0.5rem' }}
+                                        />
+                                        <button className="btn" onClick={() => updateTournament(viewingTournament.id, { name: viewingTournament.name })}>Save Name</button>
+                                    </div>
+                                </div>
+
+                                <div style={{ marginBottom: '2rem' }}>
+                                    <h3>Bracket & Matches</h3>
+                                    <div style={{ display: 'grid', gap: '1rem' }}>
+                                        {viewingTournament.bracket_data?.map((match, idx) => (
+                                            <div key={match.matchId} style={{
+                                                display: 'grid', gridTemplateColumns: '1fr auto 1fr auto auto', gap: '1rem', alignItems: 'center',
+                                                padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px'
+                                            }}>
+                                                {/* Team 1 Selector */}
+                                                <select
+                                                    value={match.team1?.id || ''}
+                                                    onChange={(e) => {
+                                                        const newTeam = teams.find(t => t.id === e.target.value) || null;
+                                                        const newBracket = [...viewingTournament.bracket_data];
+                                                        newBracket[idx] = { ...newBracket[idx], team1: newTeam };
+                                                        setViewingTournament({ ...viewingTournament, bracket_data: newBracket });
+                                                    }}
+                                                    style={{ padding: '0.3rem', background: '#222', color: 'white', border: '1px solid #444', maxWidth: '200px' }}
+                                                >
+                                                    <option value="">TBD / Slot</option>
+                                                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                                </select>
+
+                                                <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>VS</span>
+
+                                                {/* Team 2 Selector */}
+                                                <select
+                                                    value={match.team2?.id || ''}
+                                                    onChange={(e) => {
+                                                        const newTeam = teams.find(t => t.id === e.target.value) || null;
+                                                        const newBracket = [...viewingTournament.bracket_data];
+                                                        newBracket[idx] = { ...newBracket[idx], team2: newTeam };
+                                                        setViewingTournament({ ...viewingTournament, bracket_data: newBracket });
+                                                    }}
+                                                    style={{ padding: '0.3rem', background: '#222', color: 'white', border: '1px solid #444', maxWidth: '200px' }}
+                                                >
+                                                    <option value="">TBD / Slot</option>
+                                                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                                </select>
+
+                                                {/* Schedule Picker */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                                    <label style={{ fontSize: '0.7rem', color: '#888' }}>Schedule Time:</label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        value={match.scheduledTime || ''}
+                                                        onChange={(e) => {
+                                                            const newBracket = [...viewingTournament.bracket_data];
+                                                            newBracket[idx] = { ...newBracket[idx], scheduledTime: e.target.value };
+                                                            setViewingTournament({ ...viewingTournament, bracket_data: newBracket });
+                                                        }}
+                                                        style={{
+                                                            padding: '0.3rem',
+                                                            background: '#222',
+                                                            color: 'white',
+                                                            border: '1px solid #444',
+                                                            fontSize: '0.8rem',
+                                                            fontFamily: 'inherit'
+                                                        }}
+                                                    />
+                                                </div>
+
+                                                {/* Status / Actions */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.8rem', color: '#888' }}>
+                                                    <span>{match.winner ? 'Finished' : 'Pending'}</span>
+                                                    {match.winner && <span style={{ color: '#4caf50' }}>Winner: {match.winner === match.team1?.id ? match.team1?.name : match.team2?.name}</span>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button
+                                        className="btn btn-primary"
+                                        style={{ marginTop: '1rem', width: '100%' }}
+                                        onClick={() => {
+                                            updateTournament(viewingTournament.id, { bracket_data: viewingTournament.bracket_data });
+                                            alert("Bracket updated!");
+                                        }}
+                                    >
+                                        Save Changes to Bracket
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
