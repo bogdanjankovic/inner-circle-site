@@ -53,28 +53,37 @@ const Results = () => {
                                 <div
                                     onClick={() => toggleMatch(match.matchId || index)}
                                     style={{
-                                        padding: '1rem',
+                                        padding: '1.5rem',
                                         cursor: 'pointer',
-                                        background: isRadiantWin ? 'linear-gradient(90deg, rgba(46,139,87,0.2) 0%, rgba(0,0,0,0) 100%)' : 'linear-gradient(90deg, rgba(139,46,46,0.2) 0%, rgba(0,0,0,0) 100%)',
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center'
+                                        background: isRadiantWin
+                                            ? 'linear-gradient(90deg, rgba(46,139,87,0.1) 0%, #111 50%, rgba(46,139,87,0.0) 100%)'
+                                            : 'linear-gradient(90deg, rgba(139,46,46,0.1) 0%, #111 50%, rgba(139,46,46,0.0) 100%)',
+                                        display: 'grid',
+                                        gridTemplateColumns: '1fr auto 1fr',
+                                        alignItems: 'center',
+                                        gap: '1rem'
                                     }}
                                 >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <div style={{
-                                            fontWeight: 'bold',
-                                            fontSize: '1.2rem',
-                                            color: isRadiantWin ? '#4caf50' : '#f44336'
-                                        }}>
-                                            {isRadiantWin ? 'RADIANT VICTORY' : 'DIRE VICTORY'}
+                                    {/* Radiant Team */}
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: isRadiantWin ? '#4caf50' : 'white' }}>
+                                            {match.radiantTeamName || 'Radiant'} {isRadiantWin && '🏆'}
                                         </div>
-                                        <div style={{ fontSize: '0.9rem', color: '#aaa' }}>
-                                            Match ID: {match.matchId}
-                                        </div>
+                                        <div style={{ fontSize: '0.8rem', color: '#4caf50' }}>Radiant</div>
                                     </div>
-                                    <div style={{ color: '#aaa' }}>
-                                        {formatDate(match.timestamp)}
+
+                                    {/* Score / VS */}
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#aaa' }}>VS</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#666' }}>{formatDate(match.timestamp)}</div>
+                                    </div>
+
+                                    {/* Dire Team */}
+                                    <div style={{ textAlign: 'left' }}>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: !isRadiantWin ? '#f44336' : 'white' }}>
+                                            {!isRadiantWin && '🏆'} {match.direTeamName || 'Dire'}
+                                        </div>
+                                        <div style={{ fontSize: '0.8rem', color: '#f44336' }}>Dire</div>
                                     </div>
                                 </div>
 

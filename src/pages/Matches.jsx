@@ -18,31 +18,45 @@ const Matches = () => {
                 <div className="card">Nema zakazanih mečeva.</div>
             ) : (
                 <div style={{ display: 'grid', gap: '1rem' }}>
-                    {(activeTournament.bracket_data || []).map(m => (
-                        <div key={m.matchId} className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                            <div
-                                style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: '#15191f' }}
-                                onClick={() => toggleMatch(m.matchId)}
-                            >
-                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{m.team1.name}</div>
-                                <div style={{ color: 'var(--accent)', fontWeight: 'bold' }}>VS</div>
-                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{m.team2.name}</div>
-                                <div style={{ textTransform: 'uppercase', fontSize: '0.8rem', color: '#666', letterSpacing: '1px' }}>
-                                    {new Date().toLocaleDateString()}
-                                </div>
-                            </div>
+                    {(activeTournament.bracket_data || [])
+                        .filter(m => !m.winner) // ONLY Upcoming matches
+                        .sort((a, b) => new Date(a.scheduledTime || 9999999999999) - new Date(b.scheduledTime || 9999999999999))
+                        .map(m => (
+                            <div key={m.matchId} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                                <div
+                                    style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', cursor: 'pointer', background: '#15191f', gap: '1rem' }}
+                                    onClick={() => toggleMatch(m.matchId)}
+                                >
+                                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem', textAlign: 'right' }}>{m.team1?.name || 'TBD'}</div>
 
-                            {/* Expandable Details */}
-                            {expandedMatchId === m.matchId && (
-                                <div style={{ borderTop: '1px solid #222' }}>
-                                    {/* Pass 'm' as match data. Assuming 'm' has the structure from parser 
-                                        OR 'm.stats' has it. If AdminUpload merges them, 'm' might be it.
-                                        For safety, let's pass 'm' directly. */}
-                                    <MatchDetails match={m} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                        <div style={{ color: 'var(--accent)', fontWeight: 'bold', fontSize: '1.5rem' }}>VS</div>
+                                        {m.scheduledTime ? (
+                                            <div style={{ fontSize: '0.9rem', color: '#fdd835', fontWeight: 'bold', marginTop: '0.2rem' }}>
+                                                {new Date(m.scheduledTime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} • {new Date(m.scheduledTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        ) : (
+                                            <div style={{ fontSize: '0.8rem', color: '#666' }}>TBA</div>
+                                        )}
+                                    </div>
+
+                                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem', textAlign: 'left' }}>{m.team2?.name || 'TBD'}</div>
                                 </div>
-                            )}
+
+                                {/* Expandable Details */}
+                                {expandedMatchId === m.matchId && (
+                                    <div style={{ borderTop: '1px solid #222', padding: '1rem', textAlign: 'center', color: '#888' }}>
+                                        Match details will appear here once live.
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    {(activeTournament.bracket_data || []).filter(m => !m.winner).length === 0 && (
+                        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+                            <h3>No upcoming matches</h3>
+                            <p>All matches in the current tournament have been played.</p>
                         </div>
-                    ))}
+                    )}
                 </div>
             )}
         </div>

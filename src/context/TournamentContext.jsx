@@ -165,7 +165,11 @@ export const TournamentProvider = ({ children }) => {
             duration: matchData.duration,
             radiant_team_id: matchData.radiantTeamId,
             dire_team_id: matchData.direTeamId,
-            data: matchData
+            data: {
+                ...matchData,
+                radiantTeamName: teams.find(t => t.id === matchData.radiantTeamId)?.name || 'Radiant',
+                direTeamName: teams.find(t => t.id === matchData.direTeamId)?.name || 'Dire'
+            }
         };
 
         const { error } = await supabase.from('matches').insert([matchRow]);

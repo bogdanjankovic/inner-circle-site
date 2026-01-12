@@ -355,83 +355,126 @@ const Admin = () => {
             )}
 
             {activeTab === 'tournaments' && (
-                <div style={{ display: 'grid', gap: '2rem' }}>
-                    {/* Create New Tournament */}
-                    <div className="card">
-                        <h2 style={{ color: 'var(--accent)' }}>Create New Tournament</h2>
-                        <p style={{ color: '#888', marginBottom: '1rem' }}>Generates a bracket for all currently registered teams ({teams.length}).</p>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                            <input
-                                type="text"
-                                placeholder="Tournament Name (e.g. Winter Cup 2024)"
-                                id="newTourneyName"
-                                style={{ padding: '0.5rem', flex: 1 }}
-                            />
-                            <button className="btn" onClick={() => {
-                                const name = document.getElementById('newTourneyName').value;
-                                if (!name) return alert("Enter a name");
-                                if (teams.length < 2) return alert("Need at least 2 teams!");
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 2fr', gap: '2rem', alignItems: 'start' }}>
 
-                                // Logic from Tournaments.jsx (we can refactor to a helper, but duplicating for safety/speed now)
-                                const getTeamMMR = (team) => {
-                                    let total = 0, count = 0;
-                                    if (!team.players) return 0;
-                                    team.players.forEach(p => { if (p.rankTier) { total += p.rankTier; count++; } });
-                                    return count > 0 ? total / count : 0;
-                                };
-                                const sortedTeams = [...teams].sort((a, b) => getTeamMMR(b) - getTeamMMR(a));
-                                const round1 = [];
-                                const pool = [...sortedTeams];
-                                while (pool.length >= 2) {
-                                    const strong = pool.shift();
-                                    const weak = pool.pop();
-                                    round1.push({
-                                        matchId: Date.now() + Math.random(),
-                                        team1: strong,
-                                        team2: weak,
-                                        winner: null,
-                                        isPlaceholder: false
-                                    });
-                                }
-                                createTournament(name, round1); // Calls saveTournament
-                            }}>Generate Draft</button>
+                    {/* LEFT COLUMN: Create & Drafts */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                        {/* Create New Tournament */}
+                        <div className="card">
+                            <h2 style={{ color: 'var(--accent)', fontSize: '1.2rem', marginBottom: '1rem' }}>Create Tournament</h2>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Tournament Name"
+                                    id="newTourneyName"
+                                    style={{ padding: '0.8rem', background: '#222', border: '1px solid #333', color: 'white' }}
+                                />
+                                <button className="btn btn-primary" onClick={() => {
+                                    const name = document.getElementById('newTourneyName').value;
+                                    if (!name) return alert("Enter a name");
+                                    if (teams.length < 2) return alert("Need at least 2 teams!");
+
+                                    const getTeamMMR = (team) => {
+                                        let total = 0, count = 0;
+                                        if (!team.players) return 0;
+                                        team.players.forEach(p => { if (p.rankTier) { total += p.rankTier; count++; } });
+                                        return count > 0 ? total / count : 0;
+                                    };
+                                    const sortedTeams = [...teams].sort((a, b) => getTeamMMR(b) - getTeamMMR(a));
+                                    const round1 = [];
+                                    const pool = [...sortedTeams];
+                                    while (pool.length >= 2) {
+                                        const strong = pool.shift();
+                                        const weak = pool.pop();
+                                        round1.push({
+                                            matchId: Date.now() + Math.random(),
+                                            team1: strong,
+                                            team2: weak,
+                                            winner: null,
+                                            isPlaceholder: false
+                                        });
+                                    }
+                                    createTournament(name, round1);
+                                }}>Generate Draft</button>
+                            </div>
+                        </div>
+
+                        {/* Drafts List */}
+                        <div className="card">
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#aaa' }}>Drafts & History</h3>
+                            {tournaments.length === 0 ? <p style={{ color: '#666' }}>No tournaments found.</p> : (
+                                <ul style={{ listStyle: 'none', padding: 0 }}>
+                                    {tournaments.map(t => (
+                                        <li key={t.id} style={{
+                                            padding: '1rem',
+                                            border: '1px solid #333',
+                                            marginBottom: '0.5rem',
+                                            background: '#1a1a1a',
+                                            borderRadius: '4px'
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                                <strong style={{ color: 'white' }}>{t.name}</strong>
+                                                <span style={{
+                                                    fontSize: '0.7rem',
+                                                    padding: '2px 6px',
+                                                    borderRadius: '4px',
+                                                    background: t.status === 'active' ? '#4caf50' : '#444',
+                                                    color: 'white'
+                                                }}>{t.status.toUpperCase()}</span>
+                                            </div>
+                                            <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '1rem' }}>
+                                                {new Date(t.created_at).toLocaleDateString('en-GB')}
+                                            </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                                <button className="btn" onClick={() => setViewingTournament(t)} style={{ background: '#2196f3', fontSize: '0.8rem', padding: '0.5rem' }}>
+                                                    Edit / Manage
+                                                </button>
+                                                {t.status === 'draft' ? (
+                                                    <button className="btn" onClick={() => publishTournament(t.id)} style={{ fontSize: '0.8rem', padding: '0.5rem' }}>Publish</button>
+                                                ) : (
+                                                    <button className="btn" disabled style={{ background: 'transparent', border: '1px solid #444', color: '#444', fontSize: '0.8rem' }}>Active</button>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => deleteTournament(t.id)}
+                                                style={{ width: '100%', marginTop: '0.5rem', background: 'transparent', border: 'none', color: '#f44336', fontSize: '0.8rem', cursor: 'pointer' }}
+                                            >
+                                                Delete Tournament
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
                     </div>
 
-                    {/* Active Tournament */}
-                    {activeTournament && (
-                        <div className="card" style={{ border: '1px solid #4caf50' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <h2 style={{ color: '#4caf50' }}>ACTIVE: {activeTournament.name}</h2>
-                                <button className="btn" onClick={() => deleteTournament(activeTournament.id)} style={{ background: '#f44336' }}>Delete Active</button>
-                            </div>
-                            <p>Bracket matches: {activeTournament.bracket_data?.length || 0}</p>
-                        </div>
-                    )}
+                    {/* RIGHT COLUMN: Active Tournament Details (or Placeholder) */}
+                    <div>
+                        {activeTournament ? (
+                            <div className="card" style={{ borderTop: '4px solid #4caf50' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                                    <div>
+                                        <h2 style={{ color: '#4caf50', margin: 0 }}>ACTIVE: {activeTournament.name}</h2>
+                                        <span style={{ color: '#888', fontSize: '0.9rem' }}>Live on public site</span>
+                                    </div>
+                                    <button className="btn" onClick={() => deleteTournament(activeTournament.id)} style={{ background: '#f44336' }}>Delete Active</button>
+                                </div>
 
-                    {/* Drafts List */}
-                    <div className="card">
-                        <h3>Drafts / Turniri</h3>
-                        {tournaments.length === 0 ? <p>No tournaments found.</p> : (
-                            <ul style={{ listStyle: 'none', padding: 0 }}>
-                                {tournaments.map(t => (
-                                    <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div>
-                                            <strong>{t.name}</strong> <span style={{ fontSize: '0.8rem', color: '#888' }}>({t.status})</span>
-                                            <div style={{ fontSize: '0.8rem', color: '#666' }}>{new Date(t.created_at).toLocaleDateString()}</div>
+                                {/* Quick Bracket Preview */}
+                                <div style={{ display: 'grid', gap: '0.5rem' }}>
+                                    {activeTournament.bracket_data?.map((m, i) => (
+                                        <div key={i} style={{ padding: '0.5rem', background: '#222', fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>{m.team1?.name || 'TBD'} vs {m.team2?.name || 'TBD'}</span>
+                                            <span style={{ color: m.winner ? '#4caf50' : '#888' }}>{m.winner ? 'Finished' : 'Pending'}</span>
                                         </div>
-                                        <div style={{ display: 'flex', gap: '1rem' }}>
-                                            <button className="btn" onClick={() => setViewingTournament(t)} style={{ background: '#2196f3' }}>
-                                                Manage / Edit
-                                            </button>
-                                            {t.status === 'draft' && (
-                                                <button className="btn" onClick={() => publishTournament(t.id)}>PUBLISH</button>
-                                            )}
-                                            <button className="btn" onClick={() => deleteTournament(t.id)} style={{ background: '#f44336', padding: '0.3rem 0.8rem', fontSize: '0.8rem' }}>Delete</button>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="card" style={{ textAlign: 'center', padding: '4rem', color: '#666', border: '2px dashed #333' }}>
+                                <h2>No Active Tournament</h2>
+                                <p>Select a draft from the left and click "Publish" to go live.</p>
+                            </div>
                         )}
                     </div>
 
