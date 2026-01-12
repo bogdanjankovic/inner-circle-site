@@ -107,7 +107,7 @@ const EditMatchModal = ({ match, onClose, onSave }) => {
 };
 
 const Admin = () => {
-    const { pendingTeams, approveTeam, rejectTeam, teams, deleteTeam, updateTeam, matchHistory, deleteMatch, createTournament, tournaments, activeTournament, deleteTournament, publishTournament } = useTournament();
+    const { pendingTeams, approveTeam, rejectTeam, teams, deleteTeam, updateTeam, matchHistory, deleteMatch, createTournament, tournaments, activeTournament, deleteTournament, publishTournament, updateTournament } = useTournament();
     const [editingTeam, setEditingTeam] = useState(null);
     const [editingMatch, setEditingMatch] = useState(null);
     const [viewingTournament, setViewingTournament] = useState(null);
