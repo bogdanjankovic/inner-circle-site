@@ -308,12 +308,12 @@ const Admin = () => {
             {activeTab === 'results' && (
                 <div className="card">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h2 style={{ color: 'var(--accent)', margin: 0 }}>Istorija Mečeva ({matchHistory.length})</h2>
-                        <a href="/admin/upload" className="btn btn-primary" style={{ textDecoration: 'none' }}>+ Upload New Match</a>
+                        <h2 style={{ color: 'var(--accent)', margin: 0 }}>Istorija Mečeve ({matchHistory.length})</h2>
+                        <a href="/admin/upload" className="btn btn-primary" style={{ textDecoration: 'none' }}>+ Otpremi Novi Meč</a>
                     </div>
 
                     <ul style={{ listStyle: 'none', padding: 0 }}>
-                        {matchHistory.length === 0 ? <p style={{ color: '#888' }}>No matches recorded yet.</p> : matchHistory.map((m, idx) => (
+                        {matchHistory.length === 0 ? <p style={{ color: '#888' }}>Nema zabeleženih mečeva.</p> : matchHistory.map((m, idx) => (
                             <li key={m.matchId || idx} style={{
                                 padding: '1rem',
                                 borderBottom: '1px solid var(--border)',
@@ -329,7 +329,7 @@ const Admin = () => {
                                         <span style={{ color: m.winner === 'Radiant' ? '#4caf50' : '#fff' }}>Radiant</span> vs <span style={{ color: m.winner === 'Dire' ? '#f44336' : '#fff' }}>Dire</span>
                                     </div>
                                     <div style={{ fontSize: '0.8rem', color: '#888' }}>
-                                        ID: {m.matchId} | Winner: <span style={{ fontWeight: 'bold' }}>{m.winner}</span> | {new Date(m.timestamp).toLocaleString()}
+                                        ID: {m.matchId} | Pobednik: <span style={{ fontWeight: 'bold' }}>{m.winner}</span> | {new Date(m.timestamp).toLocaleString()}
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem' }}>
@@ -338,14 +338,14 @@ const Admin = () => {
                                         className="btn"
                                         style={{ fontSize: '0.9rem', padding: '0.3rem 1rem' }}
                                     >
-                                        Edit
+                                        Izmeni
                                     </button>
                                     <button
                                         onClick={() => handleDeleteMatch(m.matchId)}
                                         className="btn"
                                         style={{ fontSize: '0.9rem', padding: '0.3rem 1rem', background: '#f44336' }}
                                     >
-                                        Delete
+                                        Obriši
                                     </button>
                                 </div>
                             </li>
@@ -361,11 +361,11 @@ const Admin = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                         {/* Create New Tournament */}
                         <div className="card">
-                            <h2 style={{ color: 'var(--accent)', fontSize: '1.2rem', marginBottom: '1rem' }}>Create Tournament</h2>
+                            <h2 style={{ color: 'var(--accent)', fontSize: '1.2rem', marginBottom: '1rem' }}>Napravi Turnir</h2>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 <input
                                     type="text"
-                                    placeholder="Tournament Name"
+                                    placeholder="Ime Turnira"
                                     id="newTourneyName"
                                     style={{ padding: '0.8rem', background: '#222', border: '1px solid #333', color: 'white' }}
                                 />
@@ -395,14 +395,14 @@ const Admin = () => {
                                         });
                                     }
                                     createTournament(name, round1);
-                                }}>Generate Draft</button>
+                                }}>Generiši Žreb</button>
                             </div>
                         </div>
 
                         {/* Drafts List */}
                         <div className="card">
-                            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#aaa' }}>Drafts & History</h3>
-                            {tournaments.length === 0 ? <p style={{ color: '#666' }}>No tournaments found.</p> : (
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#aaa' }}>Nacrti i Istorija</h3>
+                            {tournaments.length === 0 ? <p style={{ color: '#666' }}>Nema pronađenih turnira.</p> : (
                                 <ul style={{ listStyle: 'none', padding: 0 }}>
                                     {tournaments.map(t => (
                                         <li key={t.id} style={{
@@ -427,19 +427,19 @@ const Admin = () => {
                                             </div>
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                                                 <button className="btn" onClick={() => setViewingTournament(t)} style={{ background: '#2196f3', fontSize: '0.8rem', padding: '0.5rem' }}>
-                                                    Edit / Manage
+                                                    Upravljaj
                                                 </button>
                                                 {t.status === 'draft' ? (
-                                                    <button className="btn" onClick={() => publishTournament(t.id)} style={{ fontSize: '0.8rem', padding: '0.5rem' }}>Publish</button>
+                                                    <button className="btn" onClick={() => publishTournament(t.id)} style={{ fontSize: '0.8rem', padding: '0.5rem' }}>Objavi</button>
                                                 ) : (
-                                                    <button className="btn" disabled style={{ background: 'transparent', border: '1px solid #444', color: '#444', fontSize: '0.8rem' }}>Active</button>
+                                                    <button className="btn" disabled style={{ background: 'transparent', border: '1px solid #444', color: '#444', fontSize: '0.8rem' }}>Aktivan</button>
                                                 )}
                                             </div>
                                             <button
                                                 onClick={() => deleteTournament(t.id)}
                                                 style={{ width: '100%', marginTop: '0.5rem', background: 'transparent', border: 'none', color: '#f44336', fontSize: '0.8rem', cursor: 'pointer' }}
                                             >
-                                                Delete Tournament
+                                                Obriši Turnir
                                             </button>
                                         </li>
                                     ))}

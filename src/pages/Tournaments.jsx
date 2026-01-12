@@ -40,8 +40,8 @@ const Tournaments = () => {
                         {/* Winner Banner if applicable */}
                         {activeTournament.bracket_data?.every(m => m.winner) && (
                             <div className="card" style={{ background: 'linear-gradient(45deg, #1a237e, #0d47a1)', textAlign: 'center', border: '2px solid #ffd700' }}>
-                                <h1 style={{ color: '#ffd700', textShadow: '0 0 10px rgba(255, 215, 0, 0.5)' }}>🏆 TOURNAMENT COMPLETED 🏆</h1>
-                                <h3>Winning Team: {activeTournament.bracket_data[activeTournament.bracket_data.length - 1].winner === activeTournament.bracket_data[activeTournament.bracket_data.length - 1].team1?.id
+                                <h1 style={{ color: '#ffd700', textShadow: '0 0 10px rgba(255, 215, 0, 0.5)' }}>🏆 TURNIR ZAVRŠEN 🏆</h1>
+                                <h3>Pobednik: {activeTournament.bracket_data[activeTournament.bracket_data.length - 1].winner === activeTournament.bracket_data[activeTournament.bracket_data.length - 1].team1?.id
                                     ? activeTournament.bracket_data[activeTournament.bracket_data.length - 1].team1?.name
                                     : activeTournament.bracket_data[activeTournament.bracket_data.length - 1].team2?.name}</h3>
                             </div>
@@ -74,11 +74,11 @@ const Tournaments = () => {
                                         {match.team1?.name || 'TBD'}
                                         {match.winner === match.team1?.id && ' 🏆'}
                                     </h4>
-                                    {match.team1 && <small style={{ color: '#666' }}>Avg Rank: {getTeamMMR(match.team1).toFixed(0)}</small>}
+                                    {match.team1 && <small style={{ color: '#666' }}>Prosečan Rank: {getTeamMMR(match.team1).toFixed(0)}</small>}
                                 </div>
 
                                 <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: match.winner ? '#666' : 'var(--accent)', textAlign: 'center' }}>
-                                    {match.winner ? <span style={{ fontSize: '0.9rem', border: '1px solid #444', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>FINISHED</span> : 'VS'}
+                                    {match.winner ? <span style={{ fontSize: '0.9rem', border: '1px solid #444', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>ZAVRŠENO</span> : 'VS'}
                                 </div>
 
                                 <div style={{ textAlign: 'center' }}>
@@ -86,7 +86,7 @@ const Tournaments = () => {
                                         {match.team2?.name || 'TBD'}
                                         {match.winner === match.team2?.id && ' 🏆'}
                                     </h4>
-                                    {match.team2 && <small style={{ color: '#666' }}>Avg Rank: {getTeamMMR(match.team2).toFixed(0)}</small>}
+                                    {match.team2 && <small style={{ color: '#666' }}>Prosečan Rank: {getTeamMMR(match.team2).toFixed(0)}</small>}
                                 </div>
                             </div>
                         ))}

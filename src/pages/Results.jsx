@@ -11,7 +11,7 @@ const Results = () => {
     };
 
     const formatDate = (ts) => {
-        if (!ts) return "Unknown Date";
+        if (!ts) return "Nepoznat Datum";
         return new Date(ts).toLocaleString();
     };
 
@@ -24,7 +24,7 @@ const Results = () => {
                 if (found) return found.personaName || found.name;
             }
         }
-        return p.name || p.personaName || 'Unknown';
+        return p.name || p.personaName || 'Nepoznato';
     };
 
     const getItemImageUrl = (itemName) => {
@@ -36,7 +36,7 @@ const Results = () => {
 
     return (
         <div className="container" style={{ padding: '4rem 0' }}>
-            <h1 style={{ marginBottom: '2rem', textAlign: 'center' }}>Istorija Mečeve</h1>
+            <h1 style={{ marginBottom: '2rem', textAlign: 'center' }}>Istorija Mečeva</h1>
 
             {!matchHistory || matchHistory.length === 0 ? (
                 <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
@@ -93,15 +93,15 @@ const Results = () => {
                                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                                             <thead>
                                                 <tr style={{ borderBottom: '1px solid #333', color: '#888' }}>
-                                                    <th style={{ textAlign: 'left', padding: '0.5rem' }}>Player</th>
-                                                    <th style={{ textAlign: 'left', padding: '0.5rem' }}>Hero</th>
+                                                    <th style={{ textAlign: 'left', padding: '0.5rem' }}>Igrač</th>
+                                                    <th style={{ textAlign: 'left', padding: '0.5rem' }}>Heroj</th>
                                                     <th style={{ textAlign: 'center', padding: '0.5rem' }}>Lvl</th>
                                                     <th style={{ textAlign: 'center', padding: '0.5rem' }}>K/D/A</th>
                                                     <th style={{ textAlign: 'center', padding: '0.5rem' }}>LH/DN</th>
                                                     <th style={{ textAlign: 'center', padding: '0.5rem' }}>Net Worth</th>
                                                     <th style={{ textAlign: 'center', padding: '0.5rem' }}>GPM / XPM</th>
                                                     <th style={{ textAlign: 'center', padding: '0.5rem' }}>Rosh</th>
-                                                    <th style={{ textAlign: 'left', padding: '0.5rem' }}>Items</th>
+                                                    <th style={{ textAlign: 'left', padding: '0.5rem' }}>Predmeti</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

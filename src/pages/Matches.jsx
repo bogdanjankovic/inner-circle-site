@@ -46,15 +46,15 @@ const Matches = () => {
                                 {/* Expandable Details */}
                                 {expandedMatchId === m.matchId && (
                                     <div style={{ borderTop: '1px solid #222', padding: '1rem', textAlign: 'center', color: '#888' }}>
-                                        Match details will appear here once live.
+                                        Detalji meča će se prikazati ovde kada meč počne.
                                     </div>
                                 )}
                             </div>
                         ))}
                     {(activeTournament.bracket_data || []).filter(m => !m.winner).length === 0 && (
                         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-                            <h3>No upcoming matches</h3>
-                            <p>All matches in the current tournament have been played.</p>
+                            <h3>Nema predstojećih mečeva</h3>
+                            <p>Svi mečevi u trenutnom turniru su završeni.</p>
                         </div>
                     )}
                 </div>
