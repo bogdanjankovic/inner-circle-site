@@ -19,8 +19,9 @@ const Results = () => {
     const getPlayerName = (p) => {
         if (p.tournamentPlayerId && teams) {
             for (const t of teams) {
-                const found = t.players?.find(tp => tp.id === p.tournamentPlayerId);
-                if (found) return found.nickname;
+                // Match by steamId, not id
+                const found = t.players?.find(tp => tp.steamId === p.tournamentPlayerId);
+                if (found) return found.personaName || found.name;
             }
         }
         return p.name || p.personaName || 'Unknown';
@@ -30,7 +31,7 @@ const Results = () => {
         if (!itemName) return '';
         const cleanName = itemName.replace(/"/g, "").replace('item_', '');
         const snake = cleanName.replace(/([A-Z])/g, "_$1").toLowerCase().replace(/^_/, "");
-        return `https://cdn.dota2.com/apps/dota2/images/items/${snake}_lg.png`;
+        return `https://steamcdn-a.akamaihd.net/apps/dota2/images/items/${snake}_lg.png`;
     };
 
     return (
