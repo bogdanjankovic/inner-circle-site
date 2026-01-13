@@ -6,6 +6,7 @@ const ITEM_IMG_BASE = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/
 const ABILITY_IMG_BASE = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/abilities/';
 
 const formatNumber = (num) => {
+    if (num == null || isNaN(num)) return '0';
     if (num >= 1000) {
         return (num / 1000).toFixed(1) + 'k';
     }
