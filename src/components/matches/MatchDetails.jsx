@@ -1,6 +1,6 @@
 import React from 'react';
 import './MatchDetails.css';
-import { HeroImage } from '../components/ui/HeroTooltip';
+import { HeroImage } from '../ui/HeroTooltip';
 
 const HERO_IMG_BASE = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/';
 const ITEM_IMG_BASE = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/';
