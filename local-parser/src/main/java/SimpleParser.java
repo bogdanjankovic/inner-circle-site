@@ -37,8 +37,8 @@ public class SimpleParser {
     private List<Map<String, Object>> wardLog = new ArrayList<>();
     // Ability Build: PlayerID -> List of Ability Names
     private Map<Integer, List<String>> abilityUpgrades = new HashMap<>();
-    // Position Storage: PlayerID -> List of "{t, x, y}"
-    private Map<Integer, List<String>> playerPositions = new HashMap<>();
+    // Position Storage: PlayerID -> List of "[t, x, y]"
+    private Map<Integer, List<int[]>> playerPositions = new HashMap<>();
 
     // Damage Stats Maps: key = hero name (e.g. "npc_dota_hero_axe")
     private Map<String, Integer> heroDamageMap = new HashMap<>();
@@ -369,7 +369,7 @@ public class SimpleParser {
                             int normY = y;
 
                             playerPositions.computeIfAbsent(i, k -> new ArrayList<>())
-                                    .add("[" + (int) time + "," + normX + "," + normY + "]");
+                                    .add(new int[] { (int) time, normX, normY });
                         }
                     }
                 }
@@ -877,8 +877,15 @@ public class SimpleParser {
             List<String> upgrades = abilityUpgrades.getOrDefault(i, Collections.emptyList());
             pJson.append("      \"ability_build\": [").append(String.join(", ", upgrades)).append("],\n");
 
-            List<String> posList = playerPositions.getOrDefault(i, Collections.emptyList());
-            pJson.append("      \"positions\": [").append(String.join(", ", posList)).append("]\n");
+            List<int[]> posList = playerPositions.getOrDefault(i, Collections.emptyList());
+            pJson.append("      \"positions\": [");
+            for (int k = 0; k < posList.size(); k++) {
+                int[] p = posList.get(k);
+                pJson.append("[").append(p[0]).append(",").append(p[1]).append(",").append(p[2]).append("]");
+                if (k < posList.size() - 1)
+                    pJson.append(", ");
+            }
+            pJson.append("]\n");
 
             pJson.append("    }");
             playerJsons.add(pJson.toString());

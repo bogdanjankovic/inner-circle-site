@@ -3,8 +3,8 @@ import './MatchDetails.css';
 import { HeroImage } from '../ui/HeroTooltip';
 
 const HERO_IMG_BASE = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/';
-const ITEM_IMG_BASE = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/';
-const ABILITY_IMG_BASE = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/abilities/';
+const ITEM_IMG_BASE = 'https://cdn.dota2.com/apps/dota2/images/items/';
+const ABILITY_IMG_BASE = 'https://cdn.dota2.com/apps/dota2/images/abilities/';
 
 const formatNumber = (num) => {
     if (num == null || isNaN(num)) return '0';
@@ -44,16 +44,22 @@ const PlayerRow = ({ p }) => {
             <td>{formatNumber(p.heroHealing)}</td>
             <td>
                 <div className="items-cell">
-                    {p.items.map((item, idx) => (
-                        <img
-                            key={idx}
-                            src={`${ITEM_IMG_BASE}${item}.png`}
-                            alt={item}
-                            title={item}
-                            className="item-icon"
-                            onError={(e) => e.target.style.display = 'none'}
-                        />
-                    ))}
+                    {p.items.map((item, idx) => {
+                        // Remove 'item_' prefix if present (parser usually keeps it? check parser)
+                        // Parser seems to return names like "item_blink".
+                        // Valve CDN expects "blink_lg.png".
+                        const cleanItem = item.replace('item_', '');
+                        return (
+                            <img
+                                key={idx}
+                                src={`${ITEM_IMG_BASE}${cleanItem}_lg.png`}
+                                alt={item}
+                                title={item}
+                                className="item-icon"
+                                onError={(e) => e.target.style.display = 'none'}
+                            />
+                        );
+                    })}
                 </div>
             </td>
         </tr>
@@ -141,10 +147,17 @@ const AbilityBuildGrid = ({ teamName, players }) => {
                                 return (
                                     <div key={i} style={{ textAlign: 'center' }}>
                                         <img
-                                            src={`${ABILITY_IMG_BASE}${ability}.png`}
+                                            src={`${ABILITY_IMG_BASE}${ability}_md.png`}
                                             className="ability-icon-small"
                                             title={ability}
-                                            onError={(e) => e.target.style.opacity = 0}
+                                            onError={(e) => {
+                                                // Fallback to _hp1 or default
+                                                if (!e.target.src.includes('_hp1')) {
+                                                    e.target.src = `${ABILITY_IMG_BASE}${ability}_hp1.png`;
+                                                } else {
+                                                    e.target.style.opacity = 0;
+                                                }
+                                            }}
                                         />
                                     </div>
                                 )
