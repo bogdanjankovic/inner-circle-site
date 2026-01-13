@@ -45,6 +45,14 @@ public class SimpleParser {
     private Map<String, Integer> towerDamageMap = new HashMap<>();
     private Map<String, Integer> heroHealingMap = new HashMap<>();
 
+    // NEW: Granular Stats
+    private Map<Integer, Integer> stacksMap = new HashMap<>(); // PID -> Stacks
+    private Map<Integer, Integer> neutralTokensMap = new HashMap<>(); // PID -> Tokens Found
+    private Map<Integer, Integer> tormentorKillsMap = new HashMap<>(); // PID -> Tormentors Killed
+    // Also track total team tormentor kills?
+    private int radiantTormentors = 0;
+    private int direTormentors = 0;
+
     public static void main(String[] args) throws Exception {
         if (args.length == 0) {
             System.err.println("Usage: java -jar dota-parser.jar <demofile>");
@@ -470,34 +478,88 @@ public class SimpleParser {
         combatLogEvents.add(log);
     }
 
+    @OnGameEvent("dota_camp_stack")
+    public void onCampStack(skadistats.clarity.model.GameEvent event) {
+        Integer pid = event.getProperty("stacker_player_id");
+        if (pid != null) {
+            stacksMap.merge(pid, 1, Integer::sum);
+            log("DEBUG: Stack by Player " + pid);
+        }
+    }
+
+    @OnGameEvent("dota_item_picked_up")
+    public void onItemPickedUp(skadistats.clarity.model.GameEvent event) {
+        String item = event.getProperty("itemname");
+        Integer pid = event.getProperty("PlayerID");
+
+        if (item != null && pid != null) {
+            // Check for Neutral Tokens (Tier 1-5)
+            // Item names usually: item_neutral_token_tier_1, etc.
+            // Or specific tokens? Dota 7.37+ has tokens.
+            if (item.contains("neutral_token") || item.contains("item_tier_")) {
+                neutralTokensMap.merge(pid, 1, Integer::sum);
+                // log("DEBUG: Token " + item + " picked up by " + pid);
+            }
+        }
+    }
+
     @OnCombatLogEntry
     public void onCombatLogEntry(CombatLogEntry cle) {
         try {
-            int type = cle.getType().ordinal();
-            // DOTA_COMBATLOG_DAMAGE = 4
-            if (type == 4) {
+            // Use String name to be safe against ordinal changes, or implicit imports
+            // But cle.getType() returns an Enum DOTA_COMBATLOG_TYPES
+            // We can match substring or specific enum properties.
+            // Clarity 2 usages was specific, Clarity 3/Source 2 might differ.
+            // Safe fallback: use the ordinal 4 for Damage, 5 for Heal (Standard Dota 2)
+
+            // To be more robust:
+            String typeName = cle.getType().name();
+            boolean isDamage = typeName.equals("DOTA_COMBATLOG_DAMAGE") || cle.getType().ordinal() == 4;
+            boolean isHeal = typeName.equals("DOTA_COMBATLOG_HEAL") || cle.getType().ordinal() == 5;
+
+            if (isDamage) {
                 String attacker = cle.getAttackerName();
                 String target = cle.getTargetName();
                 int val = cle.getValue();
 
                 if (attacker != null && attacker.startsWith("npc_dota_hero")) {
                     if (target != null && target.startsWith("npc_dota_hero")) {
-                        heroDamageMap.merge(attacker, val, Integer::sum);
+                        // FILTER: Exclude Illusions
+                        boolean isIllusion = cle.isTargetIllusion();
+                        // FILTER: Exclude Self Damage (optional, but standard stats usually exclude)
+                        boolean isSelf = attacker.equals(target);
+
+                        if (!isIllusion && !isSelf) {
+                            heroDamageMap.merge(attacker, val, Integer::sum);
+                        }
                     } else if (target != null && (target.contains("tower") || target.contains("barracks")
-                            || target.contains("fort") || target.contains("healer"))) {
+                            || target.contains("fort") || target.contains("healer")
+                            || target.contains("filler") || target.contains("effigy"))) {
                         towerDamageMap.merge(attacker, val, Integer::sum);
                     }
                 }
             }
-            // DOTA_COMBATLOG_HEAL = 5
-            if (type == 5) {
+
+            if (isHeal) {
                 String attacker = cle.getAttackerName();
+                String target = cle.getTargetName();
                 int val = cle.getValue();
+
+                // FILTER: Only count healing provided to HEROES (Self or Ally)
+                // Existing bug: Counted healing to creeps (e.g. Dazzle Wave)
                 if (attacker != null && attacker.startsWith("npc_dota_hero")) {
-                    heroHealingMap.merge(attacker, val, Integer::sum);
+                    if (target != null && target.startsWith("npc_dota_hero")) {
+                        // Illusions? Usually healing illusions counts or doesn't matter much,
+                        // but let's exclude to be safe if `isTargetIllusion` works.
+                        boolean isIllusion = cle.isTargetIllusion();
+                        if (!isIllusion) {
+                            heroHealingMap.merge(attacker, val, Integer::sum);
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
+            // Ignore errors in logging to prevent crash
         }
     }
 
@@ -769,6 +831,30 @@ public class SimpleParser {
             int assists = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iAssists", i);
             int level = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iLevel", i);
             int heroId = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_nSelectedHeroID", i);
+
+            // Resolve Tormentor Kills for this player (Hero Name Match)
+            // Need the hero name for this PID.
+            // We can get it from the "hero" entity loop or query Entities again?
+            // Or we know the heroId, can we map to name?
+            // Hard without the list.
+            // Better: Iterate entities to find this player's hero name?
+            // Or rely on the fact that we have heroName logic in checkAbilityUpgrades.
+            // Let's try to get the Hero Entity again for the name.
+            int tormentorKills = 0;
+            Integer heroHandle = getProperty(pr,
+                    "m_vecPlayerTeamData." + Util.arrayIdxToString(i) + ".m_hSelectedHero");
+            if (heroHandle != null) {
+                Entity hero = entities.getByHandle(heroHandle);
+                if (hero != null) {
+                    String hName = hero.getDtClass().getDtName();
+                    String pName = "npc_dota_hero_"
+                            + hName.replace("CDOTA_Unit_Hero_", "").replace("CDOTA_Unit_", "").toLowerCase();
+                    tormentorKills = tormentorKillsTempMap.getOrDefault(pName, 0);
+                }
+            }
+
+            int stacks = stacksMap.getOrDefault(i, 0);
+            int tokens = neutralTokensMap.getOrDefault(i, 0);
 
             int lastHits = 0, denies = 0, gold = 0, netWorth = 0, gpm = 0, xpm = 0;
             int heroDamage = 0, towerDamage = 0, heroHealing = 0;

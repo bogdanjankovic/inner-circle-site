@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
+import http from 'http';
 import { fileURLToPath } from 'url';
 
 // Helper to handle ESM __dirname
@@ -33,12 +34,19 @@ const downloadImage = (url, localPath) => {
                 resolve();
                 return;
             }
-            https.get(currentUrl, response => {
+
+            const client = currentUrl.startsWith('https') ? https : http;
+
+            client.get(currentUrl, response => {
                 // Handle Redirects
                 if (response.statusCode === 301 || response.statusCode === 302) {
                     if (response.headers.location) {
-                        // console.log(`Following redirect for ${path.basename(localPath)}`);
-                        get(response.headers.location);
+                        // Handle relative redirects (unlikely but possible)
+                        const redirectUrl = response.headers.location.startsWith('http')
+                            ? response.headers.location
+                            : new URL(response.headers.location, currentUrl).toString();
+
+                        get(redirectUrl);
                         return;
                     }
                 }
@@ -52,10 +60,9 @@ const downloadImage = (url, localPath) => {
                         resolve();
                     });
                 } else {
-                    // Consume data to free memory
                     response.resume();
                     console.warn(`Failed to download ${currentUrl}: ${response.statusCode}`);
-                    resolve(); // Resolve to convert failure to skip
+                    resolve();
                 }
             }).on('error', err => {
                 fs.unlink(localPath, () => { });
@@ -71,24 +78,19 @@ const downloadImage = (url, localPath) => {
 const main = async () => {
     console.log('Fetching OpenDota Constants...');
 
+    // CDNs
+    const REACT_CDN = 'https://cdn.cloudflare.steamstatic.com'; // For Heroes (dota_react)
+    const VALVE_CDN = 'http://cdn.dota2.com'; // For Items/Abilities (standard)
+
     // 1. Heroes
     const heroesRes = await fetch('https://api.opendota.com/api/constants/heroes');
     const heroes = await heroesRes.json();
     console.log(`Found ${Object.keys(heroes).length} heroes.`);
 
-    // Official CDN base for heroes (OpenDota img usually has /apps/dota2/...)
-    const STEAM_CDN = 'https://cdn.cloudflare.steamstatic.com';
-
     for (const [id, hero] of Object.entries(heroes)) {
-        // hero.img: "/apps/dota2/images/dota_react/heroes/icons/antimage.png?"
-        // We want to save as "antimage.png" (clean name) or use ID?
-        // Using "npc_dota_hero_antimage" is safer but "antimage" matches `heroName` used in code.
-        // `hero.name` is "npc_dota_hero_antimage".
-        // `heroDetails.jsx` uses `p.heroName` which removes prefix?
-        // Let's verify what `p.heroName` is. usually "antimage".
-
         const heroName = hero.name.replace('npc_dota_hero_', '');
-        const url = `${STEAM_CDN}${hero.img}`;
+        // Heroes use dota_react paths usually
+        const url = `${REACT_CDN}${hero.img}`;
         const localPath = path.join(HEROES_DIR, `${heroName}.png`);
         await downloadImage(url, localPath);
     }
@@ -99,16 +101,11 @@ const main = async () => {
     console.log(`Found ${Object.keys(items).length} items.`);
 
     for (const [key, item] of Object.entries(items)) {
-        // item.img: "/apps/dota2/images/items/blink_lg.png?3"
         if (!item.img) continue;
-
-        // key is "blink". `item_blink` -> replace `item_` -> `blink`.
-        // We save as `blink.png`. (We will ignore _lg suffix in local filename to make it simpler, OR keep it?)
-        // Let's Keep naming simple: `{item_name}.png`.
-
-        const itemName = key; // e.g. "blink", "recipe_blink"
-        const url = `${STEAM_CDN}${item.img.split('?')[0]}`;
-        const localPath = path.join(ITEMS_DIR, `${itemName}.png`); // standardize extension? Source is png.
+        const itemName = key;
+        // Items often use standard paths. Use VALVE_CDN (http)
+        const url = `${VALVE_CDN}${item.img.split('?')[0]}`;
+        const localPath = path.join(ITEMS_DIR, `${itemName}.png`);
         await downloadImage(url, localPath);
     }
 
@@ -118,11 +115,10 @@ const main = async () => {
     console.log(`Found ${Object.keys(abilities).length} abilities.`);
 
     for (const [key, ability] of Object.entries(abilities)) {
-        // ability.img: "/apps/dota2/images/abilities/antimage_blink_md.png"
         if (!ability.img) continue;
-
-        const abilityName = key; // e.g. "antimage_blink"
-        const url = `${STEAM_CDN}${ability.img.split('?')[0]}`;
+        const abilityName = key;
+        // Abilities also use VALVE_CDN usually
+        const url = `${VALVE_CDN}${ability.img.split('?')[0]}`;
         const localPath = path.join(ABILITIES_DIR, `${abilityName}.png`);
         await downloadImage(url, localPath);
     }
