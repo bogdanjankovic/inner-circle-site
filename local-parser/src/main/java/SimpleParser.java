@@ -343,8 +343,37 @@ public class SimpleParser {
                     Integer x = getProperty(hero, "CBodyComponent.m_cellX");
                     Integer y = getProperty(hero, "CBodyComponent.m_cellY");
                     if (x != null && y != null) {
-                        playerPositions.computeIfAbsent(i, k -> new ArrayList<>())
-                                .add("[" + (int) time + "," + x + "," + y + "]");
+                        if (x != null && y != null) {
+                            // Adjustment: Cell coordinates are typically 64-192. We map to 0-128.
+                            // Actually, cell coordinates usually centered around 128?
+                            // Let's assume standard cell range and normalize if needed.
+                            // User reported offset.
+                            // Try 64 offset? Or just output raw and fix in frontend?
+                            // Better to output consistent 0-127 range if possible.
+                            // Standard Dota map cell origin is often (cellX - 64, cellY - 64).
+                            // Let's try raw first but ensure we log it.
+                            // Actually, let's switch to m_vecOrigin if available for smoother heatmaps?
+                            // Sticking to cellX/Y for minimap grid consistency.
+                            // Offsetting by -64 might actally place it correctly if the map thinks 0,0 is
+                            // center.
+                            // Let's try to normalize to 0-128 range assuming map is 128x128.
+                            // The values typically seen are around ~70-180.
+                            // Let's subtract 64.
+                            int normX = x - 64;
+                            int normY = y - 64;
+                            // Clamp
+                            if (normX < 0)
+                                normX = 0;
+                            if (normX > 127)
+                                normX = 127;
+                            if (normY < 0)
+                                normY = 0;
+                            if (normY > 127)
+                                normY = 127;
+
+                            playerPositions.computeIfAbsent(i, k -> new ArrayList<>())
+                                    .add("[" + (int) time + "," + normX + "," + normY + "]");
+                        }
                     }
                 }
             }
@@ -370,8 +399,8 @@ public class SimpleParser {
         if (name.equals("CDOTA_NPC_Observer_Ward") || name.equals("CDOTA_NPC_Sentry_Ward")) {
             Map<String, Object> ward = new HashMap<>();
             ward.put("type", name.contains("Observer") ? "Observer" : "Sentry");
-            ward.put("x", getProperty(e, "CBodyComponent.m_cellX"));
-            ward.put("y", getProperty(e, "CBodyComponent.m_cellY"));
+            ward.put("x", getIntPropertyDirect(e, "CBodyComponent.m_cellX", 0) - 64);
+            ward.put("y", getIntPropertyDirect(e, "CBodyComponent.m_cellY", 0) - 64);
             ward.put("owner", getProperty(e, "m_hOwnerEntity"));
             ward.put("time", getGameTime());
             wardLog.add(ward);
@@ -644,6 +673,13 @@ public class SimpleParser {
         sb.append("  \"winner\": \"").append(winner).append("\",\n");
         sb.append("  \"duration\": ").append(duration).append(",\n");
 
+        // Sort picks/bans by order
+        cachedPicksBans.sort((a, b) -> {
+            int orderA = extractOrder(a);
+            int orderB = extractOrder(b);
+            return Integer.compare(orderA, orderB);
+        });
+
         sb.append("  \"picks_bans\": [");
         for (int i = 0; i < cachedPicksBans.size(); i++) {
             sb.append(cachedPicksBans.get(i));
@@ -717,7 +753,13 @@ public class SimpleParser {
                 direIdx++;
             }
             gpm = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iGoldPerMin", i);
+            gpm = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iGoldPerMin", i);
             xpm = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iXPPerMin", i);
+
+            // New Stats
+            int heroDamage = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iHeroDamage", i);
+            int towerDamage = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iTowerDamage", i);
+            int heroHealing = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iHeroHealing", i);
 
             List<String> items = new ArrayList<>();
             List<String> abilities = new ArrayList<>();
@@ -735,7 +777,8 @@ public class SimpleParser {
                     if (itemHandle != null && itemHandle != 2097151) {
                         Entity itemEntity = entities.getByHandle(itemHandle);
                         if (itemEntity != null) {
-                            items.add("\"" + itemEntity.getDtClass().getDtName().replace("CDOTA_Item_", "") + "\"");
+                            items.add("\"" + itemEntity.getDtClass().getDtName().replace("CDOTA_Item_", "")
+                                    .replace("item_", "") + "\"");
                         }
                     }
                 }
@@ -773,6 +816,11 @@ public class SimpleParser {
             pJson.append("      \"netWorth\": ").append(netWorth).append(",\n");
             pJson.append("      \"gpm\": ").append(gpm).append(",\n");
             pJson.append("      \"xpm\": ").append(xpm).append(",\n");
+            pJson.append("      \"gpm\": ").append(gpm).append(",\n");
+            pJson.append("      \"xpm\": ").append(xpm).append(",\n");
+            pJson.append("      \"heroDamage\": ").append(heroDamage).append(",\n");
+            pJson.append("      \"towerDamage\": ").append(towerDamage).append(",\n");
+            pJson.append("      \"heroHealing\": ").append(heroHealing).append(",\n");
             pJson.append("      \"items\": [").append(String.join(", ", items)).append("],\n");
             pJson.append("      \"abilities\": [").append(String.join(", ", abilities)).append("],\n");
 
@@ -796,6 +844,19 @@ public class SimpleParser {
     // -------------------------------------------------------------------------
     // Utilities
     // -------------------------------------------------------------------------
+    private int extractOrder(String json) {
+        try {
+            int idx = json.indexOf("\"order\":");
+            if (idx != -1) {
+                int end = json.indexOf("}", idx);
+                String num = json.substring(idx + 8, end).trim();
+                return Integer.parseInt(num);
+            }
+        } catch (Exception e) {
+        }
+        return 0;
+    }
+
     private String mapToJson(Map<String, Object> map) {
         StringBuilder sb = new StringBuilder();
         sb.append("{");

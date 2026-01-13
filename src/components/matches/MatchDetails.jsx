@@ -136,7 +136,7 @@ const AbilityBuildGrid = ({ teamName, players }) => {
                             </div>
                         </div>
                         {[...Array(25)].map((_, i) => {
-                            const ability = p.abilityMap ? p.abilityMap[i] : null;
+                            const ability = p.ability_build ? p.ability_build[i] : null;
                             if (ability) {
                                 return (
                                     <div key={i} style={{ textAlign: 'center' }}>
