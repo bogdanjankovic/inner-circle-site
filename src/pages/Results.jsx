@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTournament } from '../context/TournamentContext';
-import { HeroImage } from '../components/ui/HeroTooltip';
+
+import MatchDetails from '../components/matches/MatchDetails';
 
 const Results = () => {
     const { matchHistory, teams } = useTournament();
@@ -15,24 +16,9 @@ const Results = () => {
         return new Date(ts).toLocaleString();
     };
 
-    // Helper to resolve player name
-    const getPlayerName = (p) => {
-        if (p.tournamentPlayerId && teams) {
-            for (const t of teams) {
-                // Match by steamId, not id
-                const found = t.players?.find(tp => (tp.steamId === p.tournamentPlayerId) || (tp.steamId === p.steamId));
-                if (found) return found.personaName || found.name;
-            }
-        }
-        return p.name || p.personaName || 'Nepoznato';
-    };
 
-    const getItemImageUrl = (itemName) => {
-        if (!itemName) return '';
-        const cleanName = itemName.replace(/"/g, "").replace('item_', '');
-        const snake = cleanName.replace(/([A-Z])/g, "_$1").toLowerCase().replace(/^_/, "");
-        return `https://steamcdn-a.akamaihd.net/apps/dota2/images/items/${snake}_lg.png`;
-    };
+
+
 
     return (
         <div className="container" style={{ padding: '4rem 0' }}>
@@ -107,62 +93,8 @@ const Results = () => {
 
                                 {/* Expanded Details */}
                                 {(expandedMatch === (match.matchId || index)) && (
-                                    <div style={{ padding: '1rem', background: '#111', overflowX: 'auto' }}>
-                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
-                                            <thead>
-                                                <tr style={{ borderBottom: '1px solid #333', color: '#888' }}>
-                                                    <th style={{ textAlign: 'left', padding: '0.5rem' }}>Igrač</th>
-                                                    <th style={{ textAlign: 'left', padding: '0.5rem' }}>Heroj</th>
-                                                    <th style={{ textAlign: 'center', padding: '0.5rem' }}>Lvl</th>
-                                                    <th style={{ textAlign: 'center', padding: '0.5rem' }}>K/D/A</th>
-                                                    <th style={{ textAlign: 'center', padding: '0.5rem' }}>LH/DN</th>
-                                                    <th style={{ textAlign: 'center', padding: '0.5rem' }}>Net Worth</th>
-                                                    <th style={{ textAlign: 'center', padding: '0.5rem' }}>GPM / XPM</th>
-                                                    <th style={{ textAlign: 'center', padding: '0.5rem' }}>Rosh</th>
-                                                    <th style={{ textAlign: 'left', padding: '0.5rem' }}>Predmeti</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {(match.players || []).sort((a, b) => (a.team === 'Radiant' ? 0 : 1) - (b.team === 'Radiant' ? 0 : 1)).map((p, idx) => (
-                                                    <tr key={idx} style={{ borderBottom: '1px solid #222' }}>
-                                                        <td style={{ padding: '0.5rem', color: p.team === 'Radiant' ? '#4caf50' : '#f44336', fontWeight: p.tournamentPlayerId ? 'bold' : 'normal' }}>
-                                                            {getPlayerName(p)}
-                                                            {p.team === 'Radiant' && p.tournamentPlayerId && <span style={{ marginLeft: '5px', fontSize: '0.7em', color: '#4caf50' }}>✓</span>}
-                                                            {p.team === 'Dire' && p.tournamentPlayerId && <span style={{ marginLeft: '5px', fontSize: '0.7em', color: '#f44336' }}>✓</span>}
-                                                        </td>
-                                                        <td style={{ padding: '0.5rem' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                <HeroImage heroId={p.heroId} />
-                                                            </div>
-                                                        </td>
-                                                        <td style={{ textAlign: 'center', color: '#ccc' }}>{p.level}</td>
-                                                        <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
-                                                            <span style={{ color: '#4caf50' }}>{p.kills}</span>/
-                                                            <span style={{ color: '#f44336' }}>{p.deaths}</span>/
-                                                            <span style={{ color: '#fff' }}>{p.assists}</span>
-                                                        </td>
-                                                        <td style={{ textAlign: 'center', color: '#aaa' }}>{p.lastHits || 0}/{p.denies || 0}</td>
-                                                        <td style={{ textAlign: 'center', color: '#ffd700' }}>{(p.netWorth || 0).toLocaleString()}</td>
-                                                        <td style={{ textAlign: 'center', color: '#aaa' }}>{p.gpm || 0} <span style={{ color: '#444' }}>/</span> {p.xpm || 0}</td>
-                                                        <td style={{ textAlign: 'center', color: '#b8860b' }}>{p.roshans || '-'}</td>
-                                                        <td style={{ padding: '0.5rem' }}>
-                                                            <div style={{ display: 'flex', gap: '2px' }}>
-                                                                {p.items && p.items.map((item, i) => (
-                                                                    <img
-                                                                        key={i}
-                                                                        src={getItemImageUrl(item)}
-                                                                        alt={item}
-                                                                        title={item}
-                                                                        style={{ width: '32px', height: '24px', borderRadius: '2px', background: '#222' }}
-                                                                        onError={(e) => e.target.style.display = 'none'}
-                                                                    />
-                                                                ))}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                    <div style={{ padding: '0', background: '#111', overflowHidden: 'true' }}>
+                                        <MatchDetails match={match} />
                                     </div>
                                 )}
                             </div>
