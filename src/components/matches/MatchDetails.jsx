@@ -345,8 +345,8 @@ const HeatmapOverlay = ({ players, wards }) => {
     }, [players, bounds, scaleX, scaleY]);
 
     return (
-        <>
-            <div className="minimap-wrapper">
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', justifyContent: 'center' }}>
+            <div className="minimap-wrapper" style={{ flex: '0 0 auto' }}>
                 {/* Pass calculated bounds to Minimap for wards */}
                 <Minimap wards={wards} minX={bounds.minX} minY={bounds.minY} scaleX={scaleX} scaleY={scaleY} />
 
@@ -360,12 +360,42 @@ const HeatmapOverlay = ({ players, wards }) => {
                     />
                 </div>
             </div>
-            {/* Legend Outside */}
-            <div style={{ textAlign: 'center', marginTop: '10px', display: 'flex', gap: '20px', justifyContent: 'center', fontSize: '0.9rem' }}>
-                <div style={{ color: '#3d9546' }}>■ Radiant Movement</div>
-                <div style={{ color: '#c23c2a' }}>■ Dire Movement</div>
+
+            {/* Legend Side Panel */}
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                background: '#15191f',
+                padding: '15px',
+                borderRadius: '4px',
+                minWidth: '200px'
+            }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 'bold', borderBottom: '1px solid #333', paddingBottom: '8px', marginBottom: '4px' }}>
+                    Legend
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'rgba(61, 149, 70, 0.8)' }}></div>
+                    <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Radiant Movement</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'rgba(194, 60, 42, 0.8)' }}></div>
+                    <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Dire Movement</div>
+                </div>
+
+                <div style={{ marginTop: '10px', fontSize: '0.9rem', fontWeight: 'bold', borderBottom: '1px solid #333', paddingBottom: '8px', marginBottom: '4px' }}>
+                    Wards
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="ward-dot obs"></div>
+                    <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Observer Ward</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="ward-dot sent"></div>
+                    <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Sentry Ward</div>
+                </div>
             </div>
-        </>
+        </div>
     );
 };
 
