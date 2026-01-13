@@ -157,19 +157,224 @@ const AbilityBuildGrid = ({ teamName, players }) => {
     )
 }
 
+const DraftTimeline = ({ picksBans }) => {
+    if (!picksBans || picksBans.length === 0) return null;
+
+    // Helper to get hero image
+    const getHeroImg = (id) => {
+        // We need a mapping or fetch mechanism for ID -> Name if not provided. 
+        // For now, assuming we might need to rely on the ID being sufficient if we had a map, 
+        // OR we just use the ID if we can't map. 
+        // Ideally the parser should provide hero names in picks_bans too to avoid huge client-side maps.
+        // Waiting for user feedback or assuming we have a map.
+        // Actually, let's use a placeholder or handle it if we have the data.
+        // The parser output shows "hero_id". We need "hero_name" for the image URL.
+        // We can find the hero name from the players list if a player picked it? 
+        // Bans won't have players.
+        // We might need a small ID->Name map or fetch it.
+        // For this step, I will use a placeholder or generic DOTA ID usage if valid.
+        // Crap, I need the hero name string (e.g. "antimage") for the image URL.
+        // I will assume I can pass a heroMap or just use ID for now and fix later?
+        // Let's check if we can pass a map from the parent or if we need to fetch constants.
+        return null;
+    };
+
+    // The parser output in the example had "hero_id". 
+    // To display images we need names. 
+    // I'll skip the image logic for a second and just render boxes with IDs/Names if available
+    // OR I can use the `dotaApi` service if available?
+    // Let's look at `dotaApi.js` later. For now, basic structure.
+
+    return (
+        <div style={{ marginBottom: '20px', overflowX: 'auto' }}>
+            <div className="section-header">Draft</div>
+            <div className="draft-timeline">
+                {picksBans.map((pb, idx) => (
+                    <div key={idx} className={`draft-card ${pb.is_pick ? 'pick' : 'ban'} team-${pb.team}`}>
+                        <span className="draft-label">{pb.is_pick ? 'PICK' : 'BAN'}</span>
+                        {/* We need hero ID to Name mapping here. For now showcasing ID */}
+                        <div className="draft-hero-id">{pb.hero_id}</div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+// Simple ID to Name map or fetcher is needed. 
+// For now, I will implement the Tabs structure and move existing code.
+
+const Minimap = ({ wards }) => {
+    // Map constants
+    // Dota 2 map is roughly square.
+    // Coordinates from parser seem to be cell coordinates (0-128 or similar). 
+    // Based on "x: 126, y: 128", it looks like a 128x128 grid (with 128 being edge/max).
+    // Let's assume the grid involves 0-128 range.
+    const MAP_SIZE = 128;
+
+    const getPosStyle = (x, y) => {
+        // Standard Dota 2 Map (0,0) is bottom-left in Cartesian, 
+        // but typically parsers output grid coordinates where (0,0) is bottom-left.
+        // We render on web (0,0 is top-left).
+        // So Left = (x / MAP_SIZE) * 100%
+        // Bottom = (y / MAP_SIZE) * 100% (CSS supports bottom positioning)
+        return {
+            left: `${(x / MAP_SIZE) * 100}%`,
+            bottom: `${(y / MAP_SIZE) * 100}%`
+        };
+    };
+
+    return (
+        <div className="minimap">
+            {wards && wards.map((w, i) => (
+                <div
+                    key={i}
+                    className={`ward-icon ${w.type === 'Observer' ? 'obs' : 'sent'} team-ward`}
+                    style={getPosStyle(w.x, w.y)}
+                    title={`${w.type} Ward (${w.x}, ${w.y})`}
+                ></div>
+            ))}
+        </div>
+    );
+};
+
+const HeatmapOverlay = ({ players }) => {
+    const canvasRef = React.useRef(null);
+    const MAP_SIZE = 127;
+
+    React.useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous
+
+        // Draw Heatmap
+        players.forEach(p => {
+            if (!p.positions) return;
+
+            // Determine color based on team
+            const color = p.team === 'Radiant' ? 'rgba(61, 149, 70, 0.1)' : 'rgba(194, 60, 42, 0.1)';
+
+            ctx.fillStyle = color;
+
+            p.positions.forEach(pos => {
+                // pos is [time, x, y]
+                const x = pos[1];
+                const y = pos[2];
+
+                const cx = (x / MAP_SIZE) * canvas.width;
+                const cy = canvas.height - ((y / MAP_SIZE) * canvas.height);
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, 5, 0, 2 * Math.PI); // Radius 5
+                ctx.fill();
+            });
+        });
+
+    }, [players]);
+
+    return (
+        <div className="minimap-wrapper">
+            {/* Background Map */}
+            <div className="minimap" style={{ position: 'relative' }}>
+                <canvas
+                    ref={canvasRef}
+                    width={512}
+                    height={512}
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+                />
+                {/* Legend */}
+                <div style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(0,0,0,0.7)', padding: '5px', borderRadius: '4px', fontSize: '0.8rem' }}>
+                    <div style={{ color: '#3d9546' }}>■ Radiant Movement</div>
+                    <div style={{ color: '#c23c2a' }}>■ Dire Movement</div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const MatchDetails = ({ match }) => {
+    const [activeTab, setActiveTab] = React.useState('overview');
+
     if (!match || !match.players) return <div style={{ padding: '1rem', color: '#888' }}>No match details available</div>;
 
     const radiantPlayers = match.players.filter(p => p.team === 'Radiant');
     const direPlayers = match.players.filter(p => p.team === 'Dire');
 
+    // Create a hero ID map from players to at least show names for picked heroes
+    const heroIdMap = {};
+    match.players.forEach(p => {
+        heroIdMap[p.heroId] = p.heroName;
+    });
+
     return (
         <div className="match-details-container">
-            <TeamTable teamName="Radiant" players={radiantPlayers} winner={match.winner} />
-            <TeamTable teamName="Dire" players={direPlayers} winner={match.winner} />
+            <div className="match-header">
+                <div>
+                    <span className="match-id">Match {match.matchId}</span>
+                    <span className="match-duration">{(match.duration / 60).toFixed(0)}:{(match.duration % 60).toFixed(0).padStart(2, '0')}</span>
+                </div>
+                <div className={`winner-label ${match.winner === 'Radiant' ? 'radiant-text' : 'dire-text'}`}>
+                    {match.winner} Victory
+                </div>
+            </div>
 
-            <AbilityBuildGrid teamName="Radiant" players={radiantPlayers} />
-            <AbilityBuildGrid teamName="Dire" players={direPlayers} />
+            <div className="tabs">
+                <button className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</button>
+                <button className={`tab-button ${activeTab === 'vision' ? 'active' : ''}`} onClick={() => setActiveTab('vision')}>Vision</button>
+                <button className={`tab-button ${activeTab === 'heatmaps' ? 'active' : ''}`} onClick={() => setActiveTab('heatmaps')}>Heatmaps</button>
+            </div>
+
+            {activeTab === 'overview' && (
+                <>
+                    <div className="draft-section">
+                        {match.picks_bans && (
+                            <div className="draft-row">
+                                {match.picks_bans.map((pb, i) => {
+                                    const heroName = heroIdMap[pb.hero_id] || 'unknown'; // Only works for picks, bans might be unknown name
+                                    const imgUrl = heroName !== 'unknown' ? `${HERO_IMG_BASE}${heroName}.png` : null;
+                                    return (
+                                        <div key={i} className={`draft-item ${pb.is_pick ? 'pick' : 'ban'} ${pb.team === 2 ? 'radiant' : 'dire'}`}>
+                                            {imgUrl ? <img src={imgUrl} title={heroName} /> : <div className="no-hero">{pb.hero_id}</div>}
+                                            <span className="draft-type">{pb.is_pick ? 'PICK' : 'BAN'}</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    <TeamTable teamName="Radiant" players={radiantPlayers} winner={match.winner} />
+                    <TeamTable teamName="Dire" players={direPlayers} winner={match.winner} />
+
+                    <AbilityBuildGrid teamName="Radiant" players={radiantPlayers} />
+                    <AbilityBuildGrid teamName="Dire" players={direPlayers} />
+                </>
+            )}
+
+            {activeTab === 'vision' && (
+                <div className="vision-tab">
+                    <h3>Ward Map</h3>
+                    <div className="minimap-wrapper">
+                        <Minimap wards={match.wards} />
+                        <div className="minimap-legend">
+                            <div className="legend-item"><span className="ward-dot obs"></span> Observer</div>
+                            <div className="legend-item"><span className="ward-dot sent"></span> Sentry</div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'heatmaps' && (
+                <div className="heatmap-tab">
+                    <h3>Player Positioning Heatmap</h3>
+                    <div className="vision-tab"> {/* Reusing centering styles */}
+                        <HeatmapOverlay players={match.players} />
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };

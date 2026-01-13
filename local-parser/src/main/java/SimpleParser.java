@@ -3,17 +3,18 @@ import skadistats.clarity.io.Util;
 import skadistats.clarity.model.Entity;
 import skadistats.clarity.model.FieldPath;
 import skadistats.clarity.processor.entities.Entities;
+import skadistats.clarity.processor.entities.OnEntityCreated;
+import skadistats.clarity.processor.entities.OnEntityUpdated;
 import skadistats.clarity.processor.entities.UsesEntities;
+import skadistats.clarity.processor.gameevents.OnGameEvent;
 import skadistats.clarity.processor.runner.ControllableRunner;
 import skadistats.clarity.source.MappedFileSource;
 import skadistats.clarity.wire.shared.demo.proto.Demo;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Iterator;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
+import skadistats.clarity.model.CombatLogEntry;
+import skadistats.clarity.processor.gameevents.OnCombatLogEntry;
 
 @UsesEntities
 public class SimpleParser {
@@ -23,12 +24,21 @@ public class SimpleParser {
     private long timestamp = 0;
     private float duration = 0; // seconds
     private String winner = "Unknown";
-    private int lastTick = 0;
 
-    // PlayerID -> List of ability names (in order of detection)
-    private Map<Integer, List<String>> skillBuilds = new HashMap<>();
-    // PlayerID -> Map<AbilityName, Level>
-    private Map<Integer, Map<String, Integer>> abilityState = new HashMap<>();
+    // Data Holders
+    private Map<Integer, Integer> playerFacets = new HashMap<>(); // PlayerID -> Facet Index
+    private List<Map<String, Object>> combatLogEvents = new ArrayList<>();
+
+    // Debug: Track unique classes
+    private Set<String> seenClasses = new HashSet<>();
+
+    // ... removed duplicate method ...
+
+    private List<Map<String, Object>> wardLog = new ArrayList<>();
+    // Ability Build: PlayerID -> List of Ability Names
+    private Map<Integer, List<String>> abilityUpgrades = new HashMap<>();
+    // Position Storage: PlayerID -> List of "{t, x, y}"
+    private Map<Integer, List<String>> playerPositions = new HashMap<>();
 
     public static void main(String[] args) throws Exception {
         if (args.length == 0) {
@@ -43,9 +53,26 @@ public class SimpleParser {
         System.exit(0);
     }
 
+    private StringBuilder debugLog = new StringBuilder();
+
     public SimpleParser(String fileName) throws IOException {
-        runner = new ControllableRunner(new MappedFileSource(fileName)).runWith(this);
-        lastTick = runner.getLastTick();
+        runner = new ControllableRunner(new MappedFileSource(fileName));
+        runner.runWith(this);
+    }
+
+    // Callback for UI updates
+    private java.util.function.Consumer<String> statusCallback;
+
+    public void setStatusCallback(java.util.function.Consumer<String> cb) {
+        this.statusCallback = cb;
+    }
+
+    private void log(String msg) {
+        debugLog.append(msg).append("\n");
+        System.err.println(msg);
+        if (statusCallback != null) {
+            statusCallback.accept(msg);
+        }
     }
 
     public void readHeader(String fileName) {
@@ -57,88 +84,153 @@ public class SimpleParser {
                     this.matchId = dota.getMatchId();
                     this.timestamp = dota.getEndTime();
                     this.winner = dota.getGameWinner() == 2 ? "Radiant" : "Dire";
-
                     if (info.hasPlaybackTime()) {
                         this.duration = info.getPlaybackTime();
                     }
                 }
             }
         } catch (Exception e) {
-            // Fallback
+            log("Header Error: " + e.toString());
         }
     }
 
-    public String run() {
-        // Polling Strategy: Seek through replay in 5-second intervals
-        int stepSec = 5;
-        int stepTicks = stepSec * 30;
+    // State for ability polling: PlayerID -> Map<AbilityName, Level>
+    private Map<Integer, Map<String, Integer>> playerAbilityLevels = new HashMap<>();
+    private int updateCount = 0;
 
-        int currentTick = 0;
-        int steps = 0;
-        while (currentTick <= lastTick) {
-            // Optional: Report progress if we had a callback
-            try {
-                runner.seek(currentTick);
-                checkAbilities();
-            } catch (Exception e) {
-                System.err.println("Seek failed at " + currentTick + ": " + e.getMessage());
-                break;
+    // Store Picks/Bans found during run
+    private List<String> cachedPicksBans = new ArrayList<>();
+    private boolean bansFound = false;
+
+    public String run() {
+        int lastTick = runner.getLastTick();
+        log("DEBUG: Parser Start. Reference LastTick=" + lastTick);
+
+        int ticksPerMinute = 30 * 60;
+        int nextSampleTick = 0;
+        int nextAbilityCheck = 0;
+
+        try {
+            while (runner.getTick() < lastTick) {
+                runner.tick();
+
+                int t = runner.getTick();
+                if (t % 5000 == 0) {
+                    log("Processing Tick " + t + " / " + lastTick + " (" + (t * 100 / (lastTick > 0 ? lastTick : 1))
+                            + "%)");
+                }
+
+                // Poll Ability Upgrades (Fallback)
+                if (t >= nextAbilityCheck) {
+                    checkAbilityUpgrades();
+                    nextAbilityCheck += 10;
+                }
+
+                if (t >= nextSampleTick) {
+                    samplePositions(t);
+                    nextSampleTick += ticksPerMinute;
+                }
             }
-            if (currentTick == lastTick)
-                break;
-            currentTick += stepTicks;
-            if (currentTick > lastTick)
-                currentTick = lastTick;
+        } catch (Exception e) {
+            log("DEBUG: CRASH in run loop! " + e.toString());
+            // Stack trace to string
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            log(sw.toString());
         }
 
         return extractStats();
     }
 
-    private void checkAbilities() {
+    // --- Ability Build Order (Polling with Validation) ---
+
+    // Map<HeroName, Set<ValidAbilityName>>
+    private Map<String, Set<String>> validHeroAbilities = new HashMap<>();
+
+    private void checkAbilityUpgrades() {
+        // Load validation data ONCE if empty
+        if (validHeroAbilities.isEmpty()) {
+            loadHeroAbilities();
+        }
+
         Entities entities = runner.getContext().getProcessor(Entities.class);
-        Entity pr = getEntity("PlayerResource");
+        Entity pr = entities.getByDtName("CDOTA_PlayerResource");
         if (pr == null)
             return;
 
         for (int i = 0; i < 24; i++) {
-            // Check if player exists
-            String name = getStringProperty(pr, "m_vecPlayerData.%i.m_iszPlayerName", i);
-            if (name == null || name.isEmpty())
+            Integer heroHandle = getProperty(pr,
+                    "m_vecPlayerTeamData." + Util.arrayIdxToString(i) + ".m_hSelectedHero");
+            if (heroHandle == null)
                 continue;
 
-            // Get hero
-            int heroHandle = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_hSelectedHero", i);
             Entity hero = entities.getByHandle(heroHandle);
             if (hero == null)
                 continue;
 
-            // Check if player is seen for the first time
-            boolean isNewPlayer = !abilityState.containsKey(i);
-            if (isNewPlayer) {
-                abilityState.put(i, new HashMap<>());
-            }
-            Map<String, Integer> playerState = abilityState.get(i);
+            // Hero Entity Name (e.g. CDOTA_Unit_Hero_Abaddon -> npc_dota_hero_abaddon)
+            String heroDtName = hero.getDtClass().getDtName();
+            String heroName = heroDtName.replace("CDOTA_Unit_Hero_", "").replace("CDOTA_Unit_", "").toLowerCase();
+            String fullHeroName = "npc_dota_hero_" + heroName;
 
-            // Check abilities
-            for (int abSlot = 0; abSlot < 32; abSlot++) {
-                String abPath = "m_vecAbilities." + Util.arrayIdxToString(abSlot);
-                Integer abHandle = getProperty(hero, abPath);
+            // Iterate all abilities
+            for (int slot = 0; slot < 32; slot++) {
+                Integer abHandle = getProperty(hero, "m_vecAbilities." + Util.arrayIdxToString(slot));
                 if (abHandle != null && abHandle != 2097151) {
-                    Entity abEntity = entities.getByHandle(abHandle);
-                    if (abEntity != null) {
-                        String abilityName = abEntity.getDtClass().getDtName().replace("CDOTA_Ability_", "");
-                        // FILTER JUNK
-                        if (shouldIgnoreAbility(abilityName))
-                            continue;
+                    Entity ab = entities.getByHandle(abHandle);
+                    if (ab != null) {
+                        String abName = ab.getDtClass().getDtName().replace("CDOTA_Ability_", "");
+                        int currentValues = getIntPropertyDirect(ab, "m_iLevel", 0);
 
-                        int level = getIntProperty(abEntity, "m_iLevel", -1);
+                        Map<String, Integer> playerLevels = playerAbilityLevels.computeIfAbsent(i,
+                                k -> new HashMap<>());
 
-                        if (level > 0) {
-                            if (isNewPlayer) {
-                                // Just record state, do not add to build logic
-                                playerState.put(abilityName, level);
-                            } else {
-                                trackAbilityLearn(i, abilityName, level);
+                        if (!playerLevels.containsKey(abName)) {
+                            playerLevels.put(abName, currentValues);
+                        } else {
+                            int oldLevel = playerLevels.get(abName);
+                            if (currentValues > oldLevel) {
+                                // LEVEL UP DETECTED
+                                boolean isValid = true;
+                                String normAb = abName.replace("_", "").toLowerCase();
+
+                                // 1. Global Blacklist
+                                if (normAb.equals("spectrereality") ||
+                                        normAb.startsWith("seasonal") ||
+                                        normAb.startsWith("plus") ||
+                                        normAb.contains("empty") ||
+                                        normAb.equals("unknown")) {
+                                    isValid = false;
+                                }
+
+                                // 2. Hero-Specific Validation
+                                if (isValid && !validHeroAbilities.isEmpty()) {
+                                    Set<String> validSet = validHeroAbilities.get(fullHeroName);
+                                    if (validSet != null) {
+                                        boolean found = false;
+                                        for (String v : validSet) {
+                                            if (v.replace("_", "").toLowerCase().equals(normAb)) {
+                                                found = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!found)
+                                            isValid = false;
+                                    }
+                                }
+
+                                // 3. Allow Talents always
+                                if (abName.startsWith("special_bonus"))
+                                    isValid = true;
+
+                                if (isValid) {
+                                    for (int k = oldLevel; k < currentValues; k++) {
+                                        abilityUpgrades.computeIfAbsent(i, l -> new ArrayList<>())
+                                                .add("\"" + abName + "\"");
+                                    }
+                                }
+                                playerLevels.put(abName, currentValues);
                             }
                         }
                     }
@@ -147,78 +239,452 @@ public class SimpleParser {
         }
     }
 
-    private boolean shouldIgnoreAbility(String name) {
-        if (name == null)
-            return true;
-        String n = name.toLowerCase();
-        return n.contains("innate") ||
-                n.startsWith("seasonal_") ||
-                n.startsWith("plus_") ||
-                n.startsWith("twin_gate") ||
-                n.equals("capture") ||
-                n.equals("lamp_use") ||
-                n.equals("abyssalunderlord_portal_warp") ||
-                n.equals("attribute_bonus") ||
-                n.equals("default_attack") ||
-                n.equals("item_tpscroll") ||
-                n.startsWith("special_bonus_attributes") ||
-                n.equals("cny_beast_teleport") ||
-                n.equals("cny2015_teleport");
-    }
-
-    private void trackAbilityLearn(int playerId, String ability, int level) {
-        Map<String, Integer> playerState = abilityState.get(playerId);
-        int oldLevel = playerState.getOrDefault(ability, 0);
-
-        if (level > oldLevel) {
-            List<String> build = skillBuilds.computeIfAbsent(playerId, k -> new ArrayList<>());
-            for (int k = oldLevel; k < level; k++) {
-                build.add("\"" + ability + "\"");
+    private void loadHeroAbilities() {
+        File cacheFile = new File("hero_abilities.json");
+        if (cacheFile.exists()) {
+            try {
+                log("Loading hero_abilities from local cache...");
+                try (java.io.FileReader reader = new java.io.FileReader(cacheFile)) {
+                    parseAbilities(reader);
+                    return;
+                }
+            } catch (Exception e) {
+                log("Error reading cache: " + e + ". Fallback to network.");
             }
-            playerState.put(ability, level);
+        }
+
+        try {
+            log("Downloading hero_abilities from OpenDota (one-time setup)...");
+            java.net.URL url = new java.net.URL(
+                    "https://raw.githubusercontent.com/odota/dotaconstants/master/build/hero_abilities.json");
+            java.net.HttpURLConnection con = (java.net.HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+            con.setConnectTimeout(5000);
+            con.setReadTimeout(5000);
+
+            if (con.getResponseCode() == 200) {
+                // Save to file first
+                try (InputStream in = con.getInputStream();
+                        FileOutputStream out = new FileOutputStream(cacheFile)) {
+                    byte[] buffer = new byte[4096];
+                    int bytesRead;
+                    while ((bytesRead = in.read(buffer)) != -1) {
+                        out.write(buffer, 0, bytesRead);
+                    }
+                }
+                log("Saved hero_abilities.json to local folder.");
+
+                // Read back
+                try (java.io.FileReader reader = new java.io.FileReader(cacheFile)) {
+                    parseAbilities(reader);
+                }
+            } else {
+                log("Failed to download hero_abilities: HTTP " + con.getResponseCode());
+            }
+        } catch (Exception e) {
+            log("Error loading hero_abilities: " + e.toString());
         }
     }
 
-    private String extractStats() {
-        Entities entities = runner.getContext().getProcessor(Entities.class);
+    private void parseAbilities(java.io.Reader reader) {
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        // Structure: Map<HeroName, HeroObject> where HeroObject has "abilities" list
+        java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<Map<String, Map<String, Object>>>() {
+        }.getType();
 
-        Entity pr = getEntity("PlayerResource");
-        Entity dataRadiant = getEntity("DataRadiant");
-        Entity dataDire = getEntity("DataDire");
-        Entity grp = getEntity("GameRulesProxy");
+        try {
+            Map<String, Map<String, Object>> data = gson.fromJson(reader, type);
+
+            for (Map.Entry<String, Map<String, Object>> e : data.entrySet()) {
+                String heroKey = e.getKey();
+                Map<String, Object> heroData = e.getValue();
+
+                if (heroData.containsKey("abilities")) {
+                    Object abListObj = heroData.get("abilities");
+                    if (abListObj instanceof List) {
+                        List<?> abList = (List<?>) abListObj;
+                        Set<String> abilities = new HashSet<>();
+                        for (Object abilityName : abList) {
+                            if (abilityName instanceof String) {
+                                abilities.add((String) abilityName);
+                            }
+                        }
+                        validHeroAbilities.put(heroKey, abilities);
+                    }
+                }
+            }
+            log("Loaded abilities for " + validHeroAbilities.size() + " heroes.");
+        } catch (Exception e) {
+            log("Data parsing error: " + e.toString());
+        }
+    }
+
+    private void samplePositions(int tick) {
+        Entities entities = runner.getContext().getProcessor(Entities.class);
+        Entity pr = entities.getByDtName("CDOTA_PlayerResource");
+        if (pr == null)
+            return;
+
+        float time = getGameTime();
+        if (time < 0)
+            return;
+
+        for (int i = 0; i < 24; i++) {
+            // Check if team is valid (Radiant=2, Dire=3)
+            Integer team = getProperty(pr, "m_vecPlayerData." + Util.arrayIdxToString(i) + ".m_iPlayerTeam");
+            if (team == null || (team != 2 && team != 3))
+                continue;
+
+            Integer heroHandle = getProperty(pr,
+                    "m_vecPlayerTeamData." + Util.arrayIdxToString(i) + ".m_hSelectedHero");
+            if (heroHandle != null) {
+                Entity hero = entities.getByHandle(heroHandle);
+                if (hero != null) {
+                    Integer x = getProperty(hero, "CBodyComponent.m_cellX");
+                    Integer y = getProperty(hero, "CBodyComponent.m_cellY");
+                    if (x != null && y != null) {
+                        playerPositions.computeIfAbsent(i, k -> new ArrayList<>())
+                                .add("[" + (int) time + "," + x + "," + y + "]");
+                    }
+                }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Event Processors
+    // -------------------------------------------------------------------------
+
+    // --- Ward Tracking ---
+    @OnEntityCreated
+    public void onEntityCreated(Entity e) {
+        String name = e.getDtClass().getDtName();
+
+        // Debug: Log GameRules entities
+        if (seenClasses.add(name)) {
+            if (name.toLowerCase().contains("gamerules") || name.toLowerCase().contains("proxy")) {
+                log("DISCOVERED Entity: " + name);
+            }
+        }
+
+        if (name.equals("CDOTA_NPC_Observer_Ward") || name.equals("CDOTA_NPC_Sentry_Ward")) {
+            Map<String, Object> ward = new HashMap<>();
+            ward.put("type", name.contains("Observer") ? "Observer" : "Sentry");
+            ward.put("x", getProperty(e, "CBodyComponent.m_cellX"));
+            ward.put("y", getProperty(e, "CBodyComponent.m_cellY"));
+            ward.put("owner", getProperty(e, "m_hOwnerEntity"));
+            ward.put("time", getGameTime());
+            wardLog.add(ward);
+        }
+    }
+
+    // --- Facet Tracking ---
+    @OnEntityUpdated
+    public void onEntityUpdated(Entity e, FieldPath[] updatedPaths, int num) {
+        updateCount++;
+        String dtName = e.getDtClass().getDtName();
+
+        if (dtName.equals("CDOTA_PlayerResource")) {
+            for (int i = 0; i < 24; i++) {
+                String path = "m_vecPlayerTeamData." + Util.arrayIdxToString(i) + ".m_nSelectedHeroFacet";
+                Object val = getProperty(e, path);
+                int facet = 0;
+                if (val instanceof Number) {
+                    facet = ((Number) val).intValue();
+                }
+
+                if (facet != 0) {
+                    playerFacets.put(i, facet);
+                }
+            }
+        }
+    }
+
+    @OnGameEvent("dota_player_learned_ability")
+    public void onLearn(skadistats.clarity.model.GameEvent event) {
+        log("DEBUG: OnLearn event fired: " + event.toString());
+        try {
+            Integer pid = null;
+            String[] keys = { "player", "PlayerID", "player_id" };
+            for (String key : keys) {
+                try {
+                    pid = event.getProperty(key);
+                    if (pid != null)
+                        break;
+                } catch (Exception ignore) {
+                }
+            }
+
+            String ability = null;
+            try {
+                ability = event.getProperty("abilityname");
+            } catch (Exception ignore) {
+            }
+
+            if (pid != null && ability != null) {
+                abilityUpgrades.computeIfAbsent(pid, k -> new ArrayList<>()).add("\"" + ability + "\"");
+            } else {
+                log("DEBUG: OnLearn missing keys. Event: " + event.toString());
+            }
+        } catch (Exception e) {
+            log("Error onLearn: " + e);
+        }
+    }
+
+    @OnGameEvent("dota_buyback")
+    public void onBuyback(skadistats.clarity.model.GameEvent event) {
+        Map<String, Object> log = new HashMap<>();
+        log.put("type", "buyback");
+        log.put("playerId", event.getProperty("entindex"));
+        log.put("time", getGameTime());
+        combatLogEvents.add(log);
+    }
+
+    @OnGameEvent("dota_tower_kill")
+    public void onTowerKill(skadistats.clarity.model.GameEvent event) {
+        Map<String, Object> log = new HashMap<>();
+        log.put("type", "tower_kill");
+        log.put("killer", event.getProperty("killer_user_id"));
+        log.put("team", event.getProperty("teamnumber"));
+        log.put("lane", event.getProperty("lane"));
+        log.put("tier", event.getProperty("tier"));
+        log.put("time", getGameTime());
+        combatLogEvents.add(log);
+    }
+
+    private float getGameTime() {
+        Entities entities = runner.getContext().getProcessor(Entities.class);
+        Entity grp = entities.getByDtName("CDOTA_GameRulesProxy");
+        if (grp == null)
+            grp = entities.getByDtName("CDOTAGamerulesProxy");
+        if (grp == null)
+            grp = entities.getByDtName("DOTAGameRulesProxy");
 
         if (grp != null) {
-            Integer gameWinner = getProperty(grp, "dota_gamerules_data.m_nGameWinner");
-            Float gameTime = getProperty(grp, "dota_gamerules_data.m_fGameTime");
-            Float startTime = getProperty(grp, "dota_gamerules_data.m_flGameStartTime");
+            Float endTime = getProperty(grp, "m_pGameRules.m_flGameEndTime");
+            Float startTime = getProperty(grp, "m_pGameRules.m_flGameStartTime");
 
-            if (gameWinner != null) {
-                this.winner = gameWinner == 2 ? "Radiant" : (gameWinner == 3 ? "Dire" : "Unknown");
+            if (endTime != null && startTime != null && endTime > 0) {
+                return endTime - startTime;
             }
-            Long mid = getProperty(grp, "dota_gamerules_data.m_unMatchID64");
-            if (mid != null && mid != 0) {
-                this.matchId = mid;
+
+            Float time = getProperty(grp, "dota_gamerules_data.m_fGameTime");
+            if (time == null)
+                time = getProperty(grp, "m_pGameRules.m_flGameTime");
+            if (time == null)
+                time = getProperty(grp, "m_pGameRules.m_fGameTime");
+            if (time == null)
+                time = getProperty(grp, "m_fGameTime");
+
+            if (startTime == null)
+                startTime = getProperty(grp, "dota_gamerules_data.m_flGameStartTime");
+            if (startTime == null)
+                startTime = getProperty(grp, "m_flGameStartTime");
+
+            if (time != null && startTime != null)
+                return time - startTime;
+        }
+        return 0f;
+    }
+
+    // -------------------------------------------------------------------------
+    // Final Stats Extraction
+    // -------------------------------------------------------------------------
+    private String extractStats() {
+        Entities entities = runner.getContext().getProcessor(Entities.class);
+        Entity pr = entities.getByDtName("CDOTA_PlayerResource");
+        Entity dataRadiant = entities.getByDtName("CDOTA_DataRadiant");
+        Entity dataDire = entities.getByDtName("CDOTA_DataDire");
+
+        Entity gr = entities.getByDtName("CDOTA_GameRulesProxy");
+        if (gr == null)
+            gr = entities.getByDtName("DOTAGameRulesProxy");
+        if (gr == null)
+            gr = entities.getByDtName("CDOTAGamerulesProxy"); // Found via debug!
+
+        // Detailed fallback search if still null (Iterate all if possible, but safely)
+        if (gr == null)
+            gr = entities.getByDtName("CDOTAGameRulesProxy");
+        if (gr == null)
+            gr = entities.getByDtName("dota_gamerules");
+
+        // Final check
+        if (gr == null) {
+            log("CRITICAL: All GameRules lookups failed. Stats will be missing.");
+        }
+
+        String winner = "Unknown";
+        float duration = 0;
+        long matchId = 0;
+
+        if (gr == null) {
+            log("CRITICAL: Could not find ANY GameRules entity. Stats will be missing.");
+        }
+
+        if (gr != null) {
+            log("Found GameRulesProxy: " + gr.getDtClass().getDtName());
+
+            // Found GameRulesProxy
+            // Validated properties: m_unMatchID64, m_flGameEndTime, m_BannedHeroes (flat)
+
+            // Get Winner
+            Integer winnerTeam = getProperty(gr, "dota_gamerules_data.m_nGameWinner");
+            if (winnerTeam == null)
+                winnerTeam = getProperty(gr, "m_pGameRules.m_nGameWinner");
+
+            if (winnerTeam != null) {
+                if (winnerTeam == 2)
+                    winner = "Radiant";
+                else if (winnerTeam == 3)
+                    winner = "Dire";
             }
-            if (gameTime != null && startTime != null) {
-                this.duration = gameTime - startTime;
+
+            duration = getGameTime();
+
+            // Get MatchID
+            Long mid = getLongPropertyDirect(gr, "dota_gamerules_data.m_iMatchID");
+            if (mid == null)
+                mid = getLongPropertyDirect(gr, "dota_gamerules_data.m_nMatchID");
+            if (mid == null)
+                mid = getLongPropertyDirect(gr, "m_pGameRules.m_iMatchID");
+            if (mid == null)
+                mid = getLongPropertyDirect(gr, "m_pGameRules.m_nMatchID");
+            if (mid == null)
+                mid = getLongPropertyDirect(gr, "m_pGameRules.m_ullMatchID"); // Unsigned
+            if (mid == null)
+                mid = getLongPropertyDirect(gr, "m_pGameRules.m_unMatchID64"); // Found via Dump!
+
+            if (mid != null)
+                matchId = mid;
+        }
+
+        if (cachedPicksBans.isEmpty() && gr != null) {
+            // Strategy 1: m_PickBan Struct (Standard CM)
+            boolean foundPickBan = false;
+            String[] pickBanPrefixes = { "dota_gamerules_data.m_PickBan.", "m_pGameRules.m_PickBan." };
+
+            for (String prefix : pickBanPrefixes) {
+                if (foundPickBan)
+                    break;
+                for (int i = 0; i < 64; i++) {
+                    String base = prefix + (i < 10 ? "0" + i : i);
+                    if (i >= 100)
+                        base = prefix + i;
+                    Integer heroId = getProperty(gr, base + ".m_iHeroID");
+                    if (heroId == null)
+                        heroId = getProperty(gr, prefix + i + ".m_iHeroID");
+                    if (heroId == null || heroId == 0)
+                        continue;
+
+                    Integer team = getProperty(gr, base + ".m_iTeam");
+                    if (team == null)
+                        team = getProperty(gr, prefix + i + ".m_iTeam");
+                    Boolean isPick = getProperty(gr, base + ".m_bIsPick");
+                    if (isPick == null)
+                        isPick = getProperty(gr, prefix + i + ".m_bIsPick");
+
+                    if (team == null)
+                        team = 0;
+                    if (isPick == null)
+                        isPick = false;
+                    cachedPicksBans.add(String.format("{\"is_pick\": %b, \"hero_id\": %d, \"team\": %d, \"order\": %d}",
+                            isPick, heroId, team, i));
+                    foundPickBan = true;
+                }
+            }
+
+            // Strategy 2: Flat m_BannedHeroes (if Strategy 1 failed)
+            if (!foundPickBan) {
+                // Bans
+                for (int i = 0; i < 24; i++) {
+                    String idx = (i < 10 ? "0" + i : "" + i);
+                    Integer heroId = getProperty(gr, "m_pGameRules.m_BannedHeroes." + idx);
+                    if (heroId != null && heroId > 0) {
+                        cachedPicksBans.add(String.format(
+                                "{\"is_pick\": false, \"hero_id\": %d, \"team\": 0, \"order\": %d}", heroId, i));
+                        foundPickBan = true;
+                    }
+                }
+
+                // Picks (SelectedHeroes)
+                for (int i = 0; i < 24; i++) {
+                    String idx = (i < 10 ? "0" + i : "" + i);
+                    Integer heroId = getProperty(gr, "m_pGameRules.m_SelectedHeroes." + idx);
+                    if (heroId != null && heroId > 0) {
+                        cachedPicksBans.add(String.format(
+                                "{\"is_pick\": true, \"hero_id\": %d, \"team\": 0, \"order\": %d}", heroId, 24 + i));
+                        foundPickBan = true;
+                    }
+                }
+            }
+
+            // Fallback: If no m_PickBan found (Non-CM modes?), try legacy m_BannedHeroes
+            // scan
+            if (!foundPickBan) {
+                for (int i = 0; i < 24; i++) {
+                    Integer banId = getProperty(gr,
+                            "dota_gamerules_data.m_BannedHeroes." + Util.arrayIdxToString(i) + ".m_iHeroID");
+                    if (banId == null) {
+                        banId = getProperty(gr,
+                                "m_pGameRules.m_BannedHeroes." + Util.arrayIdxToString(i) + ".m_iHeroID");
+                    }
+                    if (banId != null && banId > 0) {
+                        cachedPicksBans.add("{\"is_pick\": false, \"hero_id\": " + banId + ", \"order\": " + i + "}");
+                    }
+                }
             }
         }
 
-        if (pr == null) {
-            return "{\"error\": \"PlayerResource entity not found\"}";
+        if (pr == null)
+            return "{\"error\": \"PlayerResource not found\"}";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\n");
+        sb.append("  \"matchId\": ").append(matchId).append(",\n");
+        sb.append("  \"winner\": \"").append(winner).append("\",\n");
+        sb.append("  \"duration\": ").append(duration).append(",\n");
+
+        sb.append("  \"picks_bans\": [");
+        for (int i = 0; i < cachedPicksBans.size(); i++) {
+            sb.append(cachedPicksBans.get(i));
+            if (i < cachedPicksBans.size() - 1)
+                sb.append(", ");
         }
+        sb.append("],\n");
 
-        StringBuilder json = new StringBuilder();
-        json.append("{\n");
-        json.append("  \"matchId\": ").append(this.matchId).append(",\n");
-        json.append("  \"timestamp\": ").append(this.timestamp * 1000L).append(",\n");
-        json.append("  \"duration\": ").append(this.duration).append(",\n");
-        json.append("  \"winner\": \"").append(this.winner).append("\",\n");
-        json.append("  \"players\": [\n");
+        sb.append("  \"_debug\": ").append("\"").append(debugLog.toString().replace("\n", "\\n").replace("\"", "'"))
+                .append("\",\n");
 
-        List<String> playerJsons = new ArrayList<>();
+        sb.append("  \"facets\": {");
+        int fCount = 0;
+        for (Map.Entry<Integer, Integer> e : playerFacets.entrySet()) {
+            sb.append("\"").append(e.getKey()).append("\": ").append(e.getValue());
+            if (++fCount < playerFacets.size())
+                sb.append(", ");
+        }
+        sb.append("},\n");
+
+        sb.append("  \"events\": [");
+        for (int i = 0; i < combatLogEvents.size(); i++) {
+            sb.append(mapToJson(combatLogEvents.get(i)));
+            if (i < combatLogEvents.size() - 1)
+                sb.append(", ");
+        }
+        sb.append("],\n");
+
+        sb.append("  \"wards\": [");
+        for (int i = 0; i < wardLog.size(); i++) {
+            sb.append(mapToJson(wardLog.get(i)));
+            if (i < wardLog.size() - 1)
+                sb.append(", ");
+        }
+        sb.append("],\n");
+
+        sb.append("  \"players\": [\n");
+
         int radiantIdx = 0;
         int direIdx = 0;
+        List<String> playerJsons = new ArrayList<>();
 
         for (int i = 0; i < 24; i++) {
             String name = getStringProperty(pr, "m_vecPlayerData.%i.m_iszPlayerName", i);
@@ -236,20 +702,7 @@ public class SimpleParser {
             int level = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iLevel", i);
             int heroId = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_nSelectedHeroID", i);
 
-            int roshans = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iRoshanKills", i);
-
-            int lastHits = 0;
-            int denies = 0;
-            int gold = 0;
-            int netWorth = 0;
-
-            int gpm = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iGoldPerMin", i);
-            int xpm = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iXPPerMin", i);
-
-            int heroDamage = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iHeroDamage", i);
-            int towerDamage = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iTowerDamage", i);
-            int heroHealing = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iHealAmount", i);
-
+            int lastHits = 0, denies = 0, gold = 0, netWorth = 0, gpm = 0, xpm = 0;
             if (team == 2 && dataRadiant != null) {
                 lastHits = getIntProperty(dataRadiant, "m_vecDataTeam.%i.m_iLastHitCount", radiantIdx);
                 denies = getIntProperty(dataRadiant, "m_vecDataTeam.%i.m_iDenyCount", radiantIdx);
@@ -263,134 +716,155 @@ public class SimpleParser {
                 netWorth = getIntProperty(dataDire, "m_vecDataTeam.%i.m_iNetWorth", direIdx);
                 direIdx++;
             }
-
-            if (gpm == 0 && duration > 0)
-                gpm = (int) (gold / (duration / 60));
-            if (xpm == 0 && duration > 0) {
-                int totalXp = 0;
-                if (team == 2 && dataRadiant != null)
-                    totalXp = getIntProperty(dataRadiant, "m_vecDataTeam.%i.m_iTotalEarnedXP", radiantIdx - 1);
-                else if (team == 3 && dataDire != null)
-                    totalXp = getIntProperty(dataDire, "m_vecDataTeam.%i.m_iTotalEarnedXP", direIdx - 1);
-                xpm = (int) (totalXp / (duration / 60));
-            }
+            gpm = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iGoldPerMin", i);
+            xpm = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iXPPerMin", i);
 
             List<String> items = new ArrayList<>();
             List<String> abilities = new ArrayList<>();
-
             int heroHandle = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_hSelectedHero", i);
+
             Entity heroEntity = entities.getByHandle(heroHandle);
             String heroName = "unknown";
 
             if (heroEntity != null) {
                 heroName = heroEntity.getDtClass().getDtName().replace("CDOTA_Unit_Hero_", "")
-                        .replace("CDOTA_Unit_", "").toLowerCase(); // Clean up name
+                        .replace("CDOTA_Unit_", "").toLowerCase();
 
                 for (int slot = 0; slot < 6; slot++) {
-                    String itemPath = "m_hItems." + Util.arrayIdxToString(slot);
-                    Integer itemHandle = getProperty(heroEntity, itemPath);
+                    Integer itemHandle = getProperty(heroEntity, "m_hItems." + Util.arrayIdxToString(slot));
                     if (itemHandle != null && itemHandle != 2097151) {
                         Entity itemEntity = entities.getByHandle(itemHandle);
                         if (itemEntity != null) {
-                            String itemName = itemEntity.getDtClass().getDtName().replace("CDOTA_Item_", "");
-                            items.add("\"" + itemName + "\"");
+                            items.add("\"" + itemEntity.getDtClass().getDtName().replace("CDOTA_Item_", "") + "\"");
                         }
                     }
                 }
 
                 for (int abSlot = 0; abSlot < 32; abSlot++) {
-                    String abPath = "m_vecAbilities." + Util.arrayIdxToString(abSlot);
-                    Integer abHandle = getProperty(heroEntity, abPath);
+                    Integer abHandle = getProperty(heroEntity, "m_vecAbilities." + Util.arrayIdxToString(abSlot));
                     if (abHandle != null && abHandle != 2097151) {
                         Entity abEntity = entities.getByHandle(abHandle);
                         if (abEntity != null) {
                             String abName = abEntity.getDtClass().getDtName().replace("CDOTA_Ability_", "");
-                            if (!shouldIgnoreAbility(abName)) {
-                                Integer abLevel = getProperty(abEntity, "m_iLevel");
-                                if (abLevel != null && abLevel > 0) {
-                                    abilities.add("\"" + abName + "\"");
-                                }
+                            int lvl = getIntPropertyDirect(abEntity, "m_iLevel", 0);
+                            if (lvl > 0 && !abName.startsWith("special_bonus")) {
+                                abilities.add("{\"name\": \"" + abName + "\", \"level\": " + lvl + "}");
                             }
                         }
                     }
                 }
             }
 
-            StringBuilder sb = new StringBuilder();
-            sb.append("    {\n");
-            sb.append("      \"name\": \"").append(escape(name)).append("\",\n");
-            sb.append("      \"steamId\": \"").append(steamId).append("\",\n");
-            sb.append("      \"team\": \"").append(team == 2 ? "Radiant" : "Dire").append("\",\n");
-            sb.append("      \"heroId\": ").append(heroId).append(",\n");
-            sb.append("      \"heroName\": \"").append(heroName).append("\",\n");
-            sb.append("      \"level\": ").append(level).append(",\n");
-            sb.append("      \"kills\": ").append(kills).append(",\n");
-            sb.append("      \"deaths\": ").append(deaths).append(",\n");
-            sb.append("      \"assists\": ").append(assists).append(",\n");
-            sb.append("      \"lastHits\": ").append(lastHits).append(",\n");
-            sb.append("      \"denies\": ").append(denies).append(",\n");
-            sb.append("      \"totalGold\": ").append(gold).append(",\n");
-            sb.append("      \"netWorth\": ").append(netWorth).append(",\n");
-            sb.append("      \"gpm\": ").append(gpm).append(",\n");
-            sb.append("      \"xpm\": ").append(xpm).append(",\n");
-            sb.append("      \"heroDamage\": ").append(heroDamage).append(",\n");
-            sb.append("      \"towerDamage\": ").append(towerDamage).append(",\n");
-            sb.append("      \"heroHealing\": ").append(heroHealing).append(",\n");
-            sb.append("      \"roshans\": ").append(roshans).append(",\n");
-            sb.append("      \"items\": [").append(String.join(", ", items)).append("],\n");
+            StringBuilder pJson = new StringBuilder();
+            pJson.append("    {\n");
+            pJson.append("      \"steamId\": \"").append(steamId).append("\",\n");
+            pJson.append("      \"name\": \"").append(escape(name)).append("\",\n");
+            pJson.append("      \"team\": \"").append(team == 2 ? "Radiant" : "Dire").append("\",\n");
+            pJson.append("      \"heroId\": ").append(heroId).append(",\n");
+            pJson.append("      \"heroName\": \"").append(heroName).append("\",\n");
+            pJson.append("      \"level\": ").append(level).append(",\n");
+            pJson.append("      \"facet\": ").append(playerFacets.getOrDefault(i, 0)).append(",\n");
+            pJson.append("      \"kills\": ").append(kills).append(",\n");
+            pJson.append("      \"deaths\": ").append(deaths).append(",\n");
+            pJson.append("      \"assists\": ").append(assists).append(",\n");
+            pJson.append("      \"lastHits\": ").append(lastHits).append(",\n");
+            pJson.append("      \"denies\": ").append(denies).append(",\n");
+            pJson.append("      \"gold\": ").append(gold).append(",\n");
+            pJson.append("      \"netWorth\": ").append(netWorth).append(",\n");
+            pJson.append("      \"gpm\": ").append(gpm).append(",\n");
+            pJson.append("      \"xpm\": ").append(xpm).append(",\n");
+            pJson.append("      \"items\": [").append(String.join(", ", items)).append("],\n");
+            pJson.append("      \"abilities\": [").append(String.join(", ", abilities)).append("],\n");
 
-            // Skill Build
-            List<String> build = skillBuilds.get(i);
-            if (build == null)
-                build = new ArrayList<>();
-            sb.append("      \"abilities\": [").append(String.join(", ", abilities)).append("],\n");
-            sb.append("      \"abilityMap\": [").append(String.join(", ", build)).append("]\n");
+            List<String> upgrades = abilityUpgrades.getOrDefault(i, Collections.emptyList());
+            pJson.append("      \"ability_build\": [").append(String.join(", ", upgrades)).append("],\n");
 
-            sb.append("    }");
-            playerJsons.add(sb.toString());
+            List<String> posList = playerPositions.getOrDefault(i, Collections.emptyList());
+            pJson.append("      \"positions\": [").append(String.join(", ", posList)).append("]\n");
+
+            pJson.append("    }");
+            playerJsons.add(pJson.toString());
+        } // end player loop
+
+        sb.append(String.join(",\n", playerJsons));
+        sb.append("\n  ]\n");
+        sb.append("}");
+
+        return sb.toString();
+    }
+
+    // -------------------------------------------------------------------------
+    // Utilities
+    // -------------------------------------------------------------------------
+    private String mapToJson(Map<String, Object> map) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        int c = 0;
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            sb.append("\"").append(entry.getKey()).append("\": ");
+            if (entry.getValue() instanceof String) {
+                sb.append("\"").append(((String) entry.getValue()).replace("\"", "\\\"")).append("\"");
+            } else {
+                sb.append(entry.getValue());
+            }
+            if (++c < map.size())
+                sb.append(", ");
         }
-
-        json.append(String.join(",\n", playerJsons));
-        json.append("\n  ]\n");
-        json.append("}");
-
-        return json.toString();
+        sb.append("}");
+        return sb.toString();
     }
 
     private String escape(String s) {
+        if (s == null)
+            return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
-    private int getIntProperty(Entity e, String pattern, int index) {
-        String path = pattern.replaceAll("%i", Util.arrayIdxToString(index));
-        Integer val = getProperty(e, path);
-        return val != null ? val : 0;
-    }
-
-    private long getLongProperty(Entity e, String pattern, int index) {
-        String path = pattern.replaceAll("%i", Util.arrayIdxToString(index));
-        Long val = getProperty(e, path);
-        return val != null ? val : 0L;
-    }
-
-    private String getStringProperty(Entity e, String pattern, int index) {
-        String path = pattern.replaceAll("%i", Util.arrayIdxToString(index));
-        return getProperty(e, path);
-    }
-
     private <T> T getProperty(Entity e, String path) {
+        if (e == null)
+            return null;
         try {
             FieldPath fp = e.getDtClass().getFieldPathForName(path);
-            if (fp == null)
-                return null;
-            return e.getPropertyForFieldPath(fp);
+            return fp != null ? e.getPropertyForFieldPath(fp) : null;
         } catch (Exception ex) {
             return null;
         }
     }
 
-    private Entity getEntity(String entityName) {
-        String name = "CDOTA_" + entityName;
-        return runner.getContext().getProcessor(Entities.class).getByDtName(name);
+    private int getIntValue(Entity e, String path, int def) {
+        Object val = getProperty(e, path);
+        if (val instanceof Number) {
+            return ((Number) val).intValue();
+        }
+        return def;
+    }
+
+    private String getStringProperty(Entity e, String pattern, int index) {
+        return getProperty(e, pattern.replaceAll("%i", Util.arrayIdxToString(index)));
+    }
+
+    private int getIntProperty(Entity e, String pattern, int index) {
+        String path = pattern.replaceAll("%i", Util.arrayIdxToString(index));
+        return getIntValue(e, path, 0);
+    }
+
+    private int getIntPropertyDirect(Entity e, String path, int defaultValue) {
+        return getIntValue(e, path, defaultValue);
+    }
+
+    private long getLongProperty(Entity e, String pattern, int index) {
+        Object val = getProperty(e, pattern.replaceAll("%i", Util.arrayIdxToString(index)));
+        if (val instanceof Number) {
+            return ((Number) val).longValue();
+        }
+        return 0L;
+    }
+
+    private Long getLongPropertyDirect(Entity e, String path) {
+        Object val = getProperty(e, path);
+        if (val instanceof Number) {
+            return ((Number) val).longValue();
+        }
+        return null;
     }
 }

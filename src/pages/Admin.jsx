@@ -308,7 +308,7 @@ const Admin = () => {
             {activeTab === 'results' && (
                 <div className="card">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h2 style={{ color: 'var(--accent)', margin: 0 }}>Istorija Mečeve ({matchHistory.length})</h2>
+                        <h2 style={{ color: 'var(--accent)', margin: 0 }}>Istorija Mečeva ({matchHistory.length})</h2>
                         <a href="/admin/upload" className="btn btn-primary" style={{ textDecoration: 'none' }}>+ Otpremi Novi Meč</a>
                     </div>
 

@@ -65,11 +65,20 @@ const Results = () => {
                                     }}
                                 >
                                     {/* Radiant Team */}
-                                    <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: isRadiantWin ? '#4caf50' : 'white' }}>
-                                            {match.radiantTeamName || teams?.find(t => t.id === match.radiantTeamId)?.name || 'Radiant'} {isRadiantWin && '🏆'}
+                                    <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px' }}>
+                                        <div>
+                                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: isRadiantWin ? '#4caf50' : 'white' }}>
+                                                {match.radiantTeamName || teams?.find(t => t.id === match.radiantTeamId)?.name || 'Radiant'} {isRadiantWin && '🏆'}
+                                            </div>
+                                            <div style={{ fontSize: '0.8rem', color: '#4caf50' }}>Radiant</div>
                                         </div>
-                                        <div style={{ fontSize: '0.8rem', color: '#4caf50' }}>Radiant</div>
+                                        {teams?.find(t => t.id === match.radiantTeamId)?.logo && (
+                                            <img
+                                                src={teams.find(t => t.id === match.radiantTeamId).logo}
+                                                alt="Radiant Logo"
+                                                style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '50%' }}
+                                            />
+                                        )}
                                     </div>
 
                                     {/* Score / VS */}
@@ -79,11 +88,20 @@ const Results = () => {
                                     </div>
 
                                     {/* Dire Team */}
-                                    <div style={{ textAlign: 'left' }}>
-                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: !isRadiantWin ? '#f44336' : 'white' }}>
-                                            {!isRadiantWin && '🏆'} {match.direTeamName || teams?.find(t => t.id === match.direTeamId)?.name || 'Dire'}
+                                    <div style={{ textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        {teams?.find(t => t.id === match.direTeamId)?.logo && (
+                                            <img
+                                                src={teams.find(t => t.id === match.direTeamId).logo}
+                                                alt="Dire Logo"
+                                                style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '50%' }}
+                                            />
+                                        )}
+                                        <div>
+                                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: !isRadiantWin ? '#f44336' : 'white' }}>
+                                                {!isRadiantWin && '🏆'} {match.direTeamName || teams?.find(t => t.id === match.direTeamId)?.name || 'Dire'}
+                                            </div>
+                                            <div style={{ fontSize: '0.8rem', color: '#f44336' }}>Dire</div>
                                         </div>
-                                        <div style={{ fontSize: '0.8rem', color: '#f44336' }}>Dire</div>
                                     </div>
                                 </div>
 
