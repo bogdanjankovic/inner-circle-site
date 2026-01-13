@@ -6,6 +6,74 @@ const HERO_IMG_BASE = '/assets/images/dota/heroes/';
 const ITEM_IMG_BASE = '/assets/images/dota/items/';
 const ABILITY_IMG_BASE = '/assets/images/dota/abilities/';
 
+// Asset Manifest Cache
+let ASSET_MANIFEST = null;
+
+// Fetch manifest once
+fetch('/assets/dota_manifest.json')
+    .then(res => res.json())
+    .then(data => {
+        ASSET_MANIFEST = data;
+        // console.log('Asset Manifest Loaded', data);
+    })
+    .catch(err => console.warn('Failed to load asset manifest', err));
+
+const findBestMatch = (name, type) => {
+    // type: 'heroes', 'items', 'abilities'
+    if (!name || !ASSET_MANIFEST || !ASSET_MANIFEST[type]) return name; // Fallback to raw/normalized name
+
+    const files = ASSET_MANIFEST[type]; // array of filenames "antimage.png"
+    const target = name.toLowerCase(); // keys are snake_case
+
+    // 1. Exact match (name + .png)
+    if (files.includes(`${target}.png`)) return target;
+
+    // 2. Exact match (name) - sometimes parser has mismatch
+    // 3. Heuristics
+    // "windrunner_focusfire" vs "focus_fire.png"
+    // "empty_bottle" vs "bottle.png"
+
+    // Heuristic A: Substring match (Target contains File OR File contains Target)
+    // "empty_bottle" contains "bottle". -> Match!
+    // But "bottle" does NOT contain "empty_bottle".
+    // We prefer the *Asset* that is contained in the *Target*?
+    // "empty_bottle" (Parser) -> "bottle" (Asset). Yes.
+
+    // Heuristic B: Suffix Match (windrunner_focusfire -> focusfire)
+    // Remove "windrunner_" prefix?
+    // Check if any asset is a suffix of target?
+    // "focus_fire" is NOT strictly suffix of "windrunner_focusfire" due to underscore.
+
+    // Heuristic C: Fuzzy Score (Simple common chars or stripped)
+
+    let bestMatch = null;
+    let maxScore = -1;
+
+    const targetClean = target.replace(/[^a-z0-9]/g, '');
+
+    for (const file of files) {
+        const fileBase = file.replace('.png', '');
+        const fileClean = fileBase.replace(/[^a-z0-9]/g, '');
+
+        // Perfect match ignoring separators
+        if (targetClean === fileClean) return fileBase;
+
+        // Check containment (bottle inside empty_bottle)
+        if (targetClean.includes(fileClean)) {
+            // Score by length ratio (closer length = better)
+            const score = fileClean.length / targetClean.length; // 0.0 - 1.0
+            if (score > maxScore) {
+                maxScore = score;
+                bestMatch = fileBase;
+            }
+        }
+
+        // Also check if Target is inside File (unlikely for "empty_bottle" -> "bottle" direction but possible)
+    }
+
+    return bestMatch || target;
+};
+
 const formatNumber = (num) => {
     if (num == null || isNaN(num)) return '0';
     if (num >= 1000) {
@@ -65,7 +133,9 @@ const normalizeAbilityName = normalizeName; // Reuse logic
 const PlayerRow = ({ p }) => {
     // Determine image using internal heroName
     const normalizedHero = normalizeHeroName(p.heroName);
-    const heroImg = normalizedHero ? `${HERO_IMG_BASE}${normalizedHero}.png` : null;
+    // Use findBestMatch for robust matching (e.g. "centaur_warrunner" vs "centaur.png")
+    const bestHero = findBestMatch(normalizedHero, 'heroes');
+    const heroImg = bestHero ? `${HERO_IMG_BASE}${bestHero}.png` : null;
 
     return (
         <tr>
@@ -77,7 +147,7 @@ const PlayerRow = ({ p }) => {
                             alt={p.heroName}
                             className="hero-icon"
                             onError={(e) => {
-                                console.warn(`Hero Image Failed: ${p.heroName} -> ${e.target.src}`);
+                                // console.warn(`Hero Image Failed: ${p.heroName} -> ${e.target.src}`);
                                 e.target.style.display = 'none';
                             }}
                         />
@@ -108,10 +178,11 @@ const PlayerRow = ({ p }) => {
                         // Parser names: e.g. "PowerTreads" or "item_blink"
                         // Assets: "power_treads.png", "blink.png"
                         const cleanItem = normalizeItemName(item);
+                        const finalItem = findBestMatch(cleanItem, 'items');
                         return (
                             <img
                                 key={idx}
-                                src={`${ITEM_IMG_BASE}${cleanItem}.png`}
+                                src={`${ITEM_IMG_BASE}${finalItem}.png`}
                                 alt={item}
                                 title={item}
                                 className="item-icon"
@@ -209,7 +280,7 @@ const AbilityBuildGrid = ({ teamName, players }) => {
                                 return (
                                     <div key={i} style={{ textAlign: 'center' }}>
                                         <img
-                                            src={`${ABILITY_IMG_BASE}${normalizeAbilityName(ability)}.png`}
+                                            src={`${ABILITY_IMG_BASE}${findBestMatch(normalizeAbilityName(ability), 'abilities')}.png`}
                                             className="ability-icon-small"
                                             title={ability}
                                             onError={(e) => {
