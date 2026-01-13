@@ -364,17 +364,9 @@ public class SimpleParser {
                             // Let's try to normalize to 0-128 range assuming map is 128x128.
                             // The values typically seen are around ~70-180.
                             // Let's subtract 64.
-                            int normX = x - 64;
-                            int normY = y - 64;
-                            // Clamp
-                            if (normX < 0)
-                                normX = 0;
-                            if (normX > 127)
-                                normX = 127;
-                            if (normY < 0)
-                                normY = 0;
-                            if (normY > 127)
-                                normY = 127;
+                            // Using raw coordinates for auto-scaling
+                            int normX = x;
+                            int normY = y;
 
                             playerPositions.computeIfAbsent(i, k -> new ArrayList<>())
                                     .add("[" + (int) time + "," + normX + "," + normY + "]");
@@ -401,11 +393,15 @@ public class SimpleParser {
             }
         }
 
-        if (name.equals("CDOTA_NPC_Observer_Ward") || name.equals("CDOTA_NPC_Sentry_Ward")) {
+        if (name.contains("Ward") && !name.contains("TrueSight")) {
             Map<String, Object> ward = new HashMap<>();
-            ward.put("type", name.contains("Observer") ? "Observer" : "Sentry");
-            ward.put("x", getIntPropertyDirect(e, "CBodyComponent.m_cellX", 0) - 64);
-            ward.put("y", getIntPropertyDirect(e, "CBodyComponent.m_cellY", 0) - 64);
+            String type = "Observer";
+            if (name.contains("Sentry")) {
+                type = "Sentry";
+            }
+            ward.put("type", type);
+            ward.put("x", getIntPropertyDirect(e, "CBodyComponent.m_cellX", 0));
+            ward.put("y", getIntPropertyDirect(e, "CBodyComponent.m_cellY", 0));
             ward.put("owner", getProperty(e, "m_hOwnerEntity"));
             ward.put("time", getGameTime());
             wardLog.add(ward);

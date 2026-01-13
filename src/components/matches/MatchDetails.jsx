@@ -206,13 +206,22 @@ const DraftTimeline = ({ picksBans }) => {
 // Simple ID to Name map or fetcher is needed. 
 // For now, I will implement the Tabs structure and move existing code.
 
-const Minimap = ({ wards }) => {
-    const MAP_SIZE = 128;
+const Minimap = ({ wards, minX, minY, scaleX, scaleY }) => {
+    // If no bounds provided, default to standard grid (128x128 centered at 64)
+    // But since we are calculating dynamically, we expect props.
+    // Fallback: 0-128 if undefined.
+    const _minX = minX !== undefined ? minX : 0;
+    const _minY = minY !== undefined ? minY : 0;
+    const _scaleX = scaleX || 128;
+    const _scaleY = scaleY || 128;
+
     const getPosStyle = (x, y) => {
-        // x, y are 0-127 cell coordinates. (0,0) is bottom-left.
+        // Calculate percentage within bounds
+        const xPct = ((x - _minX) / _scaleX) * 100;
+        const yPct = ((y - _minY) / _scaleY) * 100;
         return {
-            left: `${(x / MAP_SIZE) * 100}%`,
-            bottom: `${(y / MAP_SIZE) * 100}%`
+            left: `${xPct}%`,
+            bottom: `${yPct}%`
         };
     };
 
@@ -230,9 +239,78 @@ const Minimap = ({ wards }) => {
     );
 };
 
-const HeatmapOverlay = ({ players }) => {
+const HeatmapOverlay = ({ players, wards }) => {
     const canvasRef = React.useRef(null);
-    const MAP_SIZE = 128;
+
+    // Calculate Bounds
+    const [bounds, setBounds] = React.useState({ minX: 64, maxX: 192, minY: 64, maxY: 192 });
+
+    React.useEffect(() => {
+        let minX = 1000, maxX = 0, minY = 1000, maxY = 0;
+        let count = 0;
+
+        // Scan Player positions
+        players.forEach(p => {
+            if (p.positions) {
+                p.positions.forEach(pos => {
+                    const x = pos[1];
+                    const y = pos[2];
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                    count++;
+                });
+            }
+        });
+
+        // Scan Wards
+        if (wards) {
+            wards.forEach(w => {
+                if (w.x < minX) minX = w.x;
+                if (w.x > maxX) maxX = w.x;
+                if (w.y < minY) minY = w.y;
+                if (w.y > maxY) maxY = w.y;
+                count++;
+            });
+        }
+
+        if (count > 0) {
+            // Add padding (e.g. 5% edges) to ensure points are not on the border
+            const rangeX = maxX - minX;
+            const rangeY = maxY - minY;
+            // Slightly expand bounds? Or trust the map image covers this exact range?
+            // The 7.33 map is square. We should ensure aspect ratio.
+            // Let's create a square bounding box centered on data.
+
+            // Heuristic for 7.33: 
+            // Observed range is likely approx 64 to 192 (128 width) if offset was removed?
+            // Or 0 to 256?
+            // Let's assume the Map Image covers the Full Grid.
+            // Full Grid is usually 0-256 cells? or 0-16384 world units/128 = 0-128 cells earlier.
+            // IF we are seeing raw indices > 128, then the grid is larger.
+            // We'll normalize to the Min/Max observed, expecting the map image to align with the PLAY AREA.
+
+            // For safety, force square aspect ratio
+            let size = Math.max(rangeX, rangeY);
+            // Min size 128 to avoid zoom in too much on short games
+            if (size < 128) size = 128;
+
+            // Center
+            const cx = (minX + maxX) / 2;
+            const cy = (minY + maxY) / 2;
+
+            setBounds({
+                minX: cx - size / 2,
+                maxX: cx + size / 2,
+                minY: cy - size / 2,
+                maxY: cy + size / 2
+            });
+        }
+    }, [players, wards]);
+
+    const scaleX = bounds.maxX - bounds.minX;
+    const scaleY = bounds.maxY - bounds.minY;
 
     React.useEffect(() => {
         const canvas = canvasRef.current;
@@ -247,40 +325,43 @@ const HeatmapOverlay = ({ players }) => {
 
             // Determine color based on team
             const color = p.team === 'Radiant' ? 'rgba(61, 149, 70, 0.1)' : 'rgba(194, 60, 42, 0.1)';
-
             ctx.fillStyle = color;
 
             p.positions.forEach(pos => {
-                // pos is [time, x, y]
                 const x = pos[1];
                 const y = pos[2];
 
-                const cx = (x / MAP_SIZE) * canvas.width;
-                const cy = canvas.height - ((y / MAP_SIZE) * canvas.height);
+                // Map to canvas
+                const cx = ((x - bounds.minX) / scaleX) * canvas.width;
+                // Flip Y for canvas
+                const cy = canvas.height - (((y - bounds.minY) / scaleY) * canvas.height);
 
                 ctx.beginPath();
-                ctx.arc(cx, cy, 5, 0, 2 * Math.PI); // Radius 5
+                ctx.arc(cx, cy, 3, 0, 2 * Math.PI); // Radius 3
                 ctx.fill();
             });
         });
 
-    }, [players]);
+    }, [players, bounds, scaleX, scaleY]);
 
     return (
         <div className="minimap-wrapper">
-            {/* Background Map */}
-            <div className="minimap" style={{ position: 'relative', backgroundImage: `url('/assets/images/dota_map_733.png')`, backgroundSize: 'cover' }}>
+            {/* Pass calculated bounds to Minimap for wards */}
+            <Minimap wards={wards} minX={bounds.minX} minY={bounds.minY} scaleX={scaleX} scaleY={scaleY} />
+
+            {/* Overlay Canvas */}
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
                 <canvas
                     ref={canvasRef}
                     width={512}
                     height={512}
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+                    style={{ width: '100%', height: '100%' }}
                 />
-                {/* Legend */}
-                <div style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(0,0,0,0.7)', padding: '5px', borderRadius: '4px', fontSize: '0.8rem' }}>
-                    <div style={{ color: '#3d9546' }}>■ Radiant Movement</div>
-                    <div style={{ color: '#c23c2a' }}>■ Dire Movement</div>
-                </div>
+            </div>
+            {/* Legend */}
+            <div style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(0,0,0,0.7)', padding: '5px', borderRadius: '4px', fontSize: '0.8rem' }}>
+                <div style={{ color: '#3d9546' }}>■ Radiant Movement</div>
+                <div style={{ color: '#c23c2a' }}>■ Dire Movement</div>
             </div>
         </div>
     );
@@ -360,9 +441,10 @@ const MatchDetails = ({ match }) => {
 
             {activeTab === 'heatmaps' && (
                 <div className="heatmap-tab">
-                    <h3>Player Positioning Heatmap</h3>
-                    <div className="vision-tab"> {/* Reusing centering styles */}
-                        <HeatmapOverlay players={match.players} />
+                    <h3>Player Positioning Heatmap & Ward Map</h3>
+                    <div className="minimap-wrapper">
+                        {/* Pass both players and wards to Overlay, which handles Minimap internally now */}
+                        <HeatmapOverlay players={match.players} wards={match.wards} />
                     </div>
                 </div>
             )}
