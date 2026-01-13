@@ -25,12 +25,8 @@ const Navbar = () => {
             <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '80px' }}>
 
                 {/* Logo */}
-                <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
-                    <img
-                        src="/assets/images/dota_logo_new.jpg"
-                        alt="Dota Srbija Logo"
-                        style={{ height: '50px', width: 'auto', borderRadius: '4px' }}
-                    />
+                <Link to="/" style={{ fontSize: '1.8rem', fontFamily: 'var(--font-heading)', fontWeight: 'bold', letterSpacing: '2px' }}>
+                    <span style={{ color: '#fff' }}>DOTA</span><span style={{ color: 'var(--accent)' }}>SRBIJA</span>
                 </Link>
 
                 {/* Desktop Menu */}
