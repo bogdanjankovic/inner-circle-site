@@ -459,6 +459,10 @@ const HeatmapOverlay = ({ players, wards }) => {
     const scaleX = bounds.maxX - bounds.minX;
     const scaleY = bounds.maxY - bounds.minY;
 
+    const [showHeatmap, setShowHeatmap] = React.useState(true);
+    const [showObs, setShowObs] = React.useState(true);
+    const [showSent, setShowSent] = React.useState(true);
+
     React.useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -466,84 +470,182 @@ const HeatmapOverlay = ({ players, wards }) => {
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous
 
-        // Draw Heatmap
-        players.forEach(p => {
-            if (!p.positions) return;
+        if (showHeatmap) {
+            // Draw Heatmap with smoothed effect
+            // Use 'lighter' or 'screen' for additive heat effect
+            ctx.globalCompositeOperation = 'screen';
 
-            // Determine color based on team
-            const color = p.team === 'Radiant' ? 'rgba(61, 149, 70, 0.1)' : 'rgba(194, 60, 42, 0.1)';
-            ctx.fillStyle = color;
+            // To hide the grid-like quantization of data, use larger radius and blur
+            ctx.shadowBlur = 10;
 
-            p.positions.forEach(pos => {
-                const x = pos[1];
-                const y = pos[2];
+            players.forEach(p => {
+                if (!p.positions) return;
 
-                // Map to canvas
-                const cx = ((x - bounds.minX) / scaleX) * canvas.width;
-                // Flip Y for canvas
-                const cy = canvas.height - (((y - bounds.minY) / scaleY) * canvas.height);
+                // Radiant: Green-ish, Dire: Red-ish
+                const color = p.team === 'Radiant' ? 'rgba(0, 255, 64, 0.05)' : 'rgba(255, 60, 60, 0.05)';
+                ctx.fillStyle = color;
+                ctx.shadowColor = color; // Glow matches fill
 
-                ctx.beginPath();
-                ctx.arc(cx, cy, 3, 0, 2 * Math.PI); // Radius 3
-                ctx.fill();
+                p.positions.forEach(pos => {
+                    const x = pos[1];
+                    const y = pos[2];
+
+                    // Map grid coordinates to canvas pixels
+                    const px = ((x - bounds.minX) / scaleX) * canvas.width;
+                    // Flip Y for standard Cartesian if needed, but parser usually matches bitmap.
+                    // Dota bitmap 0,0 is usually Bottom-Left? Web Canvas 0,0 is Top-Left.
+                    // Parser SimpleParser.java (m_cellY) is likely standard grid.
+                    // If map is inverted, we fix here. Assuming correct for now (previous screenshots implies alignment was okayish).
+                    const py = canvas.height - ((y - bounds.minY) / scaleY) * canvas.height;
+
+                    ctx.beginPath();
+                    // Larger radius (e.g. 3-4px) to overlap and smooth out
+                    ctx.arc(px, py, 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+            });
+
+            // Reset composite for standard drawing
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.shadowBlur = 0;
+        }
+    }, [players, bounds, showHeatmap]);
+
+    return (
+        <div className="minimap-container" style={{ position: 'relative', width: '500px', height: '500px', margin: '0 auto' }}>
+            {/* Controls Overlay */}
+            <div className="vision-controls" style={{ position: 'absolute', top: '-40px', left: 0, display: 'flex', gap: '10px' }}>
+                <button
+                    className={`btn-toggle ${showHeatmap ? 'active' : ''}`}
+                    onClick={() => setShowHeatmap(!showHeatmap)}
+                    style={{ background: showHeatmap ? '#4c6' : '#222', color: 'white', padding: '5px 10px', border: '1px solid #444', cursor: 'pointer' }}
+                >
+                    Heatmap
+                </button>
+                <button
+                    className={`btn-toggle ${showObs ? 'active' : ''}`}
+                    onClick={() => setShowObs(!showObs)}
+                    style={{ background: showObs ? '#fb4' : '#222', color: 'white', padding: '5px 10px', border: '1px solid #444', cursor: 'pointer' }}
+                >
+                    Observers
+                </button>
+                <button
+                    className={`btn-toggle ${showSent ? 'active' : ''}`}
+                    onClick={() => setShowSent(!showSent)}
+                    style={{ background: showSent ? '#48f' : '#222', color: 'white', padding: '5px 10px', border: '1px solid #444', cursor: 'pointer' }}
+                >
+                    Sentries
+                </button>
+            </div>
+
+            <div className="minimap" style={{ width: '100%', height: '100%', backgroundImage: `url('/assets/images/dota_map_733.png')`, backgroundSize: 'cover', position: 'relative' }}>
+                <canvas
+                    ref={canvasRef}
+                    width={500}
+                    height={500}
+                    style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
+                />
+
+                {/* Render Wards conditionally */}
+                {(showObs || showSent) && wards && wards.map((w, i) => {
+                    if (w.type === 'Observer' && !showObs) return null;
+                    if (w.type === 'Sentry' && !showSent) return null;
+
+                    // Same projection as heatmap
+                    const xPct = ((w.x - bounds.minX) / scaleX) * 100;
+                    const yPct = ((w.y - bounds.minY) / scaleY) * 100;
+
+                    return (
+                        <div
+                            key={i}
+                            className={`ward-icon ${w.type === 'Observer' ? 'obs' : 'sent'}`}
+                            style={{
+                                position: 'absolute',
+                                left: `${xPct}%`,
+                                bottom: `${yPct}%`, // Match 'canvas.height - py' logic which is 'bottom'
+                                width: '12px', height: '12px',
+                                borderRadius: '50%',
+                                border: '1px solid #000',
+                                backgroundColor: w.type === 'Observer' ? '#fb4' : '#48f',
+                                transform: 'translate(-50%, 50%)' // Center on point
+                            }}
+                            title={`${w.type} Ward`}
+                        ></div>
+                    );
+                })}
+            </div>
+
+            {/* Legend (Optional, simplifed) */}
+        </div>
+    );
+};
+
+// Map to canvas
+const cx = ((x - bounds.minX) / scaleX) * canvas.width;
+// Flip Y for canvas
+const cy = canvas.height - (((y - bounds.minY) / scaleY) * canvas.height);
+
+ctx.beginPath();
+ctx.arc(cx, cy, 3, 0, 2 * Math.PI); // Radius 3
+ctx.fill();
             });
         });
 
     }, [players, bounds, scaleX, scaleY]);
 
-    return (
-        <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', justifyContent: 'center' }}>
-            <div className="minimap-wrapper" style={{ flex: '0 0 auto' }}>
-                {/* Pass calculated bounds to Minimap for wards */}
-                <Minimap wards={wards} minX={bounds.minX} minY={bounds.minY} scaleX={scaleX} scaleY={scaleY} />
+return (
+    <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', justifyContent: 'center' }}>
+        <div className="minimap-wrapper" style={{ flex: '0 0 auto' }}>
+            {/* Pass calculated bounds to Minimap for wards */}
+            <Minimap wards={wards} minX={bounds.minX} minY={bounds.minY} scaleX={scaleX} scaleY={scaleY} />
 
-                {/* Overlay Canvas */}
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-                    <canvas
-                        ref={canvasRef}
-                        width={512}
-                        height={512}
-                        style={{ width: '100%', height: '100%' }}
-                    />
-                </div>
-            </div>
-
-            {/* Legend Side Panel */}
-            <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                background: '#15191f',
-                padding: '15px',
-                borderRadius: '4px',
-                minWidth: '200px'
-            }}>
-                <div style={{ fontSize: '0.9rem', fontWeight: 'bold', borderBottom: '1px solid #333', paddingBottom: '8px', marginBottom: '4px' }}>
-                    Legend
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'rgba(61, 149, 70, 0.8)' }}></div>
-                    <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Radiant Movement</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'rgba(194, 60, 42, 0.8)' }}></div>
-                    <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Dire Movement</div>
-                </div>
-
-                <div style={{ marginTop: '10px', fontSize: '0.9rem', fontWeight: 'bold', borderBottom: '1px solid #333', paddingBottom: '8px', marginBottom: '4px' }}>
-                    Wards
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div className="ward-dot obs"></div>
-                    <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Observer Ward</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div className="ward-dot sent"></div>
-                    <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Sentry Ward</div>
-                </div>
+            {/* Overlay Canvas */}
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                <canvas
+                    ref={canvasRef}
+                    width={512}
+                    height={512}
+                    style={{ width: '100%', height: '100%' }}
+                />
             </div>
         </div>
-    );
+
+        {/* Legend Side Panel */}
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            background: '#15191f',
+            padding: '15px',
+            borderRadius: '4px',
+            minWidth: '200px'
+        }}>
+            <div style={{ fontSize: '0.9rem', fontWeight: 'bold', borderBottom: '1px solid #333', paddingBottom: '8px', marginBottom: '4px' }}>
+                Legend
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'rgba(61, 149, 70, 0.8)' }}></div>
+                <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Radiant Movement</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'rgba(194, 60, 42, 0.8)' }}></div>
+                <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Dire Movement</div>
+            </div>
+
+            <div style={{ marginTop: '10px', fontSize: '0.9rem', fontWeight: 'bold', borderBottom: '1px solid #333', paddingBottom: '8px', marginBottom: '4px' }}>
+                Wards
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="ward-dot obs"></div>
+                <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Observer Ward</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="ward-dot sent"></div>
+                <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Sentry Ward</div>
+            </div>
+        </div>
+    </div>
+);
 };
 
 const MatchDetails = ({ match }) => {
