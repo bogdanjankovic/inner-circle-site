@@ -345,25 +345,27 @@ const HeatmapOverlay = ({ players, wards }) => {
     }, [players, bounds, scaleX, scaleY]);
 
     return (
-        <div className="minimap-wrapper">
-            {/* Pass calculated bounds to Minimap for wards */}
-            <Minimap wards={wards} minX={bounds.minX} minY={bounds.minY} scaleX={scaleX} scaleY={scaleY} />
+        <>
+            <div className="minimap-wrapper">
+                {/* Pass calculated bounds to Minimap for wards */}
+                <Minimap wards={wards} minX={bounds.minX} minY={bounds.minY} scaleX={scaleX} scaleY={scaleY} />
 
-            {/* Overlay Canvas */}
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-                <canvas
-                    ref={canvasRef}
-                    width={512}
-                    height={512}
-                    style={{ width: '100%', height: '100%' }}
-                />
+                {/* Overlay Canvas */}
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                    <canvas
+                        ref={canvasRef}
+                        width={512}
+                        height={512}
+                        style={{ width: '100%', height: '100%' }}
+                    />
+                </div>
             </div>
-            {/* Legend */}
-            <div style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(0,0,0,0.7)', padding: '5px', borderRadius: '4px', fontSize: '0.8rem' }}>
+            {/* Legend Outside */}
+            <div style={{ textAlign: 'center', marginTop: '10px', display: 'flex', gap: '20px', justifyContent: 'center', fontSize: '0.9rem' }}>
                 <div style={{ color: '#3d9546' }}>■ Radiant Movement</div>
                 <div style={{ color: '#c23c2a' }}>■ Dire Movement</div>
             </div>
-        </div>
+        </>
     );
 };
 
