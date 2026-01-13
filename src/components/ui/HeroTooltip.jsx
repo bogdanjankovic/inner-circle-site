@@ -39,10 +39,16 @@ export const HeroImage = ({ heroId, style }) => {
     }
 
     // OpenDota constants provide paths like "/apps/dota2/images/dota_react/heroes/icons/antimage.png?"
-    // User requested to use 'img' property
-    const imgSrc = heroData?.img
-        ? `https://cdn.cloudflare.steamstatic.com${heroData.img}`
-        : null;
+    // We downloaded them to /assets/images/dota/heroes/{heroName}.png
+    // We need to derive the clean name from heroData.name (npc_dota_hero_antimage)
+
+    let localImgPath = null;
+    if (heroData && heroData.name) {
+        const cleanName = heroData.name.replace('npc_dota_hero_', '');
+        localImgPath = `/assets/images/dota/heroes/${cleanName}.png`;
+    }
+
+    const imgSrc = localImgPath || null;
 
     if (imgSrc) {
         return (

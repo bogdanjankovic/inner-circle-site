@@ -14,16 +14,59 @@ const formatNumber = (num) => {
     return num.toString();
 };
 
+// Specific overrides for heroes where Parser output (lowercase, no prefix) mismatch Asset filename
+const HERO_NAME_OVERRIDES = {
+    'emberspirit': 'ember_spirit',
+    'centaur': 'centaur', // Sometimes centaur_warrunner? Checked download: centaur.png
+    'treant': 'treant',   // treant_protector? Download: treant.png
+    'magnataur': 'magnataur', // magnus? Download: magnataur.png
+    // Add others if reported missing
+};
+
+const normalizeHeroName = (name) => {
+    if (!name) return null;
+    const lower = name.toLowerCase();
+    if (HERO_NAME_OVERRIDES[lower]) return HERO_NAME_OVERRIDES[lower];
+    return lower;
+};
+
+const normalizeItemName = (name) => {
+    if (!name) return null;
+    // Handle "item_recipe_power_treads" or "PowerTreads"
+    let clean = name.replace('item_', '');
+
+    // If CamelCase/PascalCase (has capitals), convert to snake_case
+    if (/[A-Z]/.test(clean)) {
+        clean = clean.replace(/([A-Z])/g, '_$1').toLowerCase();
+        // Remove leading underscore if any (e.g. from PowerTreads -> _power_treads)
+        if (clean.startsWith('_')) clean = clean.substring(1);
+    }
+
+    return clean;
+};
+
 const PlayerRow = ({ p }) => {
     // Determine image using internal heroName
-    // fallback if no heroName
-    const heroImg = p.heroName ? `${HERO_IMG_BASE}${p.heroName}.png` : null;
+    const normalizedHero = normalizeHeroName(p.heroName);
+    const heroImg = normalizedHero ? `${HERO_IMG_BASE}${normalizedHero}.png` : null;
 
     return (
         <tr>
             <td className="left-align">
                 <div className="player-cell">
-                    {heroImg && <img src={heroImg} alt={p.heroName} className="hero-icon" />}
+                    {heroImg ? (
+                        <img
+                            src={heroImg}
+                            alt={p.heroName}
+                            className="hero-icon"
+                            onError={(e) => {
+                                console.warn(`Hero Image Failed: ${p.heroName} -> ${e.target.src}`);
+                                e.target.style.display = 'none';
+                            }}
+                        />
+                    ) : (
+                        <span style={{ fontSize: '0.8rem', color: '#888' }}>{p.heroName || p.heroId}</span>
+                    )}
                     <div className="player-info">
                         <span className="player-name">{p.name}</span>
                         <span className="player-rank">Level {p.level}</span>
@@ -45,10 +88,9 @@ const PlayerRow = ({ p }) => {
             <td>
                 <div className="items-cell">
                     {p.items.map((item, idx) => {
-                        // Remove 'item_' prefix if present (parser usually keeps it? check parser)
-                        // Parser seems to return names like "item_blink".
-                        // Valve CDN expects "blink_lg.png".
-                        const cleanItem = item.replace('item_', '');
+                        // Parser names: e.g. "PowerTreads" or "item_blink"
+                        // Assets: "power_treads.png", "blink.png"
+                        const cleanItem = normalizeItemName(item);
                         return (
                             <img
                                 key={idx}
