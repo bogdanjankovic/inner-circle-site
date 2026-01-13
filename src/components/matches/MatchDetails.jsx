@@ -239,7 +239,11 @@ const Minimap = ({ wards, minX, minY, scaleX, scaleY }) => {
     };
 
     return (
-        <div className="minimap" style={{ backgroundImage: `url('/assets/images/dota_map_733.png')`, backgroundSize: 'cover' }}>
+        <div className="minimap" style={{ backgroundImage: `url('/assets/images/dota_map_733.png')`, backgroundSize: 'cover', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 5, left: 5, zIndex: 100, color: 'white', background: 'rgba(0,0,0,0.5)', fontSize: '10px', pointerEvents: 'none' }}>
+                DEBUG: Bounds [{_minX.toFixed(0)}, {(_minX + _scaleX).toFixed(0)}, {_minY.toFixed(0)}, {(_minY + _scaleY).toFixed(0)}]<br />
+                Wards: {wards ? wards.length : 0} (Obs: {wards ? wards.filter(w => w.type === 'Observer').length : 0}, Sent: {wards ? wards.filter(w => w.type === 'Sentry').length : 0})
+            </div>
             {wards && wards.map((w, i) => (
                 <div
                     key={i}
