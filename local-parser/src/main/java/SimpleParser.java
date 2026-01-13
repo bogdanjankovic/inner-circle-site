@@ -40,6 +40,11 @@ public class SimpleParser {
     // Position Storage: PlayerID -> List of "{t, x, y}"
     private Map<Integer, List<String>> playerPositions = new HashMap<>();
 
+    // Damage Stats Maps: key = hero name (e.g. "npc_dota_hero_axe")
+    private Map<String, Integer> heroDamageMap = new HashMap<>();
+    private Map<String, Integer> towerDamageMap = new HashMap<>();
+    private Map<String, Integer> heroHealingMap = new HashMap<>();
+
     public static void main(String[] args) throws Exception {
         if (args.length == 0) {
             System.err.println("Usage: java -jar dota-parser.jar <demofile>");
@@ -469,6 +474,37 @@ public class SimpleParser {
         combatLogEvents.add(log);
     }
 
+    @OnCombatLogEntry
+    public void onCombatLogEntry(CombatLogEntry cle) {
+        try {
+            int type = cle.getType().ordinal();
+            // DOTA_COMBATLOG_DAMAGE = 4
+            if (type == 4) {
+                String attacker = cle.getAttackerName();
+                String target = cle.getTargetName();
+                int val = cle.getValue();
+
+                if (attacker != null && attacker.startsWith("npc_dota_hero")) {
+                    if (target != null && target.startsWith("npc_dota_hero")) {
+                        heroDamageMap.merge(attacker, val, Integer::sum);
+                    } else if (target != null && (target.contains("tower") || target.contains("barracks")
+                            || target.contains("fort") || target.contains("healer"))) {
+                        towerDamageMap.merge(attacker, val, Integer::sum);
+                    }
+                }
+            }
+            // DOTA_COMBATLOG_HEAL = 5
+            if (type == 5) {
+                String attacker = cle.getAttackerName();
+                int val = cle.getValue();
+                if (attacker != null && attacker.startsWith("npc_dota_hero")) {
+                    heroHealingMap.merge(attacker, val, Integer::sum);
+                }
+            }
+        } catch (Exception e) {
+        }
+    }
+
     @OnGameEvent("dota_tower_kill")
     public void onTowerKill(skadistats.clarity.model.GameEvent event) {
         Map<String, Object> log = new HashMap<>();
@@ -533,7 +569,7 @@ public class SimpleParser {
 
         // Detailed fallback search if still null (Iterate all if possible, but safely)
         if (gr == null)
-            gr = entities.getByDtName("CDOTAGameRulesProxy");
+            gr = entities.getByDtName("CDOTAGamerulesProxy");
         if (gr == null)
             gr = entities.getByDtName("dota_gamerules");
 
@@ -739,6 +775,8 @@ public class SimpleParser {
             int heroId = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_nSelectedHeroID", i);
 
             int lastHits = 0, denies = 0, gold = 0, netWorth = 0, gpm = 0, xpm = 0;
+            int heroDamage = 0, towerDamage = 0, heroHealing = 0;
+
             if (team == 2 && dataRadiant != null) {
                 lastHits = getIntProperty(dataRadiant, "m_vecDataTeam.%i.m_iLastHitCount", radiantIdx);
                 denies = getIntProperty(dataRadiant, "m_vecDataTeam.%i.m_iDenyCount", radiantIdx);
@@ -752,25 +790,42 @@ public class SimpleParser {
                 netWorth = getIntProperty(dataDire, "m_vecDataTeam.%i.m_iNetWorth", direIdx);
                 direIdx++;
             }
+
+            // GPM/XPM
             gpm = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iGoldPerMin", i);
-            gpm = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iGoldPerMin", i);
+            if (gpm == 0 && gold > 0 && duration > 0) {
+                gpm = (int) (gold / (duration / 60.0));
+            }
             xpm = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iXPPerMin", i);
+            if (xpm == 0 && duration > 0) {
+                int totalXp = calculateTotalXp(level);
+                xpm = (int) (totalXp / (duration / 60.0));
+            }
 
-            // New Stats
-            int heroDamage = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iHeroDamage", i);
-            int towerDamage = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iTowerDamage", i);
-            int heroHealing = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_iHeroHealing", i);
-
-            List<String> items = new ArrayList<>();
-            List<String> abilities = new ArrayList<>();
-            int heroHandle = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_hSelectedHero", i);
-
+            // Hero Stats from Maps (CombatLog Aggregation)
+            Integer heroHandle = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_hSelectedHero", i);
             Entity heroEntity = entities.getByHandle(heroHandle);
             String heroName = "unknown";
 
             if (heroEntity != null) {
                 heroName = heroEntity.getDtClass().getDtName().replace("CDOTA_Unit_Hero_", "")
                         .replace("CDOTA_Unit_", "").toLowerCase();
+
+                String lookupName = "npc_dota_hero_" + heroName;
+                if (heroDamageMap.containsKey(lookupName))
+                    heroDamage = heroDamageMap.get(lookupName);
+                if (towerDamageMap.containsKey(lookupName))
+                    towerDamage = towerDamageMap.get(lookupName);
+                if (heroHealingMap.containsKey(lookupName))
+                    heroHealing = heroHealingMap.get(lookupName);
+            }
+
+            List<String> items = new ArrayList<>();
+            List<String> abilities = new ArrayList<>();
+            // Hero Entity already retrieved above
+
+            if (heroEntity != null) {
+                // heroName already retrieved
 
                 for (int slot = 0; slot < 6; slot++) {
                     Integer itemHandle = getProperty(heroEntity, "m_hItems." + Util.arrayIdxToString(slot));
@@ -814,8 +869,7 @@ public class SimpleParser {
             pJson.append("      \"denies\": ").append(denies).append(",\n");
             pJson.append("      \"gold\": ").append(gold).append(",\n");
             pJson.append("      \"netWorth\": ").append(netWorth).append(",\n");
-            pJson.append("      \"gpm\": ").append(gpm).append(",\n");
-            pJson.append("      \"xpm\": ").append(xpm).append(",\n");
+            pJson.append("      \"netWorth\": ").append(netWorth).append(",\n");
             pJson.append("      \"gpm\": ").append(gpm).append(",\n");
             pJson.append("      \"xpm\": ").append(xpm).append(",\n");
             pJson.append("      \"heroDamage\": ").append(heroDamage).append(",\n");
@@ -844,6 +898,20 @@ public class SimpleParser {
     // -------------------------------------------------------------------------
     // Utilities
     // -------------------------------------------------------------------------
+    private int calculateTotalXp(int level) {
+        // Approximate Table (7.33+)
+        int[] xpTable = {
+                0, 0, 230, 600, 1080, 1680, 2300, 2940, 3600, 4280, 4980,
+                5900, 6820, 7740, 8660, 9780, 10900, 12020, 13140, 14260, 15380,
+                16500, 17620, 18740, 19860, 20980, 22100, 23220, 24340, 25460, 30000 // Cap at 30
+        };
+        if (level <= 1)
+            return 0;
+        if (level >= xpTable.length)
+            return xpTable[xpTable.length - 1];
+        return xpTable[level];
+    }
+
     private int extractOrder(String json) {
         try {
             int idx = json.indexOf("\"order\":");

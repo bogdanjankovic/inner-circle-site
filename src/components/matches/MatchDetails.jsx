@@ -217,7 +217,7 @@ const Minimap = ({ wards }) => {
     };
 
     return (
-        <div className="minimap" style={{ backgroundImage: `url('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/minimap/minimap_simple.png')`, backgroundSize: 'cover' }}>
+        <div className="minimap" style={{ backgroundImage: `url('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_reborn/733/map.jpg')`, backgroundSize: 'cover' }}>
             {wards && wards.map((w, i) => (
                 <div
                     key={i}
@@ -269,7 +269,7 @@ const HeatmapOverlay = ({ players }) => {
     return (
         <div className="minimap-wrapper">
             {/* Background Map */}
-            <div className="minimap" style={{ position: 'relative', backgroundImage: `url('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/minimap/minimap_simple.png')`, backgroundSize: 'cover' }}>
+            <div className="minimap" style={{ position: 'relative', backgroundImage: `url('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_reborn/733/map.jpg')`, backgroundSize: 'cover' }}>
                 <canvas
                     ref={canvasRef}
                     width={512}
