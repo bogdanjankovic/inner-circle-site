@@ -346,118 +346,13 @@ const DraftTimeline = ({ picksBans }) => {
     )
 }
 
-// Simple ID to Name map or fetcher is needed. 
-// For now, I will implement the Tabs structure and move existing code.
-
-const Minimap = ({ wards, minX, minY, scaleX, scaleY }) => {
-    // If no bounds provided, default to standard grid (128x128 centered at 64)
-    // But since we are calculating dynamically, we expect props.
-    // Fallback: 0-128 if undefined.
-    const _minX = minX !== undefined ? minX : 0;
-    const _minY = minY !== undefined ? minY : 0;
-    const _scaleX = scaleX || 128;
-    const _scaleY = scaleY || 128;
-
-    const getPosStyle = (x, y) => {
-        // Calculate percentage within bounds
-        const xPct = ((x - _minX) / _scaleX) * 100;
-        const yPct = ((y - _minY) / _scaleY) * 100;
-        return {
-            left: `${xPct}%`,
-            bottom: `${yPct}%`
-        };
-    };
-
-    return (
-        <div className="minimap" style={{ backgroundImage: `url('/assets/images/dota_map_733.png')`, backgroundSize: 'cover', position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 5, left: 5, zIndex: 100, color: 'white', background: 'rgba(0,0,0,0.5)', fontSize: '10px', pointerEvents: 'none' }}>
-                DEBUG: Bounds [{_minX.toFixed(0)}, {(_minX + _scaleX).toFixed(0)}, {_minY.toFixed(0)}, {(_minY + _scaleY).toFixed(0)}]<br />
-                Wards: {wards ? wards.length : 0} (Obs: {wards ? wards.filter(w => w.type === 'Observer').length : 0}, Sent: {wards ? wards.filter(w => w.type === 'Sentry').length : 0})
-            </div>
-            {wards && wards.map((w, i) => (
-                <div
-                    key={i}
-                    className={`ward-icon ${w.type === 'Observer' ? 'obs' : 'sent'} team-ward`}
-                    style={getPosStyle(w.x, w.y)}
-                    title={`${w.type} Ward (${w.x}, ${w.y})`}
-                ></div>
-            ))}
-        </div>
-    );
-};
-
 const HeatmapOverlay = ({ players, wards }) => {
     const canvasRef = React.useRef(null);
 
-    // Calculate Bounds
-    const [bounds, setBounds] = React.useState({ minX: 64, maxX: 192, minY: 64, maxY: 192 });
-
-    React.useEffect(() => {
-        let minX = 1000, maxX = 0, minY = 1000, maxY = 0;
-        let count = 0;
-
-        // Scan Player positions
-        players.forEach(p => {
-            if (p.positions) {
-                p.positions.forEach(pos => {
-                    const x = pos[1];
-                    const y = pos[2];
-                    if (x < minX) minX = x;
-                    if (x > maxX) maxX = x;
-                    if (y < minY) minY = y;
-                    if (y > maxY) maxY = y;
-                    count++;
-                });
-            }
-        });
-
-        // Scan Wards
-        if (wards) {
-            wards.forEach(w => {
-                if (w.x < minX) minX = w.x;
-                if (w.x > maxX) maxX = w.x;
-                if (w.y < minY) minY = w.y;
-                if (w.y > maxY) maxY = w.y;
-                count++;
-            });
-        }
-
-        if (count > 0) {
-            // Add padding (e.g. 5% edges) to ensure points are not on the border
-            const rangeX = maxX - minX;
-            const rangeY = maxY - minY;
-            // Slightly expand bounds? Or trust the map image covers this exact range?
-            // The 7.33 map is square. We should ensure aspect ratio.
-            // Let's create a square bounding box centered on data.
-
-            // Heuristic for 7.33: 
-            // Observed range is likely approx 64 to 192 (128 width) if offset was removed?
-            // Or 0 to 256?
-            // Let's assume the Map Image covers the Full Grid.
-            // Full Grid is usually 0-256 cells? or 0-16384 world units/128 = 0-128 cells earlier.
-            // IF we are seeing raw indices > 128, then the grid is larger.
-            // We'll normalize to the Min/Max observed, expecting the map image to align with the PLAY AREA.
-
-            // For safety, force square aspect ratio
-            let size = Math.max(rangeX, rangeY);
-            // Min size 128 to avoid zoom in too much on short games
-            if (size < 128) size = 128;
-
-            // Center
-            const cx = (minX + maxX) / 2;
-            const cy = (minY + maxY) / 2;
-
-            setBounds({
-                minX: cx - size / 2,
-                maxX: cx + size / 2,
-                minY: cy - size / 2,
-                maxY: cy + size / 2
-            });
-        }
-    }, [players, wards]);
-
-    const scaleX = bounds.maxX - bounds.minX;
-    const scaleY = bounds.maxY - bounds.minY;
+    // Fixed Bounds for 7.33 Map (approximate grid coordinates)
+    const bounds = { minX: 64, maxX: 192, minY: 64, maxY: 192 };
+    const scaleX = 128; // 192-64
+    const scaleY = 128;
 
     const [showHeatmap, setShowHeatmap] = React.useState(true);
     const [showObs, setShowObs] = React.useState(true);
@@ -471,115 +366,141 @@ const HeatmapOverlay = ({ players, wards }) => {
         ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous
 
         if (showHeatmap) {
-            // Draw Heatmap with smoothed effect
-            // Use 'lighter' or 'screen' for additive heat effect
             ctx.globalCompositeOperation = 'screen';
-
-            // To hide the grid-like quantization of data, use larger radius and blur
             ctx.shadowBlur = 10;
 
             players.forEach(p => {
                 if (!p.positions) return;
-
-                // Radiant: Green-ish, Dire: Red-ish
                 const color = p.team === 'Radiant' ? 'rgba(0, 255, 64, 0.05)' : 'rgba(255, 60, 60, 0.05)';
                 ctx.fillStyle = color;
-                ctx.shadowColor = color; // Glow matches fill
+                ctx.shadowColor = color;
 
                 p.positions.forEach(pos => {
                     const x = pos[1];
                     const y = pos[2];
 
-                    // Map grid coordinates to canvas pixels
                     const px = ((x - bounds.minX) / scaleX) * canvas.width;
-                    // Flip Y for standard Cartesian if needed, but parser usually matches bitmap.
-                    // Dota bitmap 0,0 is usually Bottom-Left? Web Canvas 0,0 is Top-Left.
-                    // Parser SimpleParser.java (m_cellY) is likely standard grid.
-                    // If map is inverted, we fix here. Assuming correct for now (previous screenshots implies alignment was okayish).
                     const py = canvas.height - ((y - bounds.minY) / scaleY) * canvas.height;
 
                     ctx.beginPath();
-                    // Larger radius (e.g. 3-4px) to overlap and smooth out
                     ctx.arc(px, py, 4, 0, 2 * Math.PI);
                     ctx.fill();
                 });
             });
-
-            // Reset composite for standard drawing
             ctx.globalCompositeOperation = 'source-over';
             ctx.shadowBlur = 0;
         }
-    }, [players, bounds, showHeatmap]);
+    }, [players, showHeatmap]);
 
     return (
-        <div className="minimap-container" style={{ position: 'relative', width: '500px', height: '500px', margin: '0 auto' }}>
-            {/* Controls Overlay */}
-            <div className="vision-controls" style={{ position: 'absolute', top: '-40px', left: 0, display: 'flex', gap: '10px' }}>
-                <button
-                    className={`btn-toggle ${showHeatmap ? 'active' : ''}`}
-                    onClick={() => setShowHeatmap(!showHeatmap)}
-                    style={{ background: showHeatmap ? '#4c6' : '#222', color: 'white', padding: '5px 10px', border: '1px solid #444', cursor: 'pointer' }}
-                >
-                    Heatmap
-                </button>
-                <button
-                    className={`btn-toggle ${showObs ? 'active' : ''}`}
-                    onClick={() => setShowObs(!showObs)}
-                    style={{ background: showObs ? '#fb4' : '#222', color: 'white', padding: '5px 10px', border: '1px solid #444', cursor: 'pointer' }}
-                >
-                    Observers
-                </button>
-                <button
-                    className={`btn-toggle ${showSent ? 'active' : ''}`}
-                    onClick={() => setShowSent(!showSent)}
-                    style={{ background: showSent ? '#48f' : '#222', color: 'white', padding: '5px 10px', border: '1px solid #444', cursor: 'pointer' }}
-                >
-                    Sentries
-                </button>
+        <div className="minimap-section" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: '40px', marginTop: '20px' }}>
+
+            {/* Map Container - Centered */}
+            <div className="minimap-container" style={{ position: 'relative', width: '512px', height: '512px', flex: '0 0 auto', border: '1px solid #333', boxShadow: '0 0 20px rgba(0,0,0,0.5)' }}>
+                <div className="minimap" style={{ width: '100%', height: '100%', backgroundImage: `url('/assets/images/dota_map_733.png')`, backgroundSize: 'cover', position: 'relative' }}>
+                    <canvas
+                        ref={canvasRef}
+                        width={512}
+                        height={512}
+                        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
+                    />
+                    {(showObs || showSent) && wards && wards.map((w, i) => {
+                        if (w.type === 'Observer' && !showObs) return null;
+                        if (w.type === 'Sentry' && !showSent) return null;
+
+                        const xPct = ((w.x - bounds.minX) / scaleX) * 100;
+                        const yPct = ((w.y - bounds.minY) / scaleY) * 100;
+
+                        return (
+                            <div
+                                key={i}
+                                className={`ward-icon ${w.type === 'Observer' ? 'obs' : 'sent'}`}
+                                style={{
+                                    position: 'absolute',
+                                    left: `${xPct}%`,
+                                    bottom: `${yPct}%`,
+                                    width: '12px', height: '12px', borderRadius: '50%',
+                                    backgroundColor: w.type === 'Observer' ? '#fb4' : '#48f',
+                                    border: '1px solid black',
+                                    boxShadow: '0 0 5px black',
+                                    transform: 'translate(-50%, 50%)' // Center on point
+                                }}
+                                title={`${w.type} Ward`}
+                            ></div>
+                        );
+                    })}
+                </div>
             </div>
 
-            <div className="minimap" style={{ width: '100%', height: '100%', backgroundImage: `url('/assets/images/dota_map_733.png')`, backgroundSize: 'cover', position: 'relative' }}>
-                <canvas
-                    ref={canvasRef}
-                    width={500}
-                    height={500}
-                    style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
-                />
+            {/* Controls Side Panel - Right Side */}
+            <div className="vision-controls-panel" style={{
+                display: 'flex', flexDirection: 'column', gap: '20px',
+                background: '#15191f', padding: '20px', borderRadius: '8px',
+                minWidth: '220px', border: '1px solid #333'
+            }}>
+                <div style={{ textTransform: 'uppercase', color: '#888', fontSize: '0.8rem', letterSpacing: '1px', fontWeight: 'bold' }}>Map Controls</div>
 
-                {/* Render Wards conditionally */}
-                {(showObs || showSent) && wards && wards.map((w, i) => {
-                    if (w.type === 'Observer' && !showObs) return null;
-                    if (w.type === 'Sentry' && !showSent) return null;
+                <div className="toggle-group" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <button
+                        onClick={() => setShowHeatmap(!showHeatmap)}
+                        style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            background: showHeatmap ? 'rgba(76, 204, 102, 0.15)' : 'rgba(255,255,255,0.05)',
+                            color: showHeatmap ? '#4c6' : '#888',
+                            padding: '12px', border: showHeatmap ? '1px solid #4c6' : '1px solid #333',
+                            borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s'
+                        }}
+                    >
+                        <span>Heatmap</span>
+                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: showHeatmap ? '#4c6' : '#444' }}></div>
+                    </button>
 
-                    // Same projection as heatmap
-                    const xPct = ((w.x - bounds.minX) / scaleX) * 100;
-                    const yPct = ((w.y - bounds.minY) / scaleY) * 100;
+                    <button
+                        onClick={() => setShowObs(!showObs)}
+                        style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            background: showObs ? 'rgba(255, 187, 68, 0.15)' : 'rgba(255,255,255,0.05)',
+                            color: showObs ? '#fb4' : '#888',
+                            padding: '12px', border: showObs ? '1px solid #fb4' : '1px solid #333',
+                            borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s'
+                        }}
+                    >
+                        <span>Observer Wards</span>
+                        <div className="ward-dot obs"></div>
+                    </button>
 
-                    return (
-                        <div
-                            key={i}
-                            className={`ward-icon ${w.type === 'Observer' ? 'obs' : 'sent'}`}
-                            style={{
-                                position: 'absolute',
-                                left: `${xPct}%`,
-                                bottom: `${yPct}%`, // Match 'canvas.height - py' logic which is 'bottom'
-                                width: '12px', height: '12px',
-                                borderRadius: '50%',
-                                border: '1px solid #000',
-                                backgroundColor: w.type === 'Observer' ? '#fb4' : '#48f',
-                                transform: 'translate(-50%, 50%)' // Center on point
-                            }}
-                            title={`${w.type} Ward`}
-                        ></div>
-                    );
-                })}
+                    <button
+                        onClick={() => setShowSent(!showSent)}
+                        style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            background: showSent ? 'rgba(68, 136, 255, 0.15)' : 'rgba(255,255,255,0.05)',
+                            color: showSent ? '#48f' : '#888',
+                            padding: '12px', border: showSent ? '1px solid #48f' : '1px solid #333',
+                            borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s'
+                        }}
+                    >
+                        <span>Sentry Wards</span>
+                        <div className="ward-dot sent"></div>
+                    </button>
+                </div>
+
+                <div style={{ height: '1px', background: '#333', margin: '10px 0' }}></div>
+
+                <div style={{ textTransform: 'uppercase', color: '#888', fontSize: '0.8rem', letterSpacing: '1px', fontWeight: 'bold' }}>Legend</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'rgba(61, 149, 70, 0.8)' }}></div>
+                        <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Radiant</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'rgba(194, 60, 42, 0.8)' }}></div>
+                        <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Dire</div>
+                    </div>
+                </div>
             </div>
-
-            {/* Legend (Optional, simplifed) */}
         </div>
     );
 };
-
 
 const MatchDetails = ({ match }) => {
     const [activeTab, setActiveTab] = React.useState('overview');
@@ -609,7 +530,6 @@ const MatchDetails = ({ match }) => {
 
             <div className="tabs">
                 <button className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</button>
-                <button className={`tab-button ${activeTab === 'vision' ? 'active' : ''}`} onClick={() => setActiveTab('vision')}>Vision</button>
                 <button className={`tab-button ${activeTab === 'heatmaps' ? 'active' : ''}`} onClick={() => setActiveTab('heatmaps')}>Heatmaps</button>
             </div>
 
@@ -640,26 +560,11 @@ const MatchDetails = ({ match }) => {
                 </>
             )}
 
-            {activeTab === 'vision' && (
-                <div className="vision-tab">
-                    <h3>Ward Map</h3>
-                    <div className="minimap-wrapper">
-                        <Minimap wards={match.wards} />
-                        <div className="minimap-legend">
-                            <div className="legend-item"><span className="ward-dot obs"></span> Observer</div>
-                            <div className="legend-item"><span className="ward-dot sent"></span> Sentry</div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {activeTab === 'heatmaps' && (
                 <div className="heatmap-tab">
                     <h3>Player Positioning Heatmap & Ward Map</h3>
-                    <div className="minimap-wrapper">
-                        {/* Pass both players and wards to Overlay, which handles Minimap internally now */}
-                        <HeatmapOverlay players={match.players} wards={match.wards} />
-                    </div>
+                    {/* Pass both players and wards to Overlay */}
+                    <HeatmapOverlay players={match.players} wards={match.wards} />
                 </div>
             )}
 
