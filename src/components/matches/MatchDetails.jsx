@@ -1,5 +1,6 @@
 import React from 'react';
 import './MatchDetails.css';
+import { HeroImage } from '../components/ui/HeroTooltip';
 
 const HERO_IMG_BASE = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/';
 const ITEM_IMG_BASE = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/';
@@ -206,19 +207,9 @@ const DraftTimeline = ({ picksBans }) => {
 // For now, I will implement the Tabs structure and move existing code.
 
 const Minimap = ({ wards }) => {
-    // Map constants
-    // Dota 2 map is roughly square.
-    // Coordinates from parser seem to be cell coordinates (0-128 or similar). 
-    // Based on "x: 126, y: 128", it looks like a 128x128 grid (with 128 being edge/max).
-    // Let's assume the grid involves 0-128 range.
     const MAP_SIZE = 128;
-
     const getPosStyle = (x, y) => {
-        // Standard Dota 2 Map (0,0) is bottom-left in Cartesian, 
-        // but typically parsers output grid coordinates where (0,0) is bottom-left.
-        // We render on web (0,0 is top-left).
-        // So Left = (x / MAP_SIZE) * 100%
-        // Bottom = (y / MAP_SIZE) * 100% (CSS supports bottom positioning)
+        // x, y are 0-127 cell coordinates. (0,0) is bottom-left.
         return {
             left: `${(x / MAP_SIZE) * 100}%`,
             bottom: `${(y / MAP_SIZE) * 100}%`
@@ -226,7 +217,7 @@ const Minimap = ({ wards }) => {
     };
 
     return (
-        <div className="minimap">
+        <div className="minimap" style={{ backgroundImage: `url('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/minimap/minimap_simple.png')`, backgroundSize: 'cover' }}>
             {wards && wards.map((w, i) => (
                 <div
                     key={i}
@@ -241,7 +232,7 @@ const Minimap = ({ wards }) => {
 
 const HeatmapOverlay = ({ players }) => {
     const canvasRef = React.useRef(null);
-    const MAP_SIZE = 127;
+    const MAP_SIZE = 128;
 
     React.useEffect(() => {
         const canvas = canvasRef.current;
@@ -278,7 +269,7 @@ const HeatmapOverlay = ({ players }) => {
     return (
         <div className="minimap-wrapper">
             {/* Background Map */}
-            <div className="minimap" style={{ position: 'relative' }}>
+            <div className="minimap" style={{ position: 'relative', backgroundImage: `url('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/minimap/minimap_simple.png')`, backgroundSize: 'cover' }}>
                 <canvas
                     ref={canvasRef}
                     width={512}
@@ -333,11 +324,11 @@ const MatchDetails = ({ match }) => {
                         {match.picks_bans && (
                             <div className="draft-row">
                                 {match.picks_bans.map((pb, i) => {
-                                    const heroName = heroIdMap[pb.hero_id] || 'unknown'; // Only works for picks, bans might be unknown name
-                                    const imgUrl = heroName !== 'unknown' ? `${HERO_IMG_BASE}${heroName}.png` : null;
+                                    const isBan = !pb.is_pick;
                                     return (
-                                        <div key={i} className={`draft-item ${pb.is_pick ? 'pick' : 'ban'} ${pb.team === 2 ? 'radiant' : 'dire'}`}>
-                                            {imgUrl ? <img src={imgUrl} title={heroName} /> : <div className="no-hero">{pb.hero_id}</div>}
+                                        <div key={i} className={`draft-item ${isBan ? 'ban' : 'pick'} ${pb.team === 2 ? 'radiant' : 'dire'}`}>
+                                            <HeroImage heroId={pb.hero_id} style={{ width: '100%', height: '100%', opacity: isBan ? 0.6 : 1, filter: isBan ? 'grayscale(100%)' : 'none' }} />
+                                            {isBan && <div className="ban-overlay">✖</div>}
                                             <span className="draft-type">{pb.is_pick ? 'PICK' : 'BAN'}</span>
                                         </div>
                                     )

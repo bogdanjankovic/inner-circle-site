@@ -254,7 +254,9 @@
 .draft-row {
     display: flex;
     gap: 8px;
-    min-width: max-content;
+    flex-wrap: wrap;
+    /* Fix scrolling */
+    justify-content: center;
 }
 
 .draft-item {
@@ -283,8 +285,22 @@
     border-bottom: 2px solid #c23c2a;
 }
 
+.ban-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: red;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-shadow: 0 0 4px black;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.draft-item.ban .hero-image-container,
 .draft-item.ban img {
-    filter: grayscale(100%) opacity(0.5);
+    filter: grayscale(100%) opacity(0.6);
 }
 
 .draft-type {
