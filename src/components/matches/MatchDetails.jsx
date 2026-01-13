@@ -30,20 +30,37 @@ const normalizeHeroName = (name) => {
     return lower;
 };
 
-const normalizeItemName = (name) => {
+const normalizeName = (name) => {
     if (!name) return null;
-    // Handle "item_recipe_power_treads" or "PowerTreads"
-    let clean = name.replace('item_', '');
+    let clean = name;
 
-    // If CamelCase/PascalCase (has capitals), convert to snake_case
-    if (/[A-Z]/.test(clean)) {
-        clean = clean.replace(/([A-Z])/g, '_$1').toLowerCase();
-        // Remove leading underscore if any (e.g. from PowerTreads -> _power_treads)
-        if (clean.startsWith('_')) clean = clean.substring(1);
-    }
+    // Handle specific prefixes to strip
+    if (clean.startsWith('item_')) clean = clean.replace('item_', '');
+    // Abilities often don't have prefix but items do.
+
+    // Convert PascalCase/camelCase to snake_case
+    // e.g. "Abaddon_AphoticShield" -> "abaddon_aphotic_shield"
+    // e.g. "PowerTreads" -> "power_treads"
+    // e.g. "blink" -> "blink"
+
+    // Strategy: Insert underscore before Capital letters that follow lowercase/number
+    clean = clean.replace(/([a-z0-9])([A-Z])/g, '$1_$2');
+
+    // Lowercase everything
+    clean = clean.toLowerCase();
+
+    // Remove any double underscores if they appeared (e.g. Abaddon_AphoticShield -> Abaddon__Aphotic_Shield)
+    clean = clean.replace(/_+/g, '_');
+
+    // Remove leading/trailing underscores
+    if (clean.startsWith('_')) clean = clean.slice(1);
+    if (clean.endsWith('_')) clean = clean.slice(0, -1);
 
     return clean;
 };
+
+const normalizeItemName = normalizeName; // Reuse logic
+const normalizeAbilityName = normalizeName; // Reuse logic
 
 const PlayerRow = ({ p }) => {
     // Determine image using internal heroName
@@ -192,7 +209,7 @@ const AbilityBuildGrid = ({ teamName, players }) => {
                                 return (
                                     <div key={i} style={{ textAlign: 'center' }}>
                                         <img
-                                            src={`${ABILITY_IMG_BASE}${ability}.png`}
+                                            src={`${ABILITY_IMG_BASE}${normalizeAbilityName(ability)}.png`}
                                             className="ability-icon-small"
                                             title={ability}
                                             onError={(e) => {
