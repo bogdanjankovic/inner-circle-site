@@ -27,26 +27,44 @@ const downloadImage = (url, localPath) => {
             return;
         }
 
-        const file = fs.createWriteStream(localPath);
-        https.get(url, response => {
-            if (response.statusCode === 200) {
-                response.pipe(file);
-                file.on('finish', () => {
-                    file.close();
-                    console.log(`Downloaded: ${path.basename(localPath)}`);
-                    resolve();
-                });
-            } else {
-                fs.unlink(localPath, () => { }); // Delete empty file
-                // reject(`Failed to download ${url}: ${response.statusCode}`);
-                console.warn(`Failed to download ${url}: ${response.statusCode}`);
-                resolve(); // Resolve anyway to continue
+        const get = (currentUrl) => {
+            if (!currentUrl) {
+                console.warn(`Empty redirect URL for ${path.basename(localPath)}`);
+                resolve();
+                return;
             }
-        }).on('error', err => {
-            fs.unlink(localPath, () => { });
-            console.warn(`Error downloading ${url}: ${err.message}`);
-            resolve();
-        });
+            https.get(currentUrl, response => {
+                // Handle Redirects
+                if (response.statusCode === 301 || response.statusCode === 302) {
+                    if (response.headers.location) {
+                        // console.log(`Following redirect for ${path.basename(localPath)}`);
+                        get(response.headers.location);
+                        return;
+                    }
+                }
+
+                if (response.statusCode === 200) {
+                    const file = fs.createWriteStream(localPath);
+                    response.pipe(file);
+                    file.on('finish', () => {
+                        file.close();
+                        console.log(`Downloaded: ${path.basename(localPath)}`);
+                        resolve();
+                    });
+                } else {
+                    // Consume data to free memory
+                    response.resume();
+                    console.warn(`Failed to download ${currentUrl}: ${response.statusCode}`);
+                    resolve(); // Resolve to convert failure to skip
+                }
+            }).on('error', err => {
+                fs.unlink(localPath, () => { });
+                console.warn(`Error downloading ${currentUrl}: ${err.message}`);
+                resolve();
+            });
+        };
+
+        get(url);
     });
 };
 
