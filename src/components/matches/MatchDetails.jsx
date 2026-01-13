@@ -351,11 +351,11 @@ const HeatmapOverlay = ({ players, wards }) => {
 
     // Fixed Bounds for 7.33 Map (approximate grid coordinates)
     // Fixed Bounds for 7.33 Map (approximate grid coordinates)
-    // Updated based on user feedback (points too close to edge).
-    // Expanded bounds from 64-192 to 48-208 to pull points inward.
-    const bounds = { minX: 48, maxX: 208, minY: 48, maxY: 208 };
-    const scaleX = 160; // 208-48
-    const scaleY = 160;
+    // Updated again: User requested "just a bit more inward".
+    // Expanded from 48-208 to 40-216.
+    const bounds = { minX: 40, maxX: 216, minY: 40, maxY: 216 };
+    const scaleX = 176; // 216-40
+    const scaleY = 176;
 
     const [showHeatmap, setShowHeatmap] = React.useState(true);
     const [showObs, setShowObs] = React.useState(true);
