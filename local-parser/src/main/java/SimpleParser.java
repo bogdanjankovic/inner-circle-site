@@ -413,6 +413,9 @@ public class SimpleParser {
             ward.put("owner", getProperty(e, "m_hOwnerEntity"));
             ward.put("time", getGameTime());
             wardLog.add(ward);
+            
+            // Debug log for wards
+            log("DEBUG: Ward found - Type: " + type + ", Name: " + name + ", X: " + ward.get("x") + ", Y: " + ward.get("y"));
         }
     }
 
