@@ -447,6 +447,7 @@ const HeatmapOverlay = ({ players, wards }) => {
     const [showHeatmap, setShowHeatmap] = React.useState(true);
     const [showObs, setShowObs] = React.useState(true);
     const [showSent, setShowSent] = React.useState(true);
+    const [wardTeamFilter, setWardTeamFilter] = React.useState('all'); // 'all', 'radiant', 'dire'
 
     React.useEffect(() => {
         const canvas = canvasRef.current;
@@ -511,6 +512,13 @@ const HeatmapOverlay = ({ players, wards }) => {
                     {(showObs || showSent) && wards && wards.map((w, i) => {
                         if (w.type === 'Observer' && !showObs) return null;
                         if (w.type === 'Sentry' && !showSent) return null;
+                        
+                        // Team filter
+                        if (wardTeamFilter !== 'all') {
+                            const wardTeam = (w.team || '').toLowerCase();
+                            if (wardTeamFilter === 'radiant' && wardTeam !== 'radiant') return null;
+                            if (wardTeamFilter === 'dire' && wardTeam !== 'dire') return null;
+                        }
 
                         const xPct = ((w.x - bounds.minX) / scaleX) * 100;
                         const yPct = ((w.y - bounds.minY) / scaleY) * 100;
@@ -585,6 +593,57 @@ const HeatmapOverlay = ({ players, wards }) => {
                     >
                         <span>Sentry Wards</span>
                         <div className="ward-dot sent"></div>
+                    </button>
+                </div>
+
+                <div style={{ height: '1px', background: '#333', margin: '10px 0' }}></div>
+
+                {/* Team Filter */}
+                <div style={{ textTransform: 'uppercase', color: '#888', fontSize: '0.8rem', letterSpacing: '1px', fontWeight: 'bold' }}>Team Filter</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <button
+                        onClick={() => setWardTeamFilter('all')}
+                        style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            background: wardTeamFilter === 'all' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255,255,255,0.05)',
+                            color: wardTeamFilter === 'all' ? '#fff' : '#888',
+                            padding: '12px', border: wardTeamFilter === 'all' ? '1px solid #fff' : '1px solid #333',
+                            borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s'
+                        }}
+                    >
+                        <span>All Teams</span>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3d9546' }}></div>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#c23c2a' }}></div>
+                        </div>
+                    </button>
+
+                    <button
+                        onClick={() => setWardTeamFilter('radiant')}
+                        style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            background: wardTeamFilter === 'radiant' ? 'rgba(61, 149, 70, 0.15)' : 'rgba(255,255,255,0.05)',
+                            color: wardTeamFilter === 'radiant' ? '#3d9546' : '#888',
+                            padding: '12px', border: wardTeamFilter === 'radiant' ? '1px solid #3d9546' : '1px solid #333',
+                            borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s'
+                        }}
+                    >
+                        <span>Radiant Only</span>
+                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#3d9546' }}></div>
+                    </button>
+
+                    <button
+                        onClick={() => setWardTeamFilter('dire')}
+                        style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            background: wardTeamFilter === 'dire' ? 'rgba(194, 60, 42, 0.15)' : 'rgba(255,255,255,0.05)',
+                            color: wardTeamFilter === 'dire' ? '#c23c2a' : '#888',
+                            padding: '12px', border: wardTeamFilter === 'dire' ? '1px solid #c23c2a' : '1px solid #333',
+                            borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s'
+                        }}
+                    >
+                        <span>Dire Only</span>
+                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#c23c2a' }}></div>
                     </button>
                 </div>
 
