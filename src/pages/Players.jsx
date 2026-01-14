@@ -147,12 +147,13 @@ const Players = () => {
                             // If Immortal (rankTier 80) with leaderboard rank
                             if (rankTier === 80 && leaderboardRank) {
                                 // Lower leaderboard rank = better player, so we invert it
-                                // Rank 29 is better than 4970, so we use 10000 - leaderboardRank
-                                return 10000 - leaderboardRank;
+                                // Rank 29 is better than 4970, so we use 20000 - leaderboardRank
+                                // This puts ranked Immortals ABOVE unranked Immortals
+                                return 20000 - leaderboardRank;
                             }
                             // If Immortal (rankTier 80) without leaderboard rank
                             else if (rankTier === 80) {
-                                return 9999; // Just below ranked Immortals, above all other ranks
+                                return 15000; // Below ranked Immortals, above all other ranks
                             }
                             // All other ranks (rankTier 11-79 for ranks 1-7)
                             else {
