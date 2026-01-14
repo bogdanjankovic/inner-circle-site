@@ -36,12 +36,27 @@ export const steamIdToAccountId = (steamId64) => {
 };
 
 /**
- * Fetches heroes by recent matches and calculates position-specific stats
+ * Fetches heroes by position using OpenDota with STRATZ fallback
  * @param {string} accountId - Player's account ID
  * @param {number} position - Position ID (1-5)
  * @returns {Array} Top 3 heroes for the position
  */
-export const getTopHeroesByPosition = async (accountId, position) => {
+export const getTopHeroesByPosition = async (accountId, position, steamId64) => {
+    // First try STRATZ API for precise position data
+    try {
+        const { getTopHeroesByPositionStratz, steamIdToStratzAccountId } = await import('./stratzApi.js');
+        const stratzAccountId = steamIdToStratzAccountId(steamId64 || accountId);
+        const stratzHeroes = await getTopHeroesByPositionStratz(stratzAccountId, position);
+        
+        if (stratzHeroes.length > 0) {
+            console.log('Using STRATZ data - precise position statistics');
+            return stratzHeroes;
+        }
+    } catch (error) {
+        console.log('STRATZ API failed, falling back to OpenDota:', error.message);
+    }
+
+    // Fallback to OpenDota
     if (!position || !LANE_TO_POSITION[position]) {
         // If no position specified, return all heroes
         try {
@@ -86,7 +101,6 @@ export const getTopHeroesByPosition = async (accountId, position) => {
         const response = await fetch(`${API_URL}/players/${accountId}/heroes?lane=${lane}`);
         const heroes = await response.json();
         
-                
         // Prvo pokušaj sa minimum 10 igara
         let filteredHeroes = heroes.filter(h => h.games >= 10);
         
@@ -188,7 +202,7 @@ export const fetchPlayerData = async (steamId, position = null) => {
         };
 
         // Top 3 Heroes by position (or all heroes if no position specified)
-        const topHeroes = await getTopHeroesByPosition(accountId, position);
+        const topHeroes = await getTopHeroesByPosition(accountId, position, steamId);
 
         const winrate = ((wl.win / (wl.win + wl.lose || 1)) * 100).toFixed(1);
 
