@@ -137,24 +137,26 @@ const Players = () => {
                             : bValue.localeCompare(aValue);
                     
                     case 'rankTier':
-                        // Rank sorting logic: Immortal with leaderboard rank > Immortal without rank > lower ranks
+                        // Rank sorting logic based on actual rankTier values (OpenDota format)
+                        // rankTier: 11-79 for ranks 1-7, 80 for Immortal
+                        // leaderboardRank: only for ranked Immortals
                         const getRankValue = (player) => {
-                            const rank = player.rankTier || 0;
+                            const rankTier = player.rankTier || 0;
                             const leaderboardRank = player.leaderboardRank;
                             
-                            // If rank is 8 (Immortal) and has leaderboard rank
-                            if (rank === 8 && leaderboardRank) {
-                                // Lower leaderboard rank = better player, so we invert it for sorting
-                                // Rank 29 is better than 4970, so we use -leaderboardRank
-                                return 10000 - leaderboardRank; // 10000 ensures Immortals are above all other ranks
+                            // If Immortal (rankTier 80) with leaderboard rank
+                            if (rankTier === 80 && leaderboardRank) {
+                                // Lower leaderboard rank = better player, so we invert it
+                                // Rank 29 is better than 4970, so we use 10000 - leaderboardRank
+                                return 10000 - leaderboardRank;
                             }
-                            // If rank is 8 (Immortal) but no leaderboard rank
-                            else if (rank === 8) {
+                            // If Immortal (rankTier 80) without leaderboard rank
+                            else if (rankTier === 80) {
                                 return 9999; // Just below ranked Immortals, above all other ranks
                             }
-                            // All other ranks (1-7)
+                            // All other ranks (rankTier 11-79 for ranks 1-7)
                             else {
-                                return rank;
+                                return rankTier;
                             }
                         };
                         
