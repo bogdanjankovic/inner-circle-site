@@ -423,23 +423,39 @@ const Players = () => {
                                                         e.currentTarget.style.backgroundColor = 'transparent';
                                                         e.currentTarget.style.borderColor = 'transparent';
                                                     }}
+                                                    onClick={(e) => { 
+                                                        e.stopPropagation(); 
+                                                        e.preventDefault();
+                                                        handleTeamToggle(teamName); 
+                                                    }}
                                                 >
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedTeams.has(teamName)}
-                                                        onChange={(e) => { handleTeamToggle(teamName); }}
+                                                        onChange={(e) => { 
+                                                            e.stopPropagation(); 
+                                                            e.preventDefault();
+                                                            handleTeamToggle(teamName); 
+                                                        }}
+                                                        onClick={(e) => { 
+                                                            e.stopPropagation(); 
+                                                            e.preventDefault();
+                                                            handleTeamToggle(teamName); 
+                                                        }}
                                                         style={{ 
                                                             cursor: 'pointer',
                                                             width: '16px',
                                                             height: '16px',
-                                                            accentColor: 'var(--accent)'
+                                                            accentColor: 'var(--accent)',
+                                                            pointerEvents: 'none'
                                                         }}
                                                     />
                                                     <span style={{ 
                                                         fontSize: '0.95rem', 
                                                         fontWeight: '500',
                                                         color: selectedTeams.has(teamName) ? 'var(--accent)' : '#fff',
-                                                        transition: 'color 0.2s'
+                                                        transition: 'color 0.2s',
+                                                        userSelect: 'none'
                                                     }}>
                                                         {teamName}
                                                     </span>
