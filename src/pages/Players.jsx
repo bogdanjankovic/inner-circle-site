@@ -108,7 +108,7 @@ const Players = () => {
     const { teams, tournamentStats } = useTournament();
     const [viewMode, setViewMode] = useState('registration');
     const [selectedPlayer, setSelectedPlayer] = useState(null);
-    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+    const [sortConfig, setSortConfig] = useState([]); // Array of sort configs for multi-sort
     const [selectedTeams, setSelectedTeams] = useState(new Set()); // Set of selected team names
     const [showTeamFilter, setShowTeamFilter] = useState(false);
 
@@ -126,132 +126,104 @@ const Players = () => {
         return allPlayers.filter(player => selectedTeams.has(player.teamName));
     }, [allPlayers, selectedTeams]);
 
-    // Sort function
+    // Get value for sorting based on key
+    const getSortValue = (player, key) => {
+        switch (key) {
+            case 'personaName':
+                return player.personaName || '';
+            
+            case 'rankTier':
+                // Rank sorting logic based on actual rankTier values (OpenDota format)
+                const rankTier = player.rankTier || 0;
+                const leaderboardRank = player.leaderboardRank;
+                
+                if (rankTier === 80 && leaderboardRank) {
+                    return 20000 - leaderboardRank;
+                } else if (rankTier === 80) {
+                    return 15000;
+                } else {
+                    return rankTier;
+                }
+            
+            case 'winrate':
+                if (viewMode === 'registration') {
+                    return player.winrate || 0;
+                } else {
+                    const stats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+                    return stats.matches ? (stats.wins / stats.matches) * 100 : 0;
+                }
+            
+            case 'gpm':
+                if (viewMode === 'registration') {
+                    return player.stats?.gpm || 0;
+                } else {
+                    const stats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+                    return stats.avgGpm || 0;
+                }
+            
+            case 'xpm':
+                if (viewMode === 'registration') {
+                    return player.stats?.xpm || 0;
+                } else {
+                    const stats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+                    return stats.avgXpm || 0;
+                }
+            
+            case 'matches':
+                const matchStats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+                return matchStats.matches || 0;
+            
+            case 'kills':
+                const killStats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+                return killStats.kills || 0;
+            
+            case 'deaths':
+                const deathStats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+                return deathStats.deaths || 0;
+            
+            case 'assists':
+                const assistStats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+                return assistStats.assists || 0;
+            
+            default:
+                return 0;
+        }
+    };
+
+    // Multi-sort function
     const sortedPlayers = useMemo(() => {
         let sortablePlayers = [...filteredPlayers];
-        if (sortConfig.key !== null) {
+        
+        if (sortConfig.length > 0) {
             sortablePlayers.sort((a, b) => {
-                let aValue, bValue;
-
-                // Get values based on sort key
-                switch (sortConfig.key) {
-                    case 'personaName':
-                        aValue = a.personaName || '';
-                        bValue = b.personaName || '';
-                        return sortConfig.direction === 'asc' 
-                            ? aValue.localeCompare(bValue)
-                            : bValue.localeCompare(aValue);
+                // Apply all sort criteria in order
+                for (const { key, direction } of sortConfig) {
+                    const aValue = getSortValue(a, key);
+                    const bValue = getSortValue(b, key);
                     
-                    case 'teamName':
-                        aValue = a.teamName || '';
-                        bValue = b.teamName || '';
-                        return sortConfig.direction === 'asc' 
-                            ? aValue.localeCompare(bValue)
-                            : bValue.localeCompare(aValue);
+                    let comparison = 0;
                     
-                    case 'rankTier':
-                        // Rank sorting logic based on actual rankTier values (OpenDota format)
-                        // rankTier: 11-79 for ranks 1-7, 80 for Immortal
-                        // leaderboardRank: only for ranked Immortals
-                        const getRankValue = (player) => {
-                            const rankTier = player.rankTier || 0;
-                            const leaderboardRank = player.leaderboardRank;
-                            
-                            // If Immortal (rankTier 80) with leaderboard rank
-                            if (rankTier === 80 && leaderboardRank) {
-                                // Lower leaderboard rank = better player, so we invert it
-                                // Rank 29 is better than 4970, so we use 20000 - leaderboardRank
-                                // This puts ranked Immortals ABOVE unranked Immortals
-                                return 20000 - leaderboardRank;
-                            }
-                            // If Immortal (rankTier 80) without leaderboard rank
-                            else if (rankTier === 80) {
-                                return 15000; // Below ranked Immortals, above all other ranks
-                            }
-                            // All other ranks (rankTier 11-79 for ranks 1-7)
-                            else {
-                                return rankTier;
-                            }
-                        };
-                        
-                        aValue = getRankValue(a);
-                        bValue = getRankValue(b);
-                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    // Handle string comparison
+                    if (typeof aValue === 'string' && typeof bValue === 'string') {
+                        comparison = aValue.localeCompare(bValue);
+                    } else {
+                        // Handle numeric comparison
+                        comparison = aValue - bValue;
+                    }
                     
-                    case 'winrate':
-                        // For registration mode, use player.stats (pub stats), for tournament mode use tournamentStats
-                        if (viewMode === 'registration') {
-                            aValue = a.winrate || 0;
-                            bValue = b.winrate || 0;
-                        } else {
-                            const aStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
-                            const bStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
-                            aValue = aStats.matches ? (aStats.wins / aStats.matches) * 100 : 0;
-                            bValue = bStats.matches ? (bStats.wins / bStats.matches) * 100 : 0;
-                        }
-                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-                    
-                    case 'gpm':
-                        // For registration mode, use player.stats.gpm, for tournament mode use tournamentStats.avgGpm
-                        if (viewMode === 'registration') {
-                            aValue = a.stats?.gpm || 0;
-                            bValue = b.stats?.gpm || 0;
-                        } else {
-                            const aGpmStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
-                            const bGpmStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
-                            aValue = aGpmStats.avgGpm || 0;
-                            bValue = bGpmStats.avgGpm || 0;
-                        }
-                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-                    
-                    case 'xpm':
-                        // For registration mode, use player.stats.xpm, for tournament mode use tournamentStats.avgXpm
-                        if (viewMode === 'registration') {
-                            aValue = a.stats?.xpm || 0;
-                            bValue = b.stats?.xpm || 0;
-                        } else {
-                            const aXpmStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
-                            const bXpmStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
-                            aValue = aXpmStats.avgXpm || 0;
-                            bValue = bXpmStats.avgXpm || 0;
-                        }
-                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-                    
-                    case 'matches':
-                        const aMatchStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
-                        const bMatchStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
-                        aValue = aMatchStats.matches || 0;
-                        bValue = bMatchStats.matches || 0;
-                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-                    
-                    case 'kills':
-                        const aKillStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
-                        const bKillStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
-                        aValue = aKillStats.kills || 0;
-                        bValue = bKillStats.kills || 0;
-                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-                    
-                    case 'deaths':
-                        const aDeathStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
-                        const bDeathStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
-                        aValue = aDeathStats.deaths || 0;
-                        bValue = bDeathStats.deaths || 0;
-                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-                    
-                    case 'assists':
-                        const aAssistStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
-                        const bAssistStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
-                        aValue = aAssistStats.assists || 0;
-                        bValue = bAssistStats.assists || 0;
-                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-                    
-                    default:
-                        return 0;
+                    // If values are different, return the comparison with direction
+                    if (comparison !== 0) {
+                        return direction === 'asc' ? comparison : -comparison;
+                    }
                 }
+                
+                // If all sort criteria are equal, return 0
+                return 0;
             });
         }
+        
         return sortablePlayers;
-    }, [filteredPlayers, sortConfig, tournamentStats]);
+    }, [filteredPlayers, sortConfig, tournamentStats, viewMode]);
 
     // Handle team filter toggle
     const handleTeamToggle = (teamName) => {
@@ -274,23 +246,60 @@ const Players = () => {
         setSelectedTeams(new Set());
     };
 
-    // Handle sort click
-    const handleSort = (key) => {
-        let direction = 'asc';
-        if (sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
+    // Handle sort click (supports Ctrl/Cmd for multi-sort)
+    const handleSort = (key, event) => {
+        const isMultiSort = event.ctrlKey || event.metaKey;
+        
+        if (isMultiSort) {
+            // Multi-sort logic
+            const existingIndex = sortConfig.findIndex(config => config.key === key);
+            let newSortConfig = [...sortConfig];
+            
+            if (existingIndex !== -1) {
+                // Toggle direction for existing sort
+                const existing = newSortConfig[existingIndex];
+                newSortConfig[existingIndex] = {
+                    ...existing,
+                    direction: existing.direction === 'asc' ? 'desc' : 'asc'
+                };
+            } else {
+                // Add new sort criteria
+                newSortConfig.push({ key, direction: 'asc' });
+            }
+            
+            setSortConfig(newSortConfig);
+        } else {
+            // Single sort logic (replace all)
+            const existing = sortConfig.find(config => config.key === key);
+            let direction = 'asc';
+            
+            if (existing) {
+                direction = existing.direction === 'asc' ? 'desc' : 'asc';
+            }
+            
+            setSortConfig([{ key, direction }]);
         }
-        setSortConfig({ key, direction });
     };
 
     // Sort icon component
     const SortIcon = ({ columnKey }) => {
-        if (sortConfig.key !== columnKey) {
+        const sortConfigItem = sortConfig.find(config => config.key === columnKey);
+        const sortIndex = sortConfig.findIndex(config => config.key === columnKey);
+        
+        if (!sortConfigItem) {
             return <span style={{ opacity: 0.3, fontSize: '0.8rem', marginLeft: '4px' }}>↕</span>;
         }
-        return <span style={{ fontSize: '0.8rem', marginLeft: '4px' }}>
-            {sortConfig.direction === 'asc' ? '↑' : '↓'}
-        </span>;
+        
+        return (
+            <span style={{ fontSize: '0.8rem', marginLeft: '4px' }}>
+                {sortConfigItem.direction === 'asc' ? '↑' : '↓'}
+                {sortIndex > 0 && (
+                    <span style={{ fontSize: '0.6rem', opacity: 0.7, marginLeft: '2px' }}>
+                        {sortIndex + 1}
+                    </span>
+                )}
+            </span>
+        );
     };
 
     return (
@@ -329,7 +338,7 @@ const Players = () => {
                         <tr style={{ backgroundColor: 'var(--bg-secondary)', textAlign: 'left' }}>
                             <th 
                                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
-                                onClick={() => handleSort('personaName')}
+                                onClick={(e) => handleSort('personaName', e)}
                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
@@ -363,7 +372,7 @@ const Players = () => {
                                 <>
                                     <th 
                                         style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
-                                        onClick={() => handleSort('rankTier')}
+                                        onClick={(e) => handleSort('rankTier', e)}
                                         onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                     >
@@ -371,7 +380,7 @@ const Players = () => {
                                     </th>
                                     <th 
                                         style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
-                                        onClick={() => handleSort('winrate')}
+                                        onClick={(e) => handleSort('winrate', e)}
                                         onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                     >
@@ -381,7 +390,7 @@ const Players = () => {
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                                             <span 
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
-                                                onClick={() => handleSort('gpm')}
+                                                onClick={(e) => handleSort('gpm', e)}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
@@ -390,7 +399,7 @@ const Players = () => {
                                             <span>/</span>
                                             <span 
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
-                                                onClick={() => handleSort('xpm')}
+                                                onClick={(e) => handleSort('xpm', e)}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
@@ -403,7 +412,7 @@ const Players = () => {
                                 <>
                                     <th 
                                         style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
-                                        onClick={() => handleSort('matches')}
+                                        onClick={(e) => handleSort('matches', e)}
                                         onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                     >
@@ -413,7 +422,7 @@ const Players = () => {
                                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                                             <span 
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
-                                                onClick={() => handleSort('kills')}
+                                                onClick={(e) => handleSort('kills', e)}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
@@ -422,7 +431,7 @@ const Players = () => {
                                             <span>/</span>
                                             <span 
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
-                                                onClick={() => handleSort('deaths')}
+                                                onClick={(e) => handleSort('deaths', e)}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
@@ -431,7 +440,7 @@ const Players = () => {
                                             <span>/</span>
                                             <span 
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
-                                                onClick={() => handleSort('assists')}
+                                                onClick={(e) => handleSort('assists', e)}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
