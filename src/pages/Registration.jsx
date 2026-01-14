@@ -20,11 +20,11 @@ const Registration = () => {
 
     // Position data
     const positions = [
-        { id: 1, name: 'Carry', icon: '🗡️' },
-        { id: 2, name: 'Midlane', icon: '⚡' },
-        { id: 3, name: 'Offlaner', icon: '🛡️' },
-        { id: 4, name: 'Soft Support', icon: '💊' },
-        { id: 5, name: 'Hard Support', icon: '🔧' }
+        { id: 1, name: 'Carry', icon: 'https://i.imgur.com/rL1ZwZ4.png' },
+        { id: 2, name: 'Midlane', icon: 'https://i.imgur.com/7oAbbDo.png' },
+        { id: 3, name: 'Offlaner', icon: 'https://i.imgur.com/ThXJQ0n.png' },
+        { id: 4, name: 'Soft Support', icon: 'https://i.imgur.com/NkAmIjB.png' },
+        { id: 5, name: 'Hard Support', icon: 'https://i.imgur.com/TGv7onk.png' }
     ];
 
     // 5 Players slots
@@ -232,7 +232,7 @@ const Registration = () => {
                                         >
                                             {positions.map(pos => (
                                                 <option key={pos.id} value={pos.id}>
-                                                    {pos.icon} {pos.name} [{pos.id}]
+                                                    {pos.name} [{pos.id}]
                                                 </option>
                                             ))}
                                         </select>

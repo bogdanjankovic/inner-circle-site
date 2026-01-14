@@ -149,11 +149,11 @@ const Players = () => {
 
     // Position data
     const positions = [
-        { id: 1, name: 'Carry', icon: '🗡️' },
-        { id: 2, name: 'Midlane', icon: '⚡' },
-        { id: 3, name: 'Offlaner', icon: '🛡️' },
-        { id: 4, name: 'Soft Support', icon: '💊' },
-        { id: 5, name: 'Hard Support', icon: '🔧' }
+        { id: 1, name: 'Carry', icon: 'https://i.imgur.com/rL1ZwZ4.png' },
+        { id: 2, name: 'Midlane', icon: 'https://i.imgur.com/7oAbbDo.png' },
+        { id: 3, name: 'Offlaner', icon: 'https://i.imgur.com/ThXJQ0n.png' },
+        { id: 4, name: 'Soft Support', icon: 'https://i.imgur.com/NkAmIjB.png' },
+        { id: 5, name: 'Hard Support', icon: 'https://i.imgur.com/TGv7onk.png' }
     ];
 
     // Filter players by selected teams and positions
@@ -490,9 +490,21 @@ const Players = () => {
                                                         fontWeight: '500',
                                                         color: selectedPositions.has(position.id) ? 'var(--accent)' : '#fff',
                                                         transition: 'color 0.2s',
-                                                        userSelect: 'none'
+                                                        userSelect: 'none',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.5rem'
                                                     }}>
-                                                        {position.icon} {position.name} [{position.id}]
+                                                        <img 
+                                                            src={position.icon} 
+                                                            alt={position.name}
+                                                            style={{ 
+                                                                width: '16px', 
+                                                                height: '16px',
+                                                                objectFit: 'contain'
+                                                            }} 
+                                                        />
+                                                        {position.name} [{position.id}]
                                                     </span>
                                                 </label>
                                             ))}
@@ -768,7 +780,15 @@ const Players = () => {
                                             background: 'rgba(255,255,255,0.1)',
                                             fontSize: '0.9rem'
                                         }}>
-                                            {positions.find(p => p.id === player.position)?.icon} 
+                                            <img 
+                                                src={positions.find(p => p.id === player.position)?.icon} 
+                                                alt={positions.find(p => p.id === player.position)?.name}
+                                                style={{ 
+                                                    width: '16px', 
+                                                    height: '16px',
+                                                    objectFit: 'contain'
+                                                }} 
+                                            />
                                             {positions.find(p => p.id === player.position)?.name}
                                         </span>
                                     ) : (
