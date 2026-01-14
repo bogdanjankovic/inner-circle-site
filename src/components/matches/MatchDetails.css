@@ -160,9 +160,11 @@
 
 .ability-grid-header {
     display: grid;
-    grid-template-columns: 200px repeat(25, 1fr);
+    grid-template-columns: 200px repeat(30, 1fr);
     gap: 2px;
     margin-bottom: 4px;
+    overflow-x: auto;
+    min-width: 800px;
 }
 
 .level-header {
@@ -173,10 +175,12 @@
 
 .ability-player-row {
     display: grid;
-    grid-template-columns: 200px repeat(25, 1fr);
+    grid-template-columns: 200px repeat(30, 1fr);
     gap: 2px;
     margin-bottom: 2px;
     align-items: center;
+    overflow-x: auto;
+    min-width: 800px;
 }
 
 .ability-icon-small {

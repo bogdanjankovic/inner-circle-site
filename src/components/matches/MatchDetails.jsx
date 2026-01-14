@@ -265,13 +265,13 @@ const TeamTable = ({ teamName, players, winner }) => {
 
 const AbilityBuildGrid = ({ teamName, players }) => {
     return (
-        <div style={{ marginTop: '2rem' }}>
+        <div style={{ marginTop: '2rem', overflowX: 'auto' }}>
             <div className="section-header" style={{ color: '#fff', borderLeft: '4px solid #888' }}>
-                {teamName} - Ability Build
+                {teamName} - Ability Build (Levels 1-30)
             </div>
             <div className="ability-grid-header">
                 <div style={{ paddingLeft: '10px', fontSize: '0.75rem', textTransform: 'uppercase', color: '#667788', alignSelf: 'center' }}>Player</div>
-                {[...Array(25)].map((_, i) => (
+                {[...Array(30)].map((_, i) => (
                     <div key={i} className="level-header">{i + 1}</div>
                 ))}
             </div>
@@ -292,7 +292,7 @@ const AbilityBuildGrid = ({ teamName, players }) => {
                                 )}
                             </div>
                         </div>
-                        {[...Array(25)].map((_, i) => {
+                        {[...Array(30)].map((_, i) => {
                             const ability = p.ability_build ? p.ability_build[i] : null;
                             if (ability) {
                                 return (
