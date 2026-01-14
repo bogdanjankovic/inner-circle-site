@@ -706,17 +706,11 @@ public class SimpleParser {
                     if (isPick == null)
                         isPick = getProperty(gr, prefix + i + ".m_bIsPick");
 
-                    if (team == null)
-                        team = 0;
-                    if (isPick == null)
-                        isPick = false;
-                    cachedPicksBans.add(String.format("{\"is_pick\": %b, \"hero_id\": %d, \"team\": %d, \"order\": %d}",
-                            isPick, heroId, team, i));
-                    foundPickBan = true;
-                }
-            }
-
-            // Strategy 2: Flat m_BannedHeroes (if Strategy 1 failed)
+        if (winnerTeam != null) {
+            if (winnerTeam == 2)
+                winner = "Radiant";
+            else if (winnerTeam == 3)
+                winner = "Dire";
             if (!foundPickBan) {
                 // Bans
                 for (int i = 0; i < 24; i++) {

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTournament } from '../context/TournamentContext';
+import { getMatchDetails, getHeroConstants } from '../services/dotaApi';
 
 const AdminUpload = () => {
     const [stage, setStage] = useState('json'); // 'json' | 'mapping'
@@ -16,6 +17,43 @@ const AdminUpload = () => {
     const [radiantTeamId, setRadiantTeamId] = useState('');
     const [direTeamId, setDireTeamId] = useState('');
     const [playerMapping, setPlayerMapping] = useState({}); // { steamId: registeredId }
+    
+    // Facet data
+    const [heroFacets, setHeroFacets] = useState({}); // { heroId: { facetId: { title, icon } } }
+    const [loadingFacets, setLoadingFacets] = useState(false);
+
+    // Load hero facets from OpenDota
+    useEffect(() => {
+        const loadHeroFacets = async () => {
+            try {
+                setLoadingFacets(true);
+                const response = await fetch('https://api.opendota.com/api/constants/heroes');
+                const heroes = await response.json();
+                
+                const facets = {};
+                Object.values(heroes).forEach(hero => {
+                    if (hero.facets && Array.isArray(hero.facets)) {
+                        facets[hero.id] = {};
+                        hero.facets.forEach((facet, index) => {
+                            facets[hero.id][index + 1] = {
+                                title: facet.title || `Facet ${index + 1}`,
+                                icon: facet.icon || ''
+                            };
+                        });
+                    }
+                });
+                
+                setHeroFacets(facets);
+                console.log('Loaded hero facets:', facets);
+            } catch (err) {
+                console.error('Error loading hero facets:', err);
+            } finally {
+                setLoadingFacets(false);
+            }
+        };
+        
+        loadHeroFacets();
+    }, []);
 
     const handleParse = () => {
         try {
@@ -33,15 +71,27 @@ const AdminUpload = () => {
     const { activeTournament, linkMatchToTournament } = useTournament();
     const [bracketMatchId, setBracketMatchId] = useState('');
 
+    // Get facet info for a hero
+    const getFacetInfo = (heroId, facetId) => {
+        if (!heroFacets[heroId] || !heroFacets[heroId][facetId]) {
+            return { title: `Facet ${facetId}`, icon: '' };
+        }
+        return heroFacets[heroId][facetId];
+    };
+
     const handleSave = () => {
         if (!parsedData) return;
 
-        // Inject mapped IDs
+        // Inject mapped IDs and facet info
         const finalPlayers = parsedData.players.map(p => {
             const registeredId = playerMapping[p.steamId || p.name];
+            const facetInfo = getFacetInfo(p.heroId, p.facet || 0);
+            
             return {
                 ...p,
-                tournamentPlayerId: registeredId || null
+                tournamentPlayerId: registeredId || null,
+                facetTitle: facetInfo.title,
+                facetIcon: facetInfo.icon
             };
         });
 

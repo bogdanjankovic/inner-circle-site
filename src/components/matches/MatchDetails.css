@@ -34,6 +34,27 @@
     font-size: 0.9rem;
 }
 
+.facet-info {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+}
+
+.facet-title {
+    color: #888;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.facet-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    object-fit: contain;
+}
+
 .stats-table th {
     background: #11151b;
     color: #556677;

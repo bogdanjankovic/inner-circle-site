@@ -156,6 +156,19 @@ const PlayerRow = ({ p }) => {
                     )}
                     <div className="player-info">
                         <span className="player-name">{p.name}</span>
+                        {p.facet && (
+                            <div className="facet-info" style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
+                                <span className="facet-title">{p.facetTitle}</span>
+                                {p.facetIcon && (
+                                    <img
+                                        src={p.facetIcon}
+                                        alt={p.facetTitle}
+                                        style={{ width: '16px', height: '16px', marginRight: '0.5rem', borderRadius: '2px' }}
+                                        onError={(e) => e.target.style.display = 'none'}
+                                    />
+                                )}
+                            </div>
+                        )}
                         <span className="player-rank">Level {p.level}</span>
                     </div>
                 </div>
@@ -272,6 +285,11 @@ const AbilityBuildGrid = ({ teamName, players }) => {
                             {heroImg && <img src={heroImg} alt={p.heroName} style={{ width: '32px', height: '18px', borderRadius: '2px' }} />}
                             <div className="player-info">
                                 <span className="player-name" style={{ fontSize: '0.8rem' }}>{p.name}</span>
+                                {p.facet && (
+                                    <div className="facet-info" style={{ fontSize: '0.65rem', color: '#888', marginTop: '0.1rem' }}>
+                                        <span className="facet-title">{p.facetTitle}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         {[...Array(25)].map((_, i) => {
