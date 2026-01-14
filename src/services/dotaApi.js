@@ -1,22 +1,22 @@
 const API_URL = 'https://api.opendota.com/api';
 
-// Position to hero mapping based on common Dota 2 roles
-const POSITION_HEROES = {
-    1: [ // Carry
-        1, 2, 3, 8, 10, 11, 13, 14, 16, 17, 19, 23, 26, 29, 31, 35, 42, 43, 46, 49, 52, 53, 58, 59, 65, 68, 69, 70, 71, 72, 73, 74, 78, 82, 94, 95, 98, 102, 106, 109, 114, 119, 120, 121, 123, 128, 129
-    ],
-    2: [ // Midlane
-        4, 5, 7, 9, 12, 15, 18, 21, 22, 25, 27, 28, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 44, 45, 47, 48, 50, 51, 54, 55, 56, 57, 60, 61, 62, 63, 64, 66, 67, 75, 76, 77, 79, 80, 81, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 96, 97, 99, 100, 101, 103, 104, 105, 107, 108, 110, 111, 112, 113, 115, 116, 117, 118, 122, 124, 125, 126, 127, 130
-    ],
-    3: [ // Offlaner
-        6, 20, 24, 49, 54, 67, 71, 79, 84, 87, 91, 93, 96, 99, 101, 103, 105, 107, 110, 113, 115, 116, 117, 122, 124, 125, 126, 127, 130
-    ],
-    4: [ // Soft Support
-        6, 20, 24, 49, 54, 67, 71, 79, 84, 87, 91, 93, 96, 99, 101, 103, 105, 107, 110, 113, 115, 116, 117, 122, 124, 125, 126, 127, 130
-    ],
-    5: [ // Hard Support
-        6, 20, 24, 49, 54, 67, 71, 79, 84, 87, 91, 93, 96, 99, 101, 103, 105, 107, 110, 113, 115, 116, 117, 122, 124, 125, 126, 127, 130
-    ]
+// Lane to position mapping based on Dota 2 lane system
+// OpenDota tracks by lane, not by position/role
+const LANE_TO_POSITION = {
+    1: 'safe_lane',   // Carry
+    2: 'mid_lane',    // Midlaner  
+    3: 'off_lane',    // Offlaner
+    4: 'off_lane',    // Soft Support
+    5: 'safe_lane'    // Hard Support
+};
+
+// Position names for display
+const POSITION_NAMES = {
+    1: 'Carry',
+    2: 'Midlane', 
+    3: 'Offlaner',
+    4: 'Soft Support',
+    5: 'Hard Support'
 };
 
 /**
@@ -36,14 +36,40 @@ export const steamIdToAccountId = (steamId64) => {
 };
 
 /**
- * Filters heroes by position and returns top 3 by games played
- * @param {Array} heroes - Array of hero data from OpenDota
+ * Fetches heroes by lane from OpenDota and returns top 3
+ * @param {string} accountId - Player's account ID
  * @param {number} position - Position ID (1-5)
  * @returns {Array} Top 3 heroes for the position
  */
-export const getTopHeroesByPosition = (heroes, position) => {
-    if (!position || !POSITION_HEROES[position]) {
-        // If no position specified, return all heroes (current behavior)
+export const getTopHeroesByPosition = async (accountId, position) => {
+    if (!position || !LANE_TO_POSITION[position]) {
+        // If no position specified, return all heroes
+        try {
+            const response = await fetch(`${API_URL}/players/${accountId}/heroes`);
+            const heroes = await response.json();
+            
+            return heroes
+                .sort((a, b) => b.games - a.games)
+                .slice(0, 3)
+                .map(h => ({
+                    heroId: h.hero_id,
+                    games: h.games,
+                    win: h.win,
+                    winrate: ((h.win / h.games) * 100).toFixed(1)
+                }));
+        } catch (error) {
+            console.error('Error fetching heroes:', error);
+            return [];
+        }
+    }
+
+    const lane = LANE_TO_POSITION[position];
+    
+    try {
+        // Fetch heroes by specific lane
+        const response = await fetch(`${API_URL}/players/${accountId}/heroes?lane=${lane}`);
+        const heroes = await response.json();
+        
         return heroes
             .sort((a, b) => b.games - a.games)
             .slice(0, 3)
@@ -53,20 +79,10 @@ export const getTopHeroesByPosition = (heroes, position) => {
                 win: h.win,
                 winrate: ((h.win / h.games) * 100).toFixed(1)
             }));
+    } catch (error) {
+        console.error(`Error fetching ${lane} heroes:`, error);
+        return [];
     }
-
-    const positionHeroes = POSITION_HEROES[position];
-    
-    return heroes
-        .filter(hero => positionHeroes.includes(hero.hero_id))
-        .sort((a, b) => b.games - a.games)
-        .slice(0, 3)
-        .map(h => ({
-            heroId: h.hero_id,
-            games: h.games,
-            win: h.win,
-            winrate: ((h.win / h.games) * 100).toFixed(1)
-        }));
 };
 
 /**
@@ -74,6 +90,8 @@ export const getTopHeroesByPosition = (heroes, position) => {
  * @param {string} steamId - SteamID64 or AccountID
  * @param {number} position - Position ID (1-5) for position-specific heroes
  */
+export { POSITION_NAMES };
+
 export const getHeroConstants = async () => {
     try {
         const response = await fetch(`${API_URL}/constants/heroes`);
@@ -137,7 +155,7 @@ export const fetchPlayerData = async (steamId, position = null) => {
         };
 
         // Top 3 Heroes by position (or all heroes if no position specified)
-        const topHeroes = getTopHeroesByPosition(heroes, position);
+        const topHeroes = await getTopHeroesByPosition(accountId, position);
 
         const winrate = ((wl.win / (wl.win + wl.lose || 1)) * 100).toFixed(1);
 

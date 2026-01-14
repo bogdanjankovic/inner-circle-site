@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTournament } from '../context/TournamentContext';
-import { fetchPlayerData } from '../services/dotaApi';
+import { fetchPlayerData, POSITION_NAMES } from '../services/dotaApi';
 import RankDisplay from '../components/ui/RankDisplay';
 import ImageUpload from '../components/ui/ImageUpload';
 import { HeroImage } from '../components/ui/HeroTooltip';
@@ -19,13 +19,13 @@ const Registration = () => {
     const [teamName, setTeamName] = useState('');
     const [teamLogo, setTeamLogo] = useState('');
 
-    // Position data
+    // Position data with icons
     const positions = [
-        { id: 1, name: 'Carry', icon: 'https://i.imgur.com/rL1ZwZ4.png' },
-        { id: 2, name: 'Midlane', icon: 'https://i.imgur.com/7oAbbDo.png' },
-        { id: 3, name: 'Offlaner', icon: 'https://i.imgur.com/ThXJQ0n.png' },
-        { id: 4, name: 'Soft Support', icon: 'https://i.imgur.com/NkAmIjB.png' },
-        { id: 5, name: 'Hard Support', icon: 'https://i.imgur.com/TGv7onk.png' }
+        { id: 1, name: POSITION_NAMES[1], icon: 'https://i.imgur.com/rL1ZwZ4.png' },
+        { id: 2, name: POSITION_NAMES[2], icon: 'https://i.imgur.com/7oAbbDo.png' },
+        { id: 3, name: POSITION_NAMES[3], icon: 'https://i.imgur.com/ThXJQ0n.png' },
+        { id: 4, name: POSITION_NAMES[4], icon: 'https://i.imgur.com/NkAmIjB.png' },
+        { id: 5, name: POSITION_NAMES[5], icon: 'https://i.imgur.com/TGv7onk.png' }
     ];
 
     // 5 Players slots
