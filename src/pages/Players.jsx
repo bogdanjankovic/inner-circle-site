@@ -300,7 +300,7 @@ const Players = () => {
                                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', position: 'relative' }}
                                 onClick={(e) => { e.stopPropagation(); setShowTeamFilter(!showTeamFilter); }}
                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
-                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}}
                             >
                                 Tim <span style={{ opacity: 0.5, fontSize: '0.8rem' }}>▼</span>
                                 {selectedTeams.size > 0 && (
@@ -318,6 +318,85 @@ const Players = () => {
                                     }}>
                                         {selectedTeams.size}
                                     </span>
+                                )}
+                                
+                                {/* Team Filter Dropdown */}
+                                {showTeamFilter && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '100%',
+                                        left: '0',
+                                        minWidth: '200px',
+                                        background: 'var(--bg-secondary)',
+                                        border: '1px solid var(--border)',
+                                        borderRadius: '4px',
+                                        padding: '1rem',
+                                        marginTop: '0.5rem',
+                                        zIndex: 1000,
+                                        maxHeight: '300px',
+                                        overflowY: 'auto',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                            <h4 style={{ margin: 0, fontSize: '0.9rem' }}>Filter Timova</h4>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); selectAllTeams(); }}
+                                                    style={{
+                                                        padding: '0.25rem 0.5rem',
+                                                        fontSize: '0.8rem',
+                                                        background: 'var(--accent)',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '2px',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    Svi
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); deselectAllTeams(); }}
+                                                    style={{
+                                                        padding: '0.25rem 0.5rem',
+                                                        fontSize: '0.8rem',
+                                                        background: '#666',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '2px',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    Ništa
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                            {allTeamNames.map(teamName => (
+                                                <label
+                                                    key={teamName}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.5rem',
+                                                        cursor: 'pointer',
+                                                        padding: '0.25rem',
+                                                        borderRadius: '2px',
+                                                        transition: 'background-color 0.2s'
+                                                    }}
+                                                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedTeams.has(teamName)}
+                                                        onChange={(e) => { e.stopPropagation(); handleTeamToggle(teamName); }}
+                                                        style={{ cursor: 'pointer' }}
+                                                    />
+                                                    <span style={{ fontSize: '0.9rem' }}>{teamName}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
                                 )}
                             </th>
                             {viewMode === 'registration' ? (
@@ -473,84 +552,6 @@ const Players = () => {
                         )}
                     </tbody>
                 </table>
-            
-            {/* Team Filter Dropdown */}
-            {showTeamFilter && (
-                <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: '0',
-                    right: '0',
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '4px',
-                    padding: '1rem',
-                    marginTop: '0.5rem',
-                    zIndex: 1000,
-                    maxHeight: '300px',
-                    overflowY: 'auto'
-                }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h4 style={{ margin: 0, fontSize: '0.9rem' }}>Filter Timova</h4>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button
-                                onClick={selectAllTeams}
-                                style={{
-                                    padding: '0.25rem 0.5rem',
-                                    fontSize: '0.8rem',
-                                    background: 'var(--accent)',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '2px',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Svi
-                            </button>
-                            <button
-                                onClick={deselectAllTeams}
-                                style={{
-                                    padding: '0.25rem 0.5rem',
-                                    fontSize: '0.8rem',
-                                    background: '#666',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '2px',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Ništa
-                            </button>
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {allTeamNames.map(teamName => (
-                            <label
-                                key={teamName}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    cursor: 'pointer',
-                                    padding: '0.25rem',
-                                    borderRadius: '2px',
-                                    transition: 'background-color 0.2s'
-                                }}
-                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
-                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={selectedTeams.has(teamName)}
-                                    onChange={() => handleTeamToggle(teamName)}
-                                    style={{ cursor: 'pointer' }}
-                                />
-                                <span style={{ fontSize: '0.9rem' }}>{teamName}</span>
-                            </label>
-                        ))}
-                    </div>
-                </div>
-            )}
             </div>
 
             {viewMode === 'tournament' && (
