@@ -356,10 +356,8 @@
     width: 100%;
     padding-bottom: 100%;
     /* Square aspect ratio */
-    background-image: url('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/minimap/minimap_simple.png');
-    background-size: cover;
-    background-position: center;
     border: 2px solid #333;
+    overflow: hidden;
 }
 
 .minimap::before {
