@@ -7,6 +7,15 @@ import ImageUpload from '../components/ui/ImageUpload';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
+// Position data
+const positions = [
+    { id: 1, name: 'Carry', icon: '🗡️' },
+    { id: 2, name: 'Midlane', icon: '⚡' },
+    { id: 3, name: 'Offlaner', icon: '🛡️' },
+    { id: 4, name: 'Soft Support', icon: '💊' },
+    { id: 5, name: 'Hard Support', icon: '🔧' }
+];
+
 const EditTeamModal = ({ team, onClose, onSave }) => {
     const [name, setName] = useState(team.name);
     const [logo, setLogo] = useState(team.logo);
@@ -15,6 +24,7 @@ const EditTeamModal = ({ team, onClose, onSave }) => {
     const handlePlayerChange = (idx, field, value) => {
         const newPlayers = [...players];
         if (field === 'personaName') newPlayers[idx].personaName = value;
+        if (field === 'position') newPlayers[idx].position = parseInt(value);
         setPlayers(newPlayers);
     };
 
@@ -58,6 +68,24 @@ const EditTeamModal = ({ team, onClose, onSave }) => {
                                 onChange={(e) => handlePlayerChange(i, 'personaName', e.target.value)}
                                 style={{ flex: 1, padding: '0.2rem' }}
                             />
+                            <select
+                                value={p.position || ''}
+                                onChange={(e) => handlePlayerChange(i, 'position', e.target.value)}
+                                style={{ 
+                                    padding: '0.2rem', 
+                                    background: '#333', 
+                                    color: 'white', 
+                                    border: '1px solid #555',
+                                    minWidth: '120px'
+                                }}
+                            >
+                                <option value="">Pozicija</option>
+                                {positions.map(pos => (
+                                    <option key={pos.id} value={pos.id}>
+                                        {pos.icon} {pos.name} [{pos.id}]
+                                    </option>
+                                ))}
+                            </select>
                             <button onClick={() => handleRemovePlayer(i)} style={{ background: '#f44336', color: 'white', border: 'none', padding: '0.2rem 0.5rem', cursor: 'pointer' }}>X</button>
                         </div>
                     ))}
@@ -258,10 +286,23 @@ const Admin = () => {
                                         <h4 style={{ marginBottom: '0.5rem', borderBottom: '1px solid #444' }}>Roster</h4>
                                         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                             {team.players.map((p, idx) => (
-                                                <div key={idx} style={{ background: '#222', padding: '0.5rem', borderRadius: '4px', width: '200px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <div key={idx} style={{ background: '#222', padding: '0.5rem', borderRadius: '4px', width: '220px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                     <img src={p.avatar} style={{ width: '32px', height: '32px', borderRadius: '50%' }} alt="" />
-                                                    <div>
-                                                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{p.personaName}</div>
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                                            {p.personaName}
+                                                            {p.position && (
+                                                                <span style={{ 
+                                                                    marginLeft: '0.5rem', 
+                                                                    fontSize: '0.7rem', 
+                                                                    background: '#444', 
+                                                                    padding: '0.1rem 0.3rem', 
+                                                                    borderRadius: '2px' 
+                                                                }}>
+                                                                    {positions.find(pos => pos.id === p.position)?.icon} [{p.position}]
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                                                             <RankDisplay rankTier={p.rankTier} width="24px" />
                                                             <span style={{ fontSize: '0.8rem', color: '#888' }}>WR: {p.winrate}%</span>
@@ -278,29 +319,55 @@ const Admin = () => {
 
                     <div className="card">
                         <h2 style={{ color: 'var(--accent)', marginBottom: '1rem' }}>Trenutno Aktivni Timovi ({teams.length})</h2>
-                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                        <div style={{ display: 'grid', gap: '1.5rem' }}>
                             {teams.map(t => (
-                                <li key={t.id} style={{
-                                    padding: '1rem',
-                                    borderBottom: '1px solid var(--border)',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    background: 'rgba(255,255,255,0.02)',
-                                    marginBottom: '0.5rem',
-                                    borderRadius: '4px'
+                                <div key={t.id} style={{
+                                    padding: '1.5rem',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: '8px',
+                                    background: 'rgba(255,255,255,0.02)'
                                 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <img src={t.logo} style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
-                                        <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{t.name}</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <img src={t.logo} style={{ width: '50px', height: '50px', borderRadius: '50%' }} />
+                                            <span style={{ fontSize: '1.3rem', fontWeight: 'bold' }}>{t.name}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                            <button onClick={() => setEditingTeam(t)} className="btn" style={{ fontSize: '0.9rem', padding: '0.3rem 1rem' }}>Edit</button>
+                                            <button onClick={() => handleDelete(t.id)} className="btn" style={{ fontSize: '0.9rem', padding: '0.3rem 1rem', background: '#f44336' }}>Delete</button>
+                                        </div>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <button onClick={() => setEditingTeam(t)} className="btn" style={{ fontSize: '0.9rem', padding: '0.3rem 1rem' }}>Edit</button>
-                                        <button onClick={() => handleDelete(t.id)} className="btn" style={{ fontSize: '0.9rem', padding: '0.3rem 1rem', background: '#f44336' }}>Delete</button>
+                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                        {t.players.map((p, idx) => (
+                                            <div key={idx} style={{ background: '#222', padding: '0.5rem', borderRadius: '4px', width: '220px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <img src={p.avatar} style={{ width: '32px', height: '32px', borderRadius: '50%' }} alt="" />
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                                        {p.personaName}
+                                                        {p.position && (
+                                                            <span style={{ 
+                                                                marginLeft: '0.5rem', 
+                                                                fontSize: '0.7rem', 
+                                                                background: '#444', 
+                                                                padding: '0.1rem 0.3rem', 
+                                                                borderRadius: '2px' 
+                                                            }}>
+                                                                {positions.find(pos => pos.id === p.position)?.icon} [{p.position}]
+                                                            </span>
+                                                        )}
+                                                        {p.isCaptain && <span style={{ marginLeft: '0.5rem', color: 'var(--accent)' }}>♔</span>}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                        <RankDisplay rankTier={p.rankTier} width="24px" />
+                                                        <span style={{ fontSize: '0.8rem', color: '#888' }}>WR: {p.winrate}%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                </li>
+                                </div>
                             ))}
-                        </ul>
+                        </div>
                     </div>
                 </>
             )}
