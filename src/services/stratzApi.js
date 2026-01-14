@@ -1,6 +1,6 @@
 // STRATZ GraphQL API Service
 const STRATZ_API_URL = 'https://api.stratz.com/graphql';
-const STRATZ_API_KEY = process.env.REACT_APP_STRATZ_API_KEY || ''; // Add to .env file
+const STRATZ_API_KEY = import.meta.env.VITE_STRATZ_API_KEY || ''; // Add to .env file
 
 // Position mapping for STRATZ
 const STRATZ_POSITIONS = {
