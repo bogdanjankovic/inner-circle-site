@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import './MatchDetails.css';
 import { HeroImage } from '../ui/HeroTooltip';
 
@@ -215,12 +215,63 @@ const PlayerRow = ({ p }) => {
 const TeamTable = ({ teamName, players, winner }) => {
     const isRadiant = teamName === 'Radiant';
     const headerClass = isRadiant ? 'radiant-header' : 'dire-header';
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
+    // Sort function
+    const sortedPlayers = useMemo(() => {
+        let sortablePlayers = [...players];
+        if (sortConfig.key !== null) {
+            sortablePlayers.sort((a, b) => {
+                let aValue = a[sortConfig.key];
+                let bValue = b[sortConfig.key];
+
+                // Handle special cases
+                if (sortConfig.key === 'playerName') {
+                    aValue = aValue || '';
+                    bValue = bValue || '';
+                    if (sortConfig.direction === 'asc') {
+                        return aValue.localeCompare(bValue);
+                    } else {
+                        return bValue.localeCompare(aValue);
+                    }
+                }
+
+                // Handle numeric values
+                aValue = aValue || 0;
+                bValue = bValue || 0;
+                
+                if (sortConfig.direction === 'asc') {
+                    return aValue - bValue;
+                } else {
+                    return bValue - aValue;
+                }
+            });
+        }
+        return sortablePlayers;
+    }, [players, sortConfig]);
+
+    // Handle sort click
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
 
     // Totals
     const totalKills = players.reduce((a, b) => a + b.kills, 0);
     const totalDeaths = players.reduce((a, b) => a + b.deaths, 0);
     const totalAssists = players.reduce((a, b) => a + b.assists, 0);
     const totalGold = players.reduce((a, b) => a + b.netWorth, 0);
+
+    // Sort icon component
+    const SortIcon = ({ columnKey }) => {
+        if (sortConfig.key !== columnKey) {
+            return <span style={{ opacity: 0.3 }}>↕</span>;
+        }
+        return sortConfig.direction === 'asc' ? <span>↑</span> : <span>↓</span>;
+    };
 
     return (
         <div>
@@ -231,20 +282,38 @@ const TeamTable = ({ teamName, players, winner }) => {
             <table className="stats-table">
                 <thead>
                     <tr>
-                        <th className="left-align" style={{ width: '25%' }}>Player</th>
-                        <th style={{ width: '5%' }}>LVL</th>
-                        <th style={{ width: '10%' }}>K D A</th>
-                        <th style={{ width: '10%' }}>LH / DN</th>
-                        <th style={{ width: '8%' }}>NET</th>
-                        <th style={{ width: '10%' }}>GPM / XPM</th>
-                        <th style={{ width: '8%' }}>HD</th>
-                        <th style={{ width: '6%' }}>TD</th>
-                        <th style={{ width: '6%' }}>HH</th>
+                        <th className="left-align sortable-header" style={{ width: '25%' }} onClick={() => handleSort('playerName')}>
+                            Player <SortIcon columnKey="playerName" />
+                        </th>
+                        <th className="sortable-header" style={{ width: '5%' }} onClick={() => handleSort('level')}>
+                            LVL <SortIcon columnKey="level" />
+                        </th>
+                        <th className="sortable-header" style={{ width: '10%' }} onClick={() => handleSort('kills')}>
+                            K D A <SortIcon columnKey="kills" />
+                        </th>
+                        <th className="sortable-header" style={{ width: '10%' }} onClick={() => handleSort('lastHits')}>
+                            LH / DN <SortIcon columnKey="lastHits" />
+                        </th>
+                        <th className="sortable-header" style={{ width: '8%' }} onClick={() => handleSort('netWorth')}>
+                            NET <SortIcon columnKey="netWorth" />
+                        </th>
+                        <th className="sortable-header" style={{ width: '10%' }} onClick={() => handleSort('gpm')}>
+                            GPM / XPM <SortIcon columnKey="gpm" />
+                        </th>
+                        <th className="sortable-header" style={{ width: '8%' }} onClick={() => handleSort('heroDamage')}>
+                            HD <SortIcon columnKey="heroDamage" />
+                        </th>
+                        <th className="sortable-header" style={{ width: '6%' }} onClick={() => handleSort('towerDamage')}>
+                            TD <SortIcon columnKey="towerDamage" />
+                        </th>
+                        <th className="sortable-header" style={{ width: '6%' }} onClick={() => handleSort('heroHealing')}>
+                            HH <SortIcon columnKey="heroHealing" />
+                        </th>
                         <th style={{ width: '20%' }}>ITEMS</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {players.map(p => <PlayerRow key={p.steamId} p={p} />)}
+                    {sortedPlayers.map(p => <PlayerRow key={p.steamId} p={p} />)}
                     {/* Totals Row */}
                     <tr style={{ background: '#11151b', fontWeight: 'bold' }}>
                         <td colSpan={2} style={{ textAlign: 'right', paddingRight: '20px' }}>Totals</td>

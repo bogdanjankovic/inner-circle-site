@@ -34,6 +34,22 @@
     font-size: 0.9rem;
 }
 
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: background-color 0.2s;
+}
+
+.sortable-header:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.sortable-header span {
+    font-size: 0.8rem;
+    margin-left: 4px;
+}
+
 .facet-info {
     display: flex;
     align-items: center;
