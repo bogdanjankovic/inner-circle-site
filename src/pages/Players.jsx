@@ -121,6 +121,8 @@ const Players = () => {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [selectedTeams, setSelectedTeams] = useState(new Set()); // Set of selected team names
     const [showTeamFilter, setShowTeamFilter] = useState(false);
+    const [selectedPositions, setSelectedPositions] = useState(new Set()); // Set of selected positions
+    const [showPositionFilter, setShowPositionFilter] = useState(false);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -128,13 +130,16 @@ const Players = () => {
             if (showTeamFilter && !event.target.closest('th')) {
                 setShowTeamFilter(false);
             }
+            if (showPositionFilter && !event.target.closest('th')) {
+                setShowPositionFilter(false);
+            }
         };
 
         document.addEventListener('click', handleClickOutside);
         return () => {
             document.removeEventListener('click', handleClickOutside);
         };
-    }, [showTeamFilter]);
+    }, [showTeamFilter, showPositionFilter]);
 
     // Flatten all players from all teams
     const allPlayers = teams.flatMap(t => t.players.map(p => ({ ...p, teamName: t.name })));
@@ -142,13 +147,31 @@ const Players = () => {
     // Get unique team names
     const allTeamNames = [...new Set(allPlayers.map(p => p.teamName).filter(Boolean))];
 
-    // Filter players by selected teams
+    // Position data
+    const positions = [
+        { id: 1, name: 'Carry', icon: '🗡️' },
+        { id: 2, name: 'Midlane', icon: '⚡' },
+        { id: 3, name: 'Offlaner', icon: '🛡️' },
+        { id: 4, name: 'Soft Support', icon: '💊' },
+        { id: 5, name: 'Hard Support', icon: '🔧' }
+    ];
+
+    // Filter players by selected teams and positions
     const filteredPlayers = useMemo(() => {
-        if (selectedTeams.size === 0) {
-            return allPlayers; // Show all if no teams selected
+        let filtered = allPlayers;
+        
+        // Filter by teams
+        if (selectedTeams.size > 0) {
+            filtered = filtered.filter(player => selectedTeams.has(player.teamName));
         }
-        return allPlayers.filter(player => selectedTeams.has(player.teamName));
-    }, [allPlayers, selectedTeams]);
+        
+        // Filter by positions
+        if (selectedPositions.size > 0) {
+            filtered = filtered.filter(player => selectedPositions.has(player.position));
+        }
+        
+        return filtered;
+    }, [allPlayers, selectedTeams, selectedPositions]);
 
     // Get value for sorting based on key
     const getSortValue = (player, key) => {
@@ -259,6 +282,27 @@ const Players = () => {
         setSelectedTeams(new Set());
     };
 
+    // Handle position filter toggle
+    const handlePositionToggle = (positionId) => {
+        const newSelectedPositions = new Set(selectedPositions);
+        if (newSelectedPositions.has(positionId)) {
+            newSelectedPositions.delete(positionId);
+        } else {
+            newSelectedPositions.add(positionId);
+        }
+        setSelectedPositions(newSelectedPositions);
+    };
+
+    // Select all positions
+    const selectAllPositions = () => {
+        setSelectedPositions(new Set(positions.map(p => p.id)));
+    };
+
+    // Deselect all positions
+    const deselectAllPositions = () => {
+        setSelectedPositions(new Set());
+    };
+
     // Handle sort click
     const handleSort = (key) => {
         let direction = 'asc';
@@ -304,12 +348,160 @@ const Players = () => {
                     <thead>
                         <tr style={{ backgroundColor: 'var(--bg-secondary)', textAlign: 'left' }}>
                             <th 
-                                style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
-                                onClick={() => handleSort('personaName')}
+                                style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', position: 'relative', minWidth: '120px' }}
+                                onClick={(e) => { e.stopPropagation(); setShowPositionFilter(!showPositionFilter); }}
                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
-                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}}
                             >
-                                Igrač <SortIcon columnKey="personaName" sortConfig={sortConfig} />
+                                Pozicija <span style={{ opacity: 0.5, fontSize: '0.8rem' }}>▼</span>
+                                {selectedPositions.size > 0 && (
+                                    <span style={{ 
+                                        background: 'var(--accent)', 
+                                        color: 'white', 
+                                        borderRadius: '50%', 
+                                        width: '16px', 
+                                        height: '16px', 
+                                        display: 'inline-flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center', 
+                                        fontSize: '0.7rem', 
+                                        marginLeft: '4px' 
+                                    }}>
+                                        {selectedPositions.size}
+                                    </span>
+                                )}
+                                
+                                {/* Position Filter Dropdown */}
+                                {showPositionFilter && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '100%',
+                                        left: '0',
+                                        minWidth: '200px',
+                                        background: 'var(--bg-secondary)',
+                                        border: '1px solid var(--border)',
+                                        borderRadius: '6px',
+                                        padding: '1rem',
+                                        marginTop: '0.5rem',
+                                        zIndex: 1000,
+                                        maxHeight: '300px',
+                                        overflowY: 'auto',
+                                        boxShadow: '0 6px 20px rgba(0,0,0,0.4)'
+                                    }}>
+                                        <div style={{ 
+                                            display: 'flex', 
+                                            justifyContent: 'space-between', 
+                                            alignItems: 'center', 
+                                            marginBottom: '1rem',
+                                            paddingBottom: '0.75rem',
+                                            borderBottom: '1px solid var(--border)'
+                                        }}>
+                                            <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600', color: 'var(--accent)' }}>Filter Pozicija</h4>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); selectAllPositions(); }}
+                                                    style={{
+                                                        padding: '0.4rem 0.8rem',
+                                                        fontSize: '0.85rem',
+                                                        background: 'var(--accent)',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontWeight: '500',
+                                                        transition: 'background-color 0.2s'
+                                                    }}
+                                                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-dark)'}
+                                                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--accent)'}
+                                                >
+                                                    Sve
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); deselectAllPositions(); }}
+                                                    style={{
+                                                        padding: '0.4rem 0.8rem',
+                                                        fontSize: '0.85rem',
+                                                        background: '#666',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontWeight: '500',
+                                                        transition: 'background-color 0.2s'
+                                                    }}
+                                                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#777'}
+                                                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#666'}
+                                                >
+                                                    Ništa
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                            {positions.map(position => (
+                                                <label
+                                                    key={position.id}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.75rem',
+                                                        cursor: 'pointer',
+                                                        padding: '0.5rem 0.4rem',
+                                                        borderRadius: '4px',
+                                                        transition: 'all 0.2s ease',
+                                                        border: '1px solid transparent'
+                                                    }}
+                                                    onMouseOver={(e) => {
+                                                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                                                        e.currentTarget.style.borderColor = 'var(--accent)';
+                                                    }}
+                                                    onMouseOut={(e) => {
+                                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                                        e.currentTarget.style.borderColor = 'transparent';
+                                                    }}
+                                                    onClick={(e) => { 
+                                                        e.stopPropagation(); 
+                                                        e.preventDefault();
+                                                        handlePositionToggle(position.id); 
+                                                    }}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedPositions.has(position.id)}
+                                                        onChange={(e) => { 
+                                                            e.stopPropagation(); 
+                                                            e.preventDefault();
+                                                            handlePositionToggle(position.id); 
+                                                        }}
+                                                        onClick={(e) => { 
+                                                            e.stopPropagation(); 
+                                                            e.preventDefault();
+                                                            handlePositionToggle(position.id); 
+                                                        }}
+                                                        style={{ 
+                                                            cursor: 'pointer',
+                                                            width: '16px',
+                                                            height: '16px',
+                                                            accentColor: 'var(--accent)',
+                                                            pointerEvents: 'none'
+                                                        }}
+                                                    />
+                                                    <span style={{ 
+                                                        fontSize: '0.95rem', 
+                                                        fontWeight: '500',
+                                                        color: selectedPositions.has(position.id) ? 'var(--accent)' : '#fff',
+                                                        transition: 'color 0.2s',
+                                                        userSelect: 'none'
+                                                    }}>
+                                                        {position.icon} {position.name} [{position.id}]
+                                                    </span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </th>
+                            <th style={{ padding: '1rem' }}>
+                                Igrač
                             </th>
                             <th 
                                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', position: 'relative', minWidth: '150px' }}
@@ -565,7 +757,25 @@ const Players = () => {
                                     onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                     onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                 >
-                                    <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <td style={{ padding: '1rem' }}>
+                                    {player.position ? (
+                                        <span style={{ 
+                                            display: 'inline-flex', 
+                                            alignItems: 'center', 
+                                            gap: '0.5rem',
+                                            padding: '0.25rem 0.5rem',
+                                            borderRadius: '4px',
+                                            background: 'rgba(255,255,255,0.1)',
+                                            fontSize: '0.9rem'
+                                        }}>
+                                            {positions.find(p => p.id === player.position)?.icon} 
+                                            {positions.find(p => p.id === player.position)?.name}
+                                        </span>
+                                    ) : (
+                                        <span style={{ color: '#666', fontSize: '0.9rem' }}>N/A</span>
+                                    )}
+                                </td>
+                                <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                         {/* Avatar & Name */}
                                         <div className="hero-tooltip-container">
                                             {player.avatar ? (
@@ -582,8 +792,7 @@ const Players = () => {
                                             <HeroTooltip heroes={player.topHeroes} />
                                         </span>
                                     </td>
-
-                                    <td style={{ padding: '1rem' }}>{player.teamName}</td>
+                                <td style={{ padding: '1rem' }}>{player.teamName}</td>
 
                                     {viewMode === 'registration' ? (
                                         <>

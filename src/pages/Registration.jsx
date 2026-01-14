@@ -18,13 +18,22 @@ const Registration = () => {
     const [teamName, setTeamName] = useState('');
     const [teamLogo, setTeamLogo] = useState('');
 
+    // Position data
+    const positions = [
+        { id: 1, name: 'Carry', icon: '🗡️' },
+        { id: 2, name: 'Midlane', icon: '⚡' },
+        { id: 3, name: 'Offlaner', icon: '🛡️' },
+        { id: 4, name: 'Soft Support', icon: '💊' },
+        { id: 5, name: 'Hard Support', icon: '🔧' }
+    ];
+
     // 5 Players slots
     const [players, setPlayers] = useState([
-        { id: 1, steamId: '', data: null, loading: false, error: null, isCaptain: true },
-        { id: 2, steamId: '', data: null, loading: false, error: null, isCaptain: false },
-        { id: 3, steamId: '', data: null, loading: false, error: null, isCaptain: false },
-        { id: 4, steamId: '', data: null, loading: false, error: null, isCaptain: false },
-        { id: 5, steamId: '', data: null, loading: false, error: null, isCaptain: false },
+        { id: 1, steamId: '', data: null, loading: false, error: null, isCaptain: true, position: 1 },
+        { id: 2, steamId: '', data: null, loading: false, error: null, isCaptain: false, position: 2 },
+        { id: 3, steamId: '', data: null, loading: false, error: null, isCaptain: false, position: 3 },
+        { id: 4, steamId: '', data: null, loading: false, error: null, isCaptain: false, position: 4 },
+        { id: 5, steamId: '', data: null, loading: false, error: null, isCaptain: false, position: 5 },
     ]);
 
     const handleCheckPlayer = async (index) => {
@@ -59,6 +68,12 @@ const Registration = () => {
         setPlayers(newPlayers);
     };
 
+    const handlePositionChange = (index, positionId) => {
+        const newPlayers = [...players];
+        newPlayers[index].position = parseInt(positionId);
+        setPlayers(newPlayers);
+    };
+
     const setCaptain = (index) => {
         const newPlayers = players.map((p, i) => ({ ...p, isCaptain: i === index }));
         setPlayers(newPlayers);
@@ -77,7 +92,8 @@ const Registration = () => {
             players: players.map(p => ({
                 steamId: p.steamId,
                 ...p.data,
-                isCaptain: p.isCaptain
+                isCaptain: p.isCaptain,
+                position: p.position
             }))
         };
 
@@ -197,6 +213,29 @@ const Registration = () => {
                                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                                             WR: {player.data.winrate}%
                                         </div>
+                                    </div>
+
+                                    {/* Position Selector */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
+                                        <label style={{ fontSize: '0.7rem', color: '#888' }}>Pozicija</label>
+                                        <select
+                                            value={player.position}
+                                            onChange={(e) => handlePositionChange(index, e.target.value)}
+                                            style={{
+                                                padding: '0.25rem 0.5rem',
+                                                borderRadius: '4px',
+                                                border: '1px solid var(--border)',
+                                                background: 'var(--bg-secondary)',
+                                                color: 'var(--text-main)',
+                                                fontSize: '0.8rem'
+                                            }}
+                                        >
+                                            {positions.map(pos => (
+                                                <option key={pos.id} value={pos.id}>
+                                                    {pos.icon} {pos.name} [{pos.id}]
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
 
                                     {/* Rank Medal */}
