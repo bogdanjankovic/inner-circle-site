@@ -298,7 +298,7 @@ const Players = () => {
                                 Igrač <SortIcon columnKey="personaName" sortConfig={sortConfig} />
                             </th>
                             <th 
-                                style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', position: 'relative' }}
+                                style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', position: 'relative', minWidth: '150px' }}
                                 onClick={(e) => { e.stopPropagation(); setShowTeamFilter(!showTeamFilter); }}
                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -327,73 +327,108 @@ const Players = () => {
                                         position: 'absolute',
                                         top: '100%',
                                         left: '0',
-                                        minWidth: '200px',
+                                        minWidth: '250px',
+                                        width: 'max-content',
                                         background: 'var(--bg-secondary)',
                                         border: '1px solid var(--border)',
-                                        borderRadius: '4px',
+                                        borderRadius: '6px',
                                         padding: '1rem',
                                         marginTop: '0.5rem',
                                         zIndex: 1000,
-                                        maxHeight: '300px',
+                                        maxHeight: '400px',
                                         overflowY: 'auto',
-                                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                                        boxShadow: '0 6px 20px rgba(0,0,0,0.4)'
                                     }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                            <h4 style={{ margin: 0, fontSize: '0.9rem' }}>Filter Timova</h4>
+                                        <div style={{ 
+                                            display: 'flex', 
+                                            justifyContent: 'space-between', 
+                                            alignItems: 'center', 
+                                            marginBottom: '1rem',
+                                            paddingBottom: '0.75rem',
+                                            borderBottom: '1px solid var(--border)'
+                                        }}>
+                                            <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600', color: 'var(--accent)' }}>Filter Timova</h4>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); selectAllTeams(); }}
                                                     style={{
-                                                        padding: '0.25rem 0.5rem',
-                                                        fontSize: '0.8rem',
+                                                        padding: '0.4rem 0.8rem',
+                                                        fontSize: '0.85rem',
                                                         background: 'var(--accent)',
                                                         color: 'white',
                                                         border: 'none',
-                                                        borderRadius: '2px',
-                                                        cursor: 'pointer'
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontWeight: '500',
+                                                        transition: 'background-color 0.2s'
                                                     }}
+                                                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-dark)'}
+                                                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--accent)'}
                                                 >
                                                     Svi
                                                 </button>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); deselectAllTeams(); }}
                                                     style={{
-                                                        padding: '0.25rem 0.5rem',
-                                                        fontSize: '0.8rem',
+                                                        padding: '0.4rem 0.8rem',
+                                                        fontSize: '0.85rem',
                                                         background: '#666',
                                                         color: 'white',
                                                         border: 'none',
-                                                        borderRadius: '2px',
-                                                        cursor: 'pointer'
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontWeight: '500',
+                                                        transition: 'background-color 0.2s'
                                                     }}
+                                                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#777'}
+                                                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#666'}
                                                 >
                                                     Ništa
                                                 </button>
                                             </div>
                                         </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                                             {allTeamNames.map(teamName => (
                                                 <label
                                                     key={teamName}
                                                     style={{
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        gap: '0.5rem',
+                                                        gap: '0.75rem',
                                                         cursor: 'pointer',
-                                                        padding: '0.25rem',
-                                                        borderRadius: '2px',
-                                                        transition: 'background-color 0.2s'
+                                                        padding: '0.5rem 0.4rem',
+                                                        borderRadius: '4px',
+                                                        transition: 'all 0.2s ease',
+                                                        border: '1px solid transparent'
                                                     }}
-                                                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
-                                                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                    onMouseOver={(e) => {
+                                                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                                                        e.currentTarget.style.borderColor = 'var(--accent)';
+                                                    }}
+                                                    onMouseOut={(e) => {
+                                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                                        e.currentTarget.style.borderColor = 'transparent';
+                                                    }}
                                                 >
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedTeams.has(teamName)}
                                                         onChange={(e) => { e.stopPropagation(); handleTeamToggle(teamName); }}
-                                                        style={{ cursor: 'pointer' }}
+                                                        style={{ 
+                                                            cursor: 'pointer',
+                                                            width: '16px',
+                                                            height: '16px',
+                                                            accentColor: 'var(--accent)'
+                                                        }}
                                                     />
-                                                    <span style={{ fontSize: '0.9rem' }}>{teamName}</span>
+                                                    <span style={{ 
+                                                        fontSize: '0.95rem', 
+                                                        fontWeight: '500',
+                                                        color: selectedTeams.has(teamName) ? 'var(--accent)' : '#fff',
+                                                        transition: 'color 0.2s'
+                                                    }}>
+                                                        {teamName}
+                                                    </span>
                                                 </label>
                                             ))}
                                         </div>
