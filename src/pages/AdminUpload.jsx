@@ -18,25 +18,44 @@ const AdminUpload = () => {
     const [direTeamId, setDireTeamId] = useState('');
     const [playerMapping, setPlayerMapping] = useState({}); // { steamId: registeredId }
     
-    // Facet data
-    const [heroFacets, setHeroFacets] = useState({}); // { heroId: { facetId: { title, icon } } }
+    // Facet data and hero mapping
+    const [heroFacets, setHeroFacets] = useState({}); // { heroName: { facetIndex: { title, icon } } }
+    const [heroIdToName, setHeroIdToName] = useState({}); // { heroId: heroName }
     const [loadingFacets, setLoadingFacets] = useState(false);
 
-    // Load hero facets from OpenDota
+    // Load hero facets from GitHub hero_abilities.json and heroes.json for mapping
     useEffect(() => {
         const loadHeroFacets = async () => {
             try {
                 setLoadingFacets(true);
-                const response = await fetch('https://api.opendota.com/api/constants/heroes');
-                const heroes = await response.json();
+                
+                // Load hero abilities (facets)
+                const abilitiesResponse = await fetch('https://raw.githubusercontent.com/odota/dotaconstants/master/build/hero_abilities.json');
+                const heroAbilities = await abilitiesResponse.json();
+                
+                // Load heroes for ID to name mapping
+                const heroesResponse = await fetch('https://raw.githubusercontent.com/odota/dotaconstants/master/build/heroes.json');
+                const heroes = await heroesResponse.json();
                 
                 const facets = {};
+                const heroIdToName = {};
+                
+                // Create hero ID to name mapping
                 Object.values(heroes).forEach(hero => {
-                    if (hero.facets && Array.isArray(hero.facets)) {
-                        facets[hero.id] = {};
-                        hero.facets.forEach((facet, index) => {
-                            facets[hero.id][index + 1] = {
-                                title: facet.title || `Facet ${index + 1}`,
+                    if (hero.id && hero.name) {
+                        heroIdToName[hero.id] = hero.name;
+                    }
+                });
+                
+                // Process facets
+                Object.entries(heroAbilities).forEach(([heroKey, heroData]) => {
+                    if (heroData.facets && Array.isArray(heroData.facets)) {
+                        facets[heroKey] = {};
+                        heroData.facets.forEach((facet, index) => {
+                            // Index starts from 0, but facet ID from .dem starts from 1
+                            facets[heroKey][index] = {
+                                title: facet.title || `Facet ${index}`,
+                                description: facet.description || '',
                                 icon: facet.icon || ''
                             };
                         });
@@ -44,7 +63,9 @@ const AdminUpload = () => {
                 });
                 
                 setHeroFacets(facets);
-                console.log('Loaded hero facets:', facets);
+                setHeroIdToName(heroIdToName);
+                console.log('Loaded hero facets from hero_abilities.json:', facets);
+                console.log('Hero ID to name mapping:', heroIdToName);
             } catch (err) {
                 console.error('Error loading hero facets:', err);
             } finally {
@@ -73,10 +94,27 @@ const AdminUpload = () => {
 
     // Get facet info for a hero
     const getFacetInfo = (heroId, facetId) => {
-        if (!heroFacets[heroId] || !heroFacets[heroId][facetId]) {
+        // If facetId is 0 or null, return empty
+        if (!facetId || facetId === 0) {
+            return { title: '', icon: '' };
+        }
+        
+        // Get hero name from heroId
+        const heroName = heroIdToName[heroId];
+        if (!heroName) {
             return { title: `Facet ${facetId}`, icon: '' };
         }
-        return heroFacets[heroId][facetId];
+        
+        // Convert facetId from .dem (1-based) to array index (0-based)
+        const facetIndex = facetId - 1;
+        
+        // Get facet info for this hero
+        const heroFacets = heroFacets[heroName];
+        if (!heroFacets || !heroFacets[facetIndex]) {
+            return { title: `Facet ${facetId}`, icon: '' };
+        }
+        
+        return heroFacets[facetIndex];
     };
 
     const handleSave = () => {
