@@ -36,7 +36,7 @@ export const steamIdToAccountId = (steamId64) => {
 };
 
 /**
- * Fetches heroes by lane from OpenDota and returns top 3
+ * Fetches heroes by recent matches and calculates position-specific stats
  * @param {string} accountId - Player's account ID
  * @param {number} position - Position ID (1-5)
  * @returns {Array} Top 3 heroes for the position
@@ -82,35 +82,60 @@ export const getTopHeroesByPosition = async (accountId, position) => {
     const lane = LANE_TO_POSITION[position];
     
     try {
-        // Fetch heroes by specific lane
-        const response = await fetch(`${API_URL}/players/${accountId}/heroes?lane=${lane}`);
-        const heroes = await response.json();
+        // Fetch recent matches to analyze hero performance by position
+        const matchesResponse = await fetch(`${API_URL}/players/${accountId}/matches?limit=100`);
+        const matches = await matchesResponse.json();
+        
+        // Group heroes by lane and calculate stats
+        const heroStatsByLane = {};
+        
+        matches.forEach(match => {
+            if (match.lane === lane && match.hero_id) {
+                const heroId = match.hero_id;
+                if (!heroStatsByLane[heroId]) {
+                    heroStatsByLane[heroId] = { games: 0, win: 0 };
+                }
+                heroStatsByLane[heroId].games++;
+                if (match.player_slot >= 0 && match.player_slot <= 4 && match.radiant_win) {
+                    heroStatsByLane[heroId].win++;
+                } else if (match.player_slot >= 128 && match.player_slot <= 132 && !match.radiant_win) {
+                    heroStatsByLane[heroId].win++;
+                }
+            }
+        });
+        
+        // Convert to array and apply filtering
+        const heroes = Object.entries(heroStatsByLane).map(([heroId, stats]) => ({
+            hero_id: parseInt(heroId),
+            games: stats.games,
+            win: stats.win
+        }));
         
         // Prvo pokušaj sa minimum 10 igara
-            let filteredHeroes = heroes.filter(h => h.games >= 10);
-            
-            if (filteredHeroes.length < 3) {
-                // Ako nema dovoljno heroja sa 10+ igara, spusti na 5 igara
-                filteredHeroes = heroes.filter(h => h.games >= 5);
-            }
-            
-            if (filteredHeroes.length < 3) {
-                // Ako i dalje nema dovoljno, uzmi sve sa najmanje 1 igrom
-                filteredHeroes = heroes.filter(h => h.games >= 1);
-            }
-            
-            return filteredHeroes
-                .sort((a, b) => b.games - a.games)
-                .slice(0, 10) // Uzmi top 10 po igrama
-                // Zatim sortiraj po winrate među najigranijima
-                .sort((a, b) => (b.win / b.games) - (a.win / a.games))
-                .slice(0, 3) // Uzmi top 3 po winrate-u
-                .map(h => ({
-                    heroId: h.hero_id,
-                    games: h.games,
-                    win: h.win,
-                    winrate: ((h.win / h.games) * 100).toFixed(1)
-                }));
+        let filteredHeroes = heroes.filter(h => h.games >= 10);
+        
+        if (filteredHeroes.length < 3) {
+            // Ako nema dovoljno heroja sa 10+ igara, spusti na 5 igara
+            filteredHeroes = heroes.filter(h => h.games >= 5);
+        }
+        
+        if (filteredHeroes.length < 3) {
+            // Ako i dalje nema dovoljno, uzmi sve sa najmanje 1 igrom
+            filteredHeroes = heroes.filter(h => h.games >= 1);
+        }
+        
+        return filteredHeroes
+            .sort((a, b) => b.games - a.games)
+            .slice(0, 10) // Uzmi top 10 po igrama
+            // Zatim sortiraj po winrate među najigranijima
+            .sort((a, b) => (b.win / b.games) - (a.win / a.games))
+            .slice(0, 3) // Uzmi top 3 po winrate-u
+            .map(h => ({
+                heroId: h.hero_id,
+                games: h.games,
+                win: h.win,
+                winrate: ((h.win / h.games) * 100).toFixed(1)
+            }));
     } catch (error) {
         console.error(`Error fetching ${lane} heroes:`, error);
         return [];

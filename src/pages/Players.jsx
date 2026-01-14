@@ -130,8 +130,8 @@ const PlayerModal = ({ player, onClose, stats }) => {
                     {isRefreshing ? (
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', justifyContent: 'center' }}>
                             <div style={{ textAlign: 'center', color: '#888' }}>
-                                <div>🔄 Učitavanje najboljih heroja...</div>
-                                <div style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>Primenjujem novi algoritam (Games + Winrate)</div>
+                                <div>🔄 Analiziram poslednjih 100 mečeva...</div>
+                                <div style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>Brojim igare na poziciji + winrate</div>
                             </div>
                         </div>
                     ) : (
@@ -156,7 +156,7 @@ const PlayerModal = ({ player, onClose, stats }) => {
                     )}
                     {refreshedPlayer.position && (
                         <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>
-                            🎯 Heroji filtrirani po poziciji sa novim algoritmom (minimum 10 igara + najviši winrate)
+                            🎯 Heroji analizirani iz poslednjih 100 mečeva na ovoj poziciji (minimum 10 igara + najviši winrate)
                         </p>
                     )}
                 </div>
