@@ -392,7 +392,7 @@ const HeatmapOverlay = ({ players, wards }) => {
 
             players.forEach(p => {
                 if (!p.positions) return;
-                const color = p.team === 'Radiant' ? 'rgba(0, 255, 64, 0.08)' : 'rgba(255, 60, 60, 0.08)';
+                const color = p.team === 'Radiant' ? 'rgba(0, 255, 64, 0.08)' : 'rgba(255, 60, 60, 0.12)';
                 ctx.fillStyle = color;
                 ctx.shadowColor = color;
 
