@@ -122,6 +122,45 @@ const PlayerModal = ({ player, onClose, stats }) => {
                             💡 Da bi video heroje za specifičnu poziciju, admin treba da postavi poziciju za ovog igrača.
                         </p>
                     )}
+
+                {/* Dota Plus Heroes */}
+                {player.dotaPlusHeroes && player.dotaPlusHeroes.length > 0 && (
+                    <div style={{ marginTop: '2rem' }}>
+                        <h3 style={{ color: '#e63946', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            ⭐ Dota Plus Heroji
+                        </h3>
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                            {player.dotaPlusHeroes.map((h, i) => (
+                                <div key={i} className="card" style={{ 
+                                    padding: '1rem', 
+                                    flex: 1, 
+                                    textAlign: 'center',
+                                    border: '2px solid #e63946',
+                                    background: 'linear-gradient(135deg, rgba(230, 57, 70, 0.1), rgba(230, 57, 70, 0.05)'
+                                }}>
+                                    <div style={{ marginBottom: '0.5rem' }}>
+                                        <HeroImage heroId={h.heroId} style={{ width: '60px', height: '60px' }} />
+                                    </div>
+                                    <div style={{ 
+                                        color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336',
+                                        fontWeight: 'bold'
+                                    }}>
+                                        {h.winrate}% Win
+                                    </div>
+                                    <div style={{ fontSize: '0.9rem', color: '#888' }}>{h.games} mečeva</div>
+                                    <div style={{ 
+                                        fontSize: '0.8rem', 
+                                        color: '#e63946', 
+                                        fontWeight: 'bold',
+                                        marginTop: '0.25rem'
+                                    }}>
+                                        Level {h.level}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
                                     </div>
 
             </div>

@@ -1,5 +1,6 @@
 // STRATZ GraphQL API Service
 const STRATZ_API_URL = 'https://api.stratz.com/graphql';
+const STRATZ_API_KEY = process.env.REACT_APP_STRATZ_API_KEY || ''; // Add to .env file
 
 // Position mapping for STRATZ
 const STRATZ_POSITIONS = {
@@ -57,13 +58,18 @@ export const getTopHeroesByPositionStratz = async (steamAccountId, position) => 
             getPlayerHeroesByPositionQuery(steamAccountId, position) : 
             getAllPlayerHeroesQuery(steamAccountId);
 
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        // Add API key if available
+        if (STRATZ_API_KEY) {
+            headers['Authorization'] = `Bearer ${STRATZ_API_KEY}`;
+        }
+
         const response = await fetch(STRATZ_API_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // Note: You might need to add API key if required
-                // 'Authorization': `Bearer ${API_KEY}`
-            },
+            headers,
             body: JSON.stringify({ query })
         });
 
@@ -136,6 +142,92 @@ export const getTopHeroesByPositionStratz = async (steamAccountId, position) => 
 
     } catch (error) {
         console.error('Error fetching STRATZ data:', error);
+        return [];
+    }
+};
+
+/**
+ * GraphQL query for player's Dota Plus heroes
+ */
+const getDotaPlusHeroesQuery = (steamAccountId) => `
+query {
+  player(steamAccountId: ${steamAccountId}) {
+    dotaPlus {
+      heroId
+      level
+      winCount
+      matchCount
+      winRate
+    }
+  }
+}
+`;
+
+/**
+ * Fetches player's Dota Plus heroes using STRATZ GraphQL API
+ * @param {string} steamAccountId - Player's Steam Account ID
+ * @returns {Array} Top 3 Dota Plus heroes by level and winrate
+ */
+export const getTopDotaPlusHeroes = async (steamAccountId) => {
+    try {
+        const query = getDotaPlusHeroesQuery(steamAccountId);
+
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        // Add API key if available
+        if (STRATZ_API_KEY) {
+            headers['Authorization'] = `Bearer ${STRATZ_API_KEY}`;
+        }
+
+        const response = await fetch(STRATZ_API_URL, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ query })
+        });
+
+        if (!response.ok) {
+            throw new Error(`STRATZ API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.errors) {
+            throw new Error(`GraphQL error: ${data.errors[0].message}`);
+        }
+
+        const dotaPlusHeroes = data.data?.player?.dotaPlus || [];
+        
+        if (dotaPlusHeroes.length === 0) {
+            return [];
+        }
+
+        // Sort by level first, then by winrate, then by match count
+        return dotaPlusHeroes
+            .sort((a, b) => {
+                // First by level (descending)
+                if (b.level !== a.level) {
+                    return b.level - a.level;
+                }
+                // Then by winrate (descending)
+                if (b.winRate !== a.winRate) {
+                    return b.winRate - a.winRate;
+                }
+                // Finally by match count (descending)
+                return b.matchCount - a.matchCount;
+            })
+            .slice(0, 3)
+            .map(hero => ({
+                heroId: hero.heroId,
+                level: hero.level,
+                games: hero.matchCount,
+                win: hero.winCount,
+                winrate: hero.winRate.toFixed(1)
+            }));
+
+    } catch (error) {
+        console.error('Error fetching STRATZ Dota Plus data:', error);
         return [];
     }
 };

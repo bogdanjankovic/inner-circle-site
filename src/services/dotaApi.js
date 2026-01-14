@@ -204,6 +204,16 @@ export const fetchPlayerData = async (steamId, position = null) => {
         // Top 3 Heroes by position (or all heroes if no position specified)
         const topHeroes = await getTopHeroesByPosition(accountId, position, steamId);
 
+        // Fetch Dota Plus heroes
+        let dotaPlusHeroes = [];
+        try {
+            const { getTopDotaPlusHeroes, steamIdToStratzAccountId } = await import('./stratzApi.js');
+            const stratzAccountId = steamIdToStratzAccountId(steamId);
+            dotaPlusHeroes = await getTopDotaPlusHeroes(stratzAccountId);
+        } catch (error) {
+            console.log('Failed to fetch Dota Plus heroes:', error.message);
+        }
+
         const winrate = ((wl.win / (wl.win + wl.lose || 1)) * 100).toFixed(1);
 
         return {
@@ -220,7 +230,8 @@ export const fetchPlayerData = async (steamId, position = null) => {
             lossCount: wl.lose,
             winrate: winrate,
             stats: stats,
-            topHeroes: topHeroes
+            topHeroes: topHeroes,
+            dotaPlusHeroes: dotaPlusHeroes
         };
 
     } catch (error) {
