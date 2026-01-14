@@ -401,38 +401,25 @@ public class SimpleParser {
             }
         }
 
-        if (name.contains("Ward") && !name.contains("TrueSight")) {
+        // Only detect placed wards (NPC), not items in inventory
+        if (name.equals("CDOTA_NPC_Observer_Ward") || name.equals("CDOTA_NPC_Sentry_Ward")) {
             Map<String, Object> ward = new HashMap<>();
-            String type = "Observer";
-            if (name.contains("Sentry")) {
-                type = "Sentry";
-            }
+            String type = name.contains("Sentry") ? "Sentry" : "Observer";
             
-            // Try different coordinate properties for sentry wards
             int x = getIntPropertyDirect(e, "CBodyComponent.m_cellX", 0);
             int y = getIntPropertyDirect(e, "CBodyComponent.m_cellY", 0);
             
-            // If coordinates are 0, try alternative properties for sentry wards
-            if (x == 0 && y == 0 && type.equals("Sentry")) {
-                x = getIntPropertyDirect(e, "m_vecOrigin.x", 0);
-                y = getIntPropertyDirect(e, "m_vecOrigin.y", 0);
+            // Only add ward if it has valid coordinates
+            if (x > 0 && y > 0) {
+                ward.put("type", type);
+                ward.put("x", x);
+                ward.put("y", y);
+                ward.put("owner", getProperty(e, "m_hOwnerEntity"));
+                ward.put("time", getGameTime());
+                wardLog.add(ward);
                 
-                // Try another fallback
-                if (x == 0 && y == 0) {
-                    x = getIntPropertyDirect(e, "CBodyComponent.m_vecX", 0);
-                    y = getIntPropertyDirect(e, "CBodyComponent.m_vecY", 0);
-                }
+                log("DEBUG: Ward placed - Type: " + type + ", X: " + x + ", Y: " + y);
             }
-            
-            ward.put("type", type);
-            ward.put("x", x);
-            ward.put("y", y);
-            ward.put("owner", getProperty(e, "m_hOwnerEntity"));
-            ward.put("time", getGameTime());
-            wardLog.add(ward);
-            
-            // Debug log for wards
-            log("DEBUG: Ward found - Type: " + type + ", Name: " + name + ", X: " + x + ", Y: " + y);
         }
     }
 
@@ -726,37 +713,16 @@ public class SimpleParser {
                     if (isPick == null)
                         isPick = getProperty(gr, prefix + i + ".m_bIsPick");
 
-        if (winnerTeam != null) {
-            if (winnerTeam == 2)
-                winner = "Radiant";
-            else if (winnerTeam == 3)
-                winner = "Dire";
-            if (!foundPickBan) {
-                // Bans
-                for (int i = 0; i < 24; i++) {
-                    String idx = (i < 10 ? "0" + i : "" + i);
-                    Integer heroId = getProperty(gr, "m_pGameRules.m_BannedHeroes." + idx);
-                    if (heroId != null && heroId > 0) {
+                    if (isPick != null && team != null) {
                         cachedPicksBans.add(String.format(
-                                "{\"is_pick\": false, \"hero_id\": %d, \"team\": 0, \"order\": %d}", heroId, i));
-                        foundPickBan = true;
-                    }
-                }
-
-                // Picks (SelectedHeroes)
-                for (int i = 0; i < 24; i++) {
-                    String idx = (i < 10 ? "0" + i : "" + i);
-                    Integer heroId = getProperty(gr, "m_pGameRules.m_SelectedHeroes." + idx);
-                    if (heroId != null && heroId > 0) {
-                        cachedPicksBans.add(String.format(
-                                "{\"is_pick\": true, \"hero_id\": %d, \"team\": 0, \"order\": %d}", heroId, 24 + i));
+                            "{\"is_pick\": %s, \"hero_id\": %d, \"team\": %d, \"order\": %d}",
+                            isPick, heroId, team, i));
                         foundPickBan = true;
                     }
                 }
             }
 
             // Fallback: If no m_PickBan found (Non-CM modes?), try legacy m_BannedHeroes
-            // scan
             if (!foundPickBan) {
                 for (int i = 0; i < 24; i++) {
                     Integer banId = getProperty(gr,
@@ -863,7 +829,7 @@ public class SimpleParser {
                     String hName = hero.getDtClass().getDtName();
                     String pName = "npc_dota_hero_"
                             + hName.replace("CDOTA_Unit_Hero_", "").replace("CDOTA_Unit_", "").toLowerCase();
-                    tormentorKills = tormentorKillsTempMap.getOrDefault(pName, 0);
+                    tormentorKills = tormentorKillsMap.getOrDefault(i, 0);
                 }
             }
 
@@ -899,8 +865,8 @@ public class SimpleParser {
             }
 
             // Hero Stats from Maps (CombatLog Aggregation)
-            Integer heroHandle = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_hSelectedHero", i);
-            Entity heroEntity = entities.getByHandle(heroHandle);
+            Integer heroHandle2 = getIntProperty(pr, "m_vecPlayerTeamData.%i.m_hSelectedHero", i);
+            Entity heroEntity = entities.getByHandle(heroHandle2);
             String heroName = "unknown";
 
             if (heroEntity != null) {
