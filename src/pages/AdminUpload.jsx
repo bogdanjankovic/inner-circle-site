@@ -109,16 +109,22 @@ const AdminUpload = () => {
         const facetIndex = facetId - 1;
         
         // Get facet info for this hero
-        const heroFacets = heroFacets[heroName];
-        if (!heroFacets || !heroFacets[facetIndex]) {
+        const heroFacetsData = heroFacets[heroName];
+        if (!heroFacetsData || !heroFacetsData[facetIndex]) {
             return { title: `Facet ${facetId}`, icon: '' };
         }
         
-        return heroFacets[facetIndex];
+        return heroFacetsData[facetIndex];
     };
 
     const handleSave = () => {
         if (!parsedData) return;
+        
+        // Wait for facets to load
+        if (loadingFacets) {
+            alert('Molimo sačekajte da se podaci o facetima učitaju...');
+            return;
+        }
 
         // Inject mapped IDs and facet info
         const finalPlayers = parsedData.players.map(p => {
