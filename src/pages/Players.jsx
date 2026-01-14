@@ -108,7 +108,7 @@ const Players = () => {
     const { teams, tournamentStats } = useTournament();
     const [viewMode, setViewMode] = useState('registration');
     const [selectedPlayer, setSelectedPlayer] = useState(null);
-    const [sortConfig, setSortConfig] = useState([]); // Array of sort configs for multi-sort
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [selectedTeams, setSelectedTeams] = useState(new Set()); // Set of selected team names
     const [showTeamFilter, setShowTeamFilter] = useState(false);
 
@@ -190,38 +190,27 @@ const Players = () => {
         }
     };
 
-    // Multi-sort function
+    // Sort function
     const sortedPlayers = useMemo(() => {
         let sortablePlayers = [...filteredPlayers];
-        
-        if (sortConfig.length > 0) {
+        if (sortConfig.key !== null) {
             sortablePlayers.sort((a, b) => {
-                // Apply all sort criteria in order
-                for (const { key, direction } of sortConfig) {
-                    const aValue = getSortValue(a, key);
-                    const bValue = getSortValue(b, key);
-                    
-                    let comparison = 0;
-                    
-                    // Handle string comparison
-                    if (typeof aValue === 'string' && typeof bValue === 'string') {
-                        comparison = aValue.localeCompare(bValue);
-                    } else {
-                        // Handle numeric comparison
-                        comparison = aValue - bValue;
-                    }
-                    
-                    // If values are different, return the comparison with direction
-                    if (comparison !== 0) {
-                        return direction === 'asc' ? comparison : -comparison;
-                    }
+                const aValue = getSortValue(a, sortConfig.key);
+                const bValue = getSortValue(b, sortConfig.key);
+                
+                let comparison = 0;
+                
+                // Handle string comparison
+                if (typeof aValue === 'string' && typeof bValue === 'string') {
+                    comparison = aValue.localeCompare(bValue);
+                } else {
+                    // Handle numeric comparison
+                    comparison = aValue - bValue;
                 }
                 
-                // If all sort criteria are equal, return 0
-                return 0;
+                return sortConfig.direction === 'asc' ? comparison : -comparison;
             });
         }
-        
         return sortablePlayers;
     }, [filteredPlayers, sortConfig, tournamentStats, viewMode]);
 
@@ -246,60 +235,23 @@ const Players = () => {
         setSelectedTeams(new Set());
     };
 
-    // Handle sort click (supports Ctrl/Cmd for multi-sort)
-    const handleSort = (key, event) => {
-        const isMultiSort = event.ctrlKey || event.metaKey;
-        
-        if (isMultiSort) {
-            // Multi-sort logic
-            const existingIndex = sortConfig.findIndex(config => config.key === key);
-            let newSortConfig = [...sortConfig];
-            
-            if (existingIndex !== -1) {
-                // Toggle direction for existing sort
-                const existing = newSortConfig[existingIndex];
-                newSortConfig[existingIndex] = {
-                    ...existing,
-                    direction: existing.direction === 'asc' ? 'desc' : 'asc'
-                };
-            } else {
-                // Add new sort criteria
-                newSortConfig.push({ key, direction: 'asc' });
-            }
-            
-            setSortConfig(newSortConfig);
-        } else {
-            // Single sort logic (replace all)
-            const existing = sortConfig.find(config => config.key === key);
-            let direction = 'asc';
-            
-            if (existing) {
-                direction = existing.direction === 'asc' ? 'desc' : 'asc';
-            }
-            
-            setSortConfig([{ key, direction }]);
+    // Handle sort click
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
         }
+        setSortConfig({ key, direction });
     };
 
     // Sort icon component
     const SortIcon = ({ columnKey }) => {
-        const sortConfigItem = sortConfig.find(config => config.key === columnKey);
-        const sortIndex = sortConfig.findIndex(config => config.key === columnKey);
-        
-        if (!sortConfigItem) {
+        if (sortConfig.key !== columnKey) {
             return <span style={{ opacity: 0.3, fontSize: '0.8rem', marginLeft: '4px' }}>↕</span>;
         }
-        
-        return (
-            <span style={{ fontSize: '0.8rem', marginLeft: '4px' }}>
-                {sortConfigItem.direction === 'asc' ? '↑' : '↓'}
-                {sortIndex > 0 && (
-                    <span style={{ fontSize: '0.6rem', opacity: 0.7, marginLeft: '2px' }}>
-                        {sortIndex + 1}
-                    </span>
-                )}
-            </span>
-        );
+        return <span style={{ fontSize: '0.8rem', marginLeft: '4px' }}>
+            {sortConfig.direction === 'asc' ? '↑' : '↓'}
+        </span>;
     };
 
     return (
@@ -338,7 +290,7 @@ const Players = () => {
                         <tr style={{ backgroundColor: 'var(--bg-secondary)', textAlign: 'left' }}>
                             <th 
                                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
-                                onClick={(e) => handleSort('personaName', e)}
+                                onClick={() => handleSort('personaName')}
                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
@@ -346,7 +298,7 @@ const Players = () => {
                             </th>
                             <th 
                                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', position: 'relative' }}
-                                onClick={() => setShowTeamFilter(!showTeamFilter)}
+                                onClick={(e) => { e.stopPropagation(); setShowTeamFilter(!showTeamFilter); }}
                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
@@ -372,7 +324,7 @@ const Players = () => {
                                 <>
                                     <th 
                                         style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
-                                        onClick={(e) => handleSort('rankTier', e)}
+                                        onClick={() => handleSort('rankTier')}
                                         onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                     >
@@ -380,7 +332,7 @@ const Players = () => {
                                     </th>
                                     <th 
                                         style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
-                                        onClick={(e) => handleSort('winrate', e)}
+                                        onClick={() => handleSort('winrate')}
                                         onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                     >
@@ -390,7 +342,7 @@ const Players = () => {
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                                             <span 
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
-                                                onClick={(e) => handleSort('gpm', e)}
+                                                onClick={() => handleSort('gpm')}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
@@ -399,7 +351,7 @@ const Players = () => {
                                             <span>/</span>
                                             <span 
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
-                                                onClick={(e) => handleSort('xpm', e)}
+                                                onClick={() => handleSort('xpm')}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
@@ -412,7 +364,7 @@ const Players = () => {
                                 <>
                                     <th 
                                         style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
-                                        onClick={(e) => handleSort('matches', e)}
+                                        onClick={() => handleSort('matches')}
                                         onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                     >
@@ -422,7 +374,7 @@ const Players = () => {
                                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                                             <span 
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
-                                                onClick={(e) => handleSort('kills', e)}
+                                                onClick={() => handleSort('kills')}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
@@ -431,7 +383,7 @@ const Players = () => {
                                             <span>/</span>
                                             <span 
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
-                                                onClick={(e) => handleSort('deaths', e)}
+                                                onClick={() => handleSort('deaths')}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
@@ -440,7 +392,7 @@ const Players = () => {
                                             <span>/</span>
                                             <span 
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
-                                                onClick={(e) => handleSort('assists', e)}
+                                                onClick={() => handleSort('assists')}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
