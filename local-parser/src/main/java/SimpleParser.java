@@ -416,9 +416,41 @@ public class SimpleParser {
                 ward.put("y", y);
                 ward.put("owner", getProperty(e, "m_hOwnerEntity"));
                 ward.put("time", getGameTime());
+                
+                // Determine team from owner entity
+                Integer ownerHandle = getProperty(e, "m_hOwnerEntity");
+                String team = "Unknown";
+                if (ownerHandle != null) {
+                    Entities entities = runner.getContext().getProcessor(Entities.class);
+                    Entity ownerEntity = entities.getByHandle(ownerHandle);
+                    if (ownerEntity != null) {
+                        // Check if owner is a player and get their team
+                        String ownerName = ownerEntity.getDtClass().getDtName();
+                        if (ownerName.contains("Hero")) {
+                            // Get player team from PlayerResource
+                            Entity pr = entities.getByDtName("CDOTA_PlayerResource");
+                            if (pr != null) {
+                                // Find which player owns this hero
+                                for (int i = 0; i < 24; i++) {
+                                    Integer playerHeroHandle = getProperty(pr,
+                                            "m_vecPlayerTeamData." + Util.arrayIdxToString(i) + ".m_hSelectedHero");
+                                    if (playerHeroHandle != null && playerHeroHandle.equals(ownerHandle)) {
+                                        Integer playerTeam = getProperty(pr, "m_vecPlayerData." + Util.arrayIdxToString(i) + ".m_iPlayerTeam");
+                                        if (playerTeam != null) {
+                                            team = (playerTeam == 2) ? "Radiant" : (playerTeam == 3) ? "Dire" : "Unknown";
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                ward.put("team", team);
                 wardLog.add(ward);
                 
-                log("DEBUG: Ward placed - Type: " + type + ", X: " + x + ", Y: " + y);
+                log("DEBUG: Ward placed - Type: " + type + ", Team: " + team + ", X: " + x + ", Y: " + y);
             }
         }
     }
