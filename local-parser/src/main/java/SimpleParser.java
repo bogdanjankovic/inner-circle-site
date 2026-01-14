@@ -401,8 +401,16 @@ public class SimpleParser {
             }
         }
 
-        // Only detect placed wards (NPC), not items in inventory
-        if (name.equals("CDOTA_NPC_Observer_Ward") || name.equals("CDOTA_NPC_Sentry_Ward")) {
+        // Debug: Log all ward-related entities to find correct names
+        if (name.contains("Ward") && !name.contains("Wardrums")) {
+            int x = getIntPropertyDirect(e, "CBodyComponent.m_cellX", 0);
+            int y = getIntPropertyDirect(e, "CBodyComponent.m_cellY", 0);
+            log("DEBUG: Ward entity: " + name + ", X: " + x + ", Y: " + y);
+        }
+        
+        // Detect placed wards - Observer and Sentry NPCs on the map
+        if (name.equals("CDOTA_NPC_Observer_Ward") || name.equals("CDOTA_NPC_Sentry_Ward") || 
+            name.equals("CDOTA_BaseNPC_SentryWard") || name.equals("CDOTA_Unit_SentryWard")) {
             Map<String, Object> ward = new HashMap<>();
             String type = name.contains("Sentry") ? "Sentry" : "Observer";
             
