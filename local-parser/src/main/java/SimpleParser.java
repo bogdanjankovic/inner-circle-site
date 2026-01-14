@@ -407,15 +407,32 @@ public class SimpleParser {
             if (name.contains("Sentry")) {
                 type = "Sentry";
             }
+            
+            // Try different coordinate properties for sentry wards
+            int x = getIntPropertyDirect(e, "CBodyComponent.m_cellX", 0);
+            int y = getIntPropertyDirect(e, "CBodyComponent.m_cellY", 0);
+            
+            // If coordinates are 0, try alternative properties for sentry wards
+            if (x == 0 && y == 0 && type.equals("Sentry")) {
+                x = getIntPropertyDirect(e, "m_vecOrigin.x", 0);
+                y = getIntPropertyDirect(e, "m_vecOrigin.y", 0);
+                
+                // Try another fallback
+                if (x == 0 && y == 0) {
+                    x = getIntPropertyDirect(e, "CBodyComponent.m_vecX", 0);
+                    y = getIntPropertyDirect(e, "CBodyComponent.m_vecY", 0);
+                }
+            }
+            
             ward.put("type", type);
-            ward.put("x", getIntPropertyDirect(e, "CBodyComponent.m_cellX", 0));
-            ward.put("y", getIntPropertyDirect(e, "CBodyComponent.m_cellY", 0));
+            ward.put("x", x);
+            ward.put("y", y);
             ward.put("owner", getProperty(e, "m_hOwnerEntity"));
             ward.put("time", getGameTime());
             wardLog.add(ward);
             
             // Debug log for wards
-            log("DEBUG: Ward found - Type: " + type + ", Name: " + name + ", X: " + ward.get("x") + ", Y: " + ward.get("y"));
+            log("DEBUG: Ward found - Type: " + type + ", Name: " + name + ", X: " + x + ", Y: " + y);
         }
     }
 
