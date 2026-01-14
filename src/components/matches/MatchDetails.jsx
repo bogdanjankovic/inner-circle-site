@@ -429,7 +429,7 @@ const HeatmapOverlay = ({ players, wards }) => {
                             backgroundImage: `url('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/minimap/minimap_simple.png')`,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
-                            filter: 'grayscale(80%) brightness(0.5) contrast(1.3)',
+                            filter: 'grayscale(50%) brightness(0.7) contrast(1.1)',
                             zIndex: 1
                         }}
                     />
