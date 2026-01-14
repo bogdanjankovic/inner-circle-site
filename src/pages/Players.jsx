@@ -109,13 +109,26 @@ const Players = () => {
     const [viewMode, setViewMode] = useState('registration');
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+    const [selectedTeams, setSelectedTeams] = useState(new Set()); // Set of selected team names
+    const [showTeamFilter, setShowTeamFilter] = useState(false);
 
     // Flatten all players from all teams
     const allPlayers = teams.flatMap(t => t.players.map(p => ({ ...p, teamName: t.name })));
 
+    // Get unique team names
+    const allTeamNames = [...new Set(allPlayers.map(p => p.teamName).filter(Boolean))];
+
+    // Filter players by selected teams
+    const filteredPlayers = useMemo(() => {
+        if (selectedTeams.size === 0) {
+            return allPlayers; // Show all if no teams selected
+        }
+        return allPlayers.filter(player => selectedTeams.has(player.teamName));
+    }, [allPlayers, selectedTeams]);
+
     // Sort function
     const sortedPlayers = useMemo(() => {
-        let sortablePlayers = [...allPlayers];
+        let sortablePlayers = [...filteredPlayers];
         if (sortConfig.key !== null) {
             sortablePlayers.sort((a, b) => {
                 let aValue, bValue;
@@ -238,7 +251,28 @@ const Players = () => {
             });
         }
         return sortablePlayers;
-    }, [allPlayers, sortConfig, tournamentStats]);
+    }, [filteredPlayers, sortConfig, tournamentStats]);
+
+    // Handle team filter toggle
+    const handleTeamToggle = (teamName) => {
+        const newSelectedTeams = new Set(selectedTeams);
+        if (newSelectedTeams.has(teamName)) {
+            newSelectedTeams.delete(teamName);
+        } else {
+            newSelectedTeams.add(teamName);
+        }
+        setSelectedTeams(newSelectedTeams);
+    };
+
+    // Select all teams
+    const selectAllTeams = () => {
+        setSelectedTeams(new Set(allTeamNames));
+    };
+
+    // Deselect all teams
+    const deselectAllTeams = () => {
+        setSelectedTeams(new Set());
+    };
 
     // Handle sort click
     const handleSort = (key) => {
@@ -289,7 +323,7 @@ const Players = () => {
                 </div>
             </div>
 
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div className="card" style={{ padding: 0, overflow: 'hidden', position: 'relative' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
                     <thead>
                         <tr style={{ backgroundColor: 'var(--bg-secondary)', textAlign: 'left' }}>
@@ -302,12 +336,28 @@ const Players = () => {
                                 Igrač <SortIcon columnKey="personaName" />
                             </th>
                             <th 
-                                style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
-                                onClick={() => handleSort('teamName')}
+                                style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', position: 'relative' }}
+                                onClick={() => setShowTeamFilter(!showTeamFilter)}
                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
-                                Tim <SortIcon columnKey="teamName" />
+                                Tim <span style={{ opacity: 0.5, fontSize: '0.8rem' }}>▼</span>
+                                {selectedTeams.size > 0 && (
+                                    <span style={{ 
+                                        background: 'var(--accent)', 
+                                        color: 'white', 
+                                        borderRadius: '50%', 
+                                        width: '16px', 
+                                        height: '16px', 
+                                        display: 'inline-flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center', 
+                                        fontSize: '0.7rem', 
+                                        marginLeft: '4px' 
+                                    }}>
+                                        {selectedTeams.size}
+                                    </span>
+                                )}
                             </th>
                             {viewMode === 'registration' ? (
                                 <>
@@ -462,6 +512,84 @@ const Players = () => {
                         )}
                     </tbody>
                 </table>
+            
+            {/* Team Filter Dropdown */}
+            {showTeamFilter && (
+                <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: '0',
+                    right: '0',
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    padding: '1rem',
+                    marginTop: '0.5rem',
+                    zIndex: 1000,
+                    maxHeight: '300px',
+                    overflowY: 'auto'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem' }}>Filter Timova</h4>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                                onClick={selectAllTeams}
+                                style={{
+                                    padding: '0.25rem 0.5rem',
+                                    fontSize: '0.8rem',
+                                    background: 'var(--accent)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '2px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Svi
+                            </button>
+                            <button
+                                onClick={deselectAllTeams}
+                                style={{
+                                    padding: '0.25rem 0.5rem',
+                                    fontSize: '0.8rem',
+                                    background: '#666',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '2px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Ništa
+                            </button>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {allTeamNames.map(teamName => (
+                            <label
+                                key={teamName}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    cursor: 'pointer',
+                                    padding: '0.25rem',
+                                    borderRadius: '2px',
+                                    transition: 'background-color 0.2s'
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selectedTeams.has(teamName)}
+                                    onChange={() => handleTeamToggle(teamName)}
+                                    style={{ cursor: 'pointer' }}
+                                />
+                                <span style={{ fontSize: '0.9rem' }}>{teamName}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            )}
             </div>
 
             {viewMode === 'tournament' && (
