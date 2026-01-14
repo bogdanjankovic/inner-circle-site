@@ -154,12 +154,7 @@ const PlayerModal = ({ player, onClose, stats }) => {
                             💡 Da bi video heroje za specifičnu poziciju, admin treba da postavi poziciju za ovog igrača.
                         </p>
                     )}
-                    {refreshedPlayer.position && (
-                        <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>
-                            🎯 Heroji analizirani iz poslednjih 100 mečeva na ovoj poziciji (minimum 10 igara + najviši winrate)
-                        </p>
-                    )}
-                </div>
+                                    </div>
 
             </div>
         </div>
