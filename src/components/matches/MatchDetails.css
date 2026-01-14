@@ -360,6 +360,7 @@
     background-size: cover;
     background-position: center;
     border: 2px solid #333;
+    filter: grayscale(70%) brightness(0.4) contrast(1.2);
 }
 
 .ward-icon {
