@@ -137,8 +137,29 @@ const Players = () => {
                             : bValue.localeCompare(aValue);
                     
                     case 'rankTier':
-                        aValue = a.rankTier || 0;
-                        bValue = b.rankTier || 0;
+                        // Rank sorting logic: Immortal with leaderboard rank > Immortal without rank > lower ranks
+                        const getRankValue = (player) => {
+                            const rank = player.rankTier || 0;
+                            const leaderboardRank = player.leaderboardRank;
+                            
+                            // If rank is 8 (Immortal) and has leaderboard rank
+                            if (rank === 8 && leaderboardRank) {
+                                // Lower leaderboard rank = better player, so we invert it for sorting
+                                // Rank 29 is better than 4970, so we use -leaderboardRank
+                                return 10000 - leaderboardRank; // 10000 ensures Immortals are above all other ranks
+                            }
+                            // If rank is 8 (Immortal) but no leaderboard rank
+                            else if (rank === 8) {
+                                return 9999; // Just below ranked Immortals, above all other ranks
+                            }
+                            // All other ranks (1-7)
+                            else {
+                                return rank;
+                            }
+                        };
+                        
+                        aValue = getRankValue(a);
+                        bValue = getRankValue(b);
                         return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
                     
                     case 'winrate':
