@@ -392,7 +392,7 @@ const HeatmapOverlay = ({ players, wards }) => {
 
             players.forEach(p => {
                 if (!p.positions) return;
-                const color = p.team === 'Radiant' ? 'rgba(0, 255, 64, 0.05)' : 'rgba(255, 60, 60, 0.05)';
+                const color = p.team === 'Radiant' ? 'rgba(0, 255, 64, 0.08)' : 'rgba(255, 60, 60, 0.08)';
                 ctx.fillStyle = color;
                 ctx.shadowColor = color;
 
@@ -429,7 +429,7 @@ const HeatmapOverlay = ({ players, wards }) => {
                             backgroundImage: `url('/assets/images/dota_map_733.png')`,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
-                            filter: 'grayscale(50%) brightness(0.7) contrast(1.1)',
+                            filter: 'grayscale(90%) brightness(0.6) contrast(1.1)',
                             zIndex: 1
                         }}
                     />
