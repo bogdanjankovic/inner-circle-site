@@ -351,7 +351,7 @@ const Players = () => {
                                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', position: 'relative', minWidth: '120px' }}
                                 onClick={(e) => { e.stopPropagation(); setShowPositionFilter(!showPositionFilter); }}
                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
-                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}}
+                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
                                 Pozicija <span style={{ opacity: 0.5, fontSize: '0.8rem' }}>▼</span>
                                 {selectedPositions.size > 0 && (
@@ -556,7 +556,7 @@ const Players = () => {
                                             <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600', color: 'var(--accent)' }}>Filter Timova</h4>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <button
-                                                    onClick={(e) => { selectAllTeams(); }}
+                                                    onClick={() => { selectAllTeams(); }}
                                                     style={{
                                                         padding: '0.4rem 0.8rem',
                                                         fontSize: '0.85rem',
@@ -574,7 +574,7 @@ const Players = () => {
                                                     Svi
                                                 </button>
                                                 <button
-                                                    onClick={(e) => { deselectAllTeams(); }}
+                                                    onClick={() => { deselectAllTeams(); }}
                                                     style={{
                                                         padding: '0.4rem 0.8rem',
                                                         fontSize: '0.85rem',
