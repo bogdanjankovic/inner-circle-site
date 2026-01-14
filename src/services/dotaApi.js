@@ -74,6 +74,17 @@ export const getTopHeroesByPosition = (heroes, position) => {
  * @param {string} steamId - SteamID64 or AccountID
  * @param {number} position - Position ID (1-5) for position-specific heroes
  */
+export const getHeroConstants = async () => {
+    try {
+        const response = await fetch(`${API_URL}/constants/heroes`);
+        if (!response.ok) throw new Error('Failed to fetch hero constants');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching hero constants:', error);
+        return {};
+    }
+};
+
 export const fetchPlayerData = async (steamId, position = null) => {
     // Basic heuristic: if length > 12 likely SteamID64
     const accountId = steamId.length > 12 ? steamIdToAccountId(steamId) : steamId;
