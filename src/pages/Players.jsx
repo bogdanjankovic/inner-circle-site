@@ -104,6 +104,16 @@ const PlayerModal = ({ player, onClose, stats }) => {
     );
 };
 
+// Sort icon component
+const SortIcon = ({ columnKey, sortConfig }) => {
+    if (sortConfig.key !== columnKey) {
+        return <span style={{ opacity: 0.3, fontSize: '0.8rem', marginLeft: '4px' }}>↕</span>;
+    }
+    return <span style={{ fontSize: '0.8rem', marginLeft: '4px' }}>
+        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+    </span>;
+};
+
 const Players = () => {
     const { teams, tournamentStats } = useTournament();
     const [viewMode, setViewMode] = useState('registration');
@@ -244,16 +254,7 @@ const Players = () => {
         setSortConfig({ key, direction });
     };
 
-    // Sort icon component
-    const SortIcon = ({ columnKey }) => {
-        if (sortConfig.key !== columnKey) {
-            return <span style={{ opacity: 0.3, fontSize: '0.8rem', marginLeft: '4px' }}>↕</span>;
-        }
-        return <span style={{ fontSize: '0.8rem', marginLeft: '4px' }}>
-            {sortConfig.direction === 'asc' ? '↑' : '↓'}
-        </span>;
-    };
-
+    
     return (
         <div className="container" style={{ padding: '4rem 0' }}>
             {selectedPlayer && (
@@ -294,13 +295,13 @@ const Players = () => {
                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
-                                Igrač <SortIcon columnKey="personaName" />
+                                Igrač <SortIcon columnKey="personaName" sortConfig={sortConfig} />
                             </th>
                             <th 
                                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', position: 'relative' }}
                                 onClick={(e) => { e.stopPropagation(); setShowTeamFilter(!showTeamFilter); }}
                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
-                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}}
+                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
                                 Tim <span style={{ opacity: 0.5, fontSize: '0.8rem' }}>▼</span>
                                 {selectedTeams.size > 0 && (
@@ -407,7 +408,7 @@ const Players = () => {
                                         onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                     >
-                                        Rank <SortIcon columnKey="rankTier" />
+                                        Rank <SortIcon columnKey="rankTier" sortConfig={sortConfig} />
                                     </th>
                                     <th 
                                         style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
@@ -415,7 +416,7 @@ const Players = () => {
                                         onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                     >
-                                        Winrate <SortIcon columnKey="winrate" />
+                                        Winrate <SortIcon columnKey="winrate" sortConfig={sortConfig} />
                                     </th>
                                     <th style={{ padding: '1rem' }}>
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -425,7 +426,7 @@ const Players = () => {
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
-                                                GPM <SortIcon columnKey="gpm" />
+                                                GPM <SortIcon columnKey="gpm" sortConfig={sortConfig} />
                                             </span>
                                             <span>/</span>
                                             <span 
@@ -434,7 +435,7 @@ const Players = () => {
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
-                                                XPM <SortIcon columnKey="xpm" />
+                                                XPM <SortIcon columnKey="xpm" sortConfig={sortConfig} />
                                             </span>
                                         </div>
                                     </th>
@@ -447,7 +448,7 @@ const Players = () => {
                                         onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                     >
-                                        Mečeva <SortIcon columnKey="matches" />
+                                        Mečeva <SortIcon columnKey="matches" sortConfig={sortConfig} />
                                     </th>
                                     <th style={{ padding: '1rem', title: 'Kills/Deaths/Assists' }}>
                                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
@@ -457,7 +458,7 @@ const Players = () => {
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
-                                                K <SortIcon columnKey="kills" />
+                                                K <SortIcon columnKey="kills" sortConfig={sortConfig} />
                                             </span>
                                             <span>/</span>
                                             <span 
@@ -466,7 +467,7 @@ const Players = () => {
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
-                                                D <SortIcon columnKey="deaths" />
+                                                D <SortIcon columnKey="deaths" sortConfig={sortConfig} />
                                             </span>
                                             <span>/</span>
                                             <span 
@@ -475,7 +476,7 @@ const Players = () => {
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
-                                                A <SortIcon columnKey="assists" />
+                                                A <SortIcon columnKey="assists" sortConfig={sortConfig} />
                                             </span>
                                         </div>
                                     </th>
