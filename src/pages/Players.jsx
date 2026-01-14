@@ -7,6 +7,33 @@ import { getMatchDetails, fetchPlayerData } from '../services/dotaApi';
 const PlayerModal = ({ player, onClose, stats }) => {
     if (!player) return null;
 
+    const [refreshedPlayer, setRefreshedPlayer] = useState(player);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    // Refresh heroes with new algorithm when modal opens
+    useEffect(() => {
+        const refreshHeroes = async () => {
+            if (player.steamId) {
+                setIsRefreshing(true);
+                try {
+                    const result = await fetchPlayerData(player.steamId, player.position);
+                    if (result.valid) {
+                        setRefreshedPlayer({
+                            ...player,
+                            topHeroes: result.topHeroes
+                        });
+                    }
+                } catch (error) {
+                    console.error('Failed to refresh heroes:', error);
+                } finally {
+                    setIsRefreshing(false);
+                }
+            }
+        };
+
+        refreshHeroes();
+    }, [player.steamId, player.position]);
+
     // Position data
     const positions = [
         { id: 1, name: 'Carry', icon: 'https://i.imgur.com/rL1ZwZ4.png' },
@@ -95,26 +122,41 @@ const PlayerModal = ({ player, onClose, stats }) => {
 
                 <div style={{ marginTop: '2rem' }}>
                     <h3>
-                        {player.position 
-                            ? `Top ${positions.find(p => p.id === player.position)?.name} Heroji` 
+                        {refreshedPlayer.position 
+                            ? `Top ${positions.find(p => p.id === refreshedPlayer.position)?.name} Heroji` 
                             : 'Najuspešniji Heroji (All Time)'}
+                        {isRefreshing && <span style={{ fontSize: '0.8rem', color: '#888' }}> (🔄 osvežavanje...)</span>}
                     </h3>
-                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                        {player.topHeroes?.map((h, i) => (
-                            <div key={i} className="card" style={{ padding: '1rem', flex: 1, textAlign: 'center' }}>
-                                <div style={{ marginBottom: '0.5rem' }}>
-                                    <HeroImage heroId={h.heroId} style={{ width: '60px', height: '60px' }} />
-                                </div>
-                                <div style={{ color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336' }}>
-                                    {h.winrate}% Win
-                                </div>
-                                <div style={{ fontSize: '0.9rem', color: '#888' }}>{h.games} mečeva</div>
+                    {isRefreshing ? (
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', justifyContent: 'center' }}>
+                            <div style={{ textAlign: 'center', color: '#888' }}>
+                                <div>🔄 Učitavanje najboljih heroja...</div>
+                                <div style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>Primenjujem novi algoritam (Games + Winrate)</div>
                             </div>
-                        ))}
-                    </div>
-                    {!player.position && (
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                            {refreshedPlayer.topHeroes?.map((h, i) => (
+                                <div key={i} className="card" style={{ padding: '1rem', flex: 1, textAlign: 'center' }}>
+                                    <div style={{ marginBottom: '0.5rem' }}>
+                                        <HeroImage heroId={h.heroId} style={{ width: '60px', height: '60px' }} />
+                                    </div>
+                                    <div style={{ color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336' }}>
+                                        {h.winrate}% Win
+                                    </div>
+                                    <div style={{ fontSize: '0.9rem', color: '#888' }}>{h.games} mečeva</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {!refreshedPlayer.position && (
                         <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>
                             💡 Da bi video heroje za specifičnu poziciju, admin treba da postavi poziciju za ovog igrača.
+                        </p>
+                    )}
+                    {refreshedPlayer.position && (
+                        <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>
+                            🎯 Heroji filtrirani po poziciji sa novim algoritmom (minimum 10 igara + najviši winrate)
                         </p>
                     )}
                 </div>
