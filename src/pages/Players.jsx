@@ -1,7 +1,7 @@
 import { useTournament } from '../context/TournamentContext';
 import RankDisplay from '../components/ui/RankDisplay';
 import HeroTooltip, { HeroImage } from '../components/ui/HeroTooltip';
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { getMatchDetails, fetchPlayerData } from '../services/dotaApi';
 
 const PlayerModal = ({ player, onClose, stats }) => {
@@ -121,6 +121,20 @@ const Players = () => {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [selectedTeams, setSelectedTeams] = useState(new Set()); // Set of selected team names
     const [showTeamFilter, setShowTeamFilter] = useState(false);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (showTeamFilter && !event.target.closest('th')) {
+                setShowTeamFilter(false);
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, [showTeamFilter]);
 
     // Flatten all players from all teams
     const allPlayers = teams.flatMap(t => t.players.map(p => ({ ...p, teamName: t.name })));
@@ -350,7 +364,7 @@ const Players = () => {
                                             <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600', color: 'var(--accent)' }}>Filter Timova</h4>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <button
-                                                    onClick={(e) => { e.stopPropagation(); selectAllTeams(); }}
+                                                    onClick={(e) => { selectAllTeams(); }}
                                                     style={{
                                                         padding: '0.4rem 0.8rem',
                                                         fontSize: '0.85rem',
@@ -368,7 +382,7 @@ const Players = () => {
                                                     Svi
                                                 </button>
                                                 <button
-                                                    onClick={(e) => { e.stopPropagation(); deselectAllTeams(); }}
+                                                    onClick={(e) => { deselectAllTeams(); }}
                                                     style={{
                                                         padding: '0.4rem 0.8rem',
                                                         fontSize: '0.85rem',
@@ -413,7 +427,7 @@ const Players = () => {
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedTeams.has(teamName)}
-                                                        onChange={(e) => { e.stopPropagation(); handleTeamToggle(teamName); }}
+                                                        onChange={(e) => { handleTeamToggle(teamName); }}
                                                         style={{ 
                                                             cursor: 'pointer',
                                                             width: '16px',
