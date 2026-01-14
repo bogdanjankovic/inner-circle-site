@@ -4,6 +4,7 @@ import { useTournament } from '../context/TournamentContext';
 import { fetchPlayerData } from '../services/dotaApi';
 import RankDisplay from '../components/ui/RankDisplay';
 import ImageUpload from '../components/ui/ImageUpload';
+import { HeroImage } from '../components/ui/HeroTooltip';
 import emailjs from '@emailjs/browser';
 
 const Registration = () => {
@@ -45,7 +46,7 @@ const Registration = () => {
         newPlayers[index].error = null;
         setPlayers(newPlayers);
 
-        const result = await fetchPlayerData(player.steamId);
+        const result = await fetchPlayerData(player.steamId, player.position);
 
         const updatedPlayers = [...players];
         updatedPlayers[index].loading = false;
@@ -68,10 +69,32 @@ const Registration = () => {
         setPlayers(newPlayers);
     };
 
-    const handlePositionChange = (index, positionId) => {
+    const handlePositionChange = async (index, positionId) => {
         const newPlayers = [...players];
         newPlayers[index].position = parseInt(positionId);
         setPlayers(newPlayers);
+
+        // If player data exists, refetch to get position-specific heroes
+        const player = newPlayers[index];
+        if (player.steamId && player.data) {
+            newPlayers[index].loading = true;
+            setPlayers(newPlayers);
+
+            try {
+                const result = await fetchPlayerData(player.steamId, parseInt(positionId));
+                const updatedPlayers = [...newPlayers];
+                updatedPlayers[index].loading = false;
+                
+                if (result.valid) {
+                    updatedPlayers[index].data = result;
+                }
+                setPlayers(updatedPlayers);
+            } catch (error) {
+                const updatedPlayers = [...newPlayers];
+                updatedPlayers[index].loading = false;
+                setPlayers(updatedPlayers);
+            }
+        }
     };
 
     const setCaptain = (index) => {
@@ -217,17 +240,21 @@ const Registration = () => {
 
                                     {/* Position Selector */}
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
-                                        <label style={{ fontSize: '0.7rem', color: '#888' }}>Pozicija</label>
+                                        <label style={{ fontSize: '0.7rem', color: '#888' }}>
+                                            Pozicija {player.position && player.data && '(🔄 osveženo)'}
+                                        </label>
                                         <select
                                             value={player.position}
                                             onChange={(e) => handlePositionChange(index, e.target.value)}
+                                            disabled={player.loading}
                                             style={{
                                                 padding: '0.25rem 0.5rem',
                                                 borderRadius: '4px',
                                                 border: '1px solid var(--border)',
-                                                background: 'var(--bg-secondary)',
+                                                background: player.loading ? '#555' : 'var(--bg-secondary)',
                                                 color: 'var(--text-main)',
-                                                fontSize: '0.8rem'
+                                                fontSize: '0.8rem',
+                                                opacity: player.loading ? 0.6 : 1
                                             }}
                                         >
                                             {positions.map(pos => (
@@ -249,9 +276,43 @@ const Registration = () => {
                                         <div>GPM: {player.data.stats.gpm}</div>
                                         <div>XPM: {player.data.stats.xpm}</div>
                                     </div>
-                                    {/* Debug/Preview Top Heroes */}
+                                    {/* Top Heroes by Position */}
                                     <div style={{ marginLeft: '1rem', fontSize: '0.7rem', color: '#888' }}>
-                                        Best: {player.data.topHeroes?.map(h => h.heroId).join(', ') || 'None'}
+                                        {player.position ? (
+                                            <div>
+                                                <div style={{ marginBottom: '0.25rem', fontWeight: 'bold' }}>
+                                                    Top {positions.find(p => p.id === player.position)?.name} Heroes:
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    {player.data.topHeroes?.map((h, i) => (
+                                                        <div key={i} style={{ textAlign: 'center' }}>
+                                                            <HeroImage heroId={h.heroId} style={{ width: '24px', height: '24px' }} />
+                                                            <div style={{ fontSize: '0.6rem' }}>{h.games}g</div>
+                                                            <div style={{ fontSize: '0.6rem', color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336' }}>
+                                                                {h.winrate}%
+                                                            </div>
+                                                        </div>
+                                                    )) || <span>None</span>}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <div style={{ marginBottom: '0.25rem', fontWeight: 'bold' }}>
+                                                    Top Heroes (All Time):
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    {player.data.topHeroes?.map((h, i) => (
+                                                        <div key={i} style={{ textAlign: 'center' }}>
+                                                            <HeroImage heroId={h.heroId} style={{ width: '24px', height: '24px' }} />
+                                                            <div style={{ fontSize: '0.6rem' }}>{h.games}g</div>
+                                                            <div style={{ fontSize: '0.6rem', color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336' }}>
+                                                                {h.winrate}%
+                                                            </div>
+                                                        </div>
+                                                    )) || <span>None</span>}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}

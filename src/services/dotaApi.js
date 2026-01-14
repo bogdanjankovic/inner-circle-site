@@ -1,5 +1,24 @@
 const API_URL = 'https://api.opendota.com/api';
 
+// Position to hero mapping based on common Dota 2 roles
+const POSITION_HEROES = {
+    1: [ // Carry
+        1, 2, 3, 8, 10, 11, 13, 14, 16, 17, 19, 23, 26, 29, 31, 35, 42, 43, 46, 49, 52, 53, 58, 59, 65, 68, 69, 70, 71, 72, 73, 74, 78, 82, 94, 95, 98, 102, 106, 109, 114, 119, 120, 121, 123, 128, 129
+    ],
+    2: [ // Midlane
+        4, 5, 7, 9, 12, 15, 18, 21, 22, 25, 27, 28, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 44, 45, 47, 48, 50, 51, 54, 55, 56, 57, 60, 61, 62, 63, 64, 66, 67, 75, 76, 77, 79, 80, 81, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 96, 97, 99, 100, 101, 103, 104, 105, 107, 108, 110, 111, 112, 113, 115, 116, 117, 118, 122, 124, 125, 126, 127, 130
+    ],
+    3: [ // Offlaner
+        6, 20, 24, 49, 54, 67, 71, 79, 84, 87, 91, 93, 96, 99, 101, 103, 105, 107, 110, 113, 115, 116, 117, 122, 124, 125, 126, 127, 130
+    ],
+    4: [ // Soft Support
+        6, 20, 24, 49, 54, 67, 71, 79, 84, 87, 91, 93, 96, 99, 101, 103, 105, 107, 110, 113, 115, 116, 117, 122, 124, 125, 126, 127, 130
+    ],
+    5: [ // Hard Support
+        6, 20, 24, 49, 54, 67, 71, 79, 84, 87, 91, 93, 96, 99, 101, 103, 105, 107, 110, 113, 115, 116, 117, 122, 124, 125, 126, 127, 130
+    ]
+};
+
 /**
  * Converts SteamID64 to SteamID32 (Account ID)
  * @param {string} steamId64 
@@ -17,10 +36,45 @@ export const steamIdToAccountId = (steamId64) => {
 };
 
 /**
+ * Filters heroes by position and returns top 3 by games played
+ * @param {Array} heroes - Array of hero data from OpenDota
+ * @param {number} position - Position ID (1-5)
+ * @returns {Array} Top 3 heroes for the position
+ */
+export const getTopHeroesByPosition = (heroes, position) => {
+    if (!position || !POSITION_HEROES[position]) {
+        // If no position specified, return all heroes (current behavior)
+        return heroes
+            .sort((a, b) => b.games - a.games)
+            .slice(0, 3)
+            .map(h => ({
+                heroId: h.hero_id,
+                games: h.games,
+                win: h.win,
+                winrate: ((h.win / h.games) * 100).toFixed(1)
+            }));
+    }
+
+    const positionHeroes = POSITION_HEROES[position];
+    
+    return heroes
+        .filter(hero => positionHeroes.includes(hero.hero_id))
+        .sort((a, b) => b.games - a.games)
+        .slice(0, 3)
+        .map(h => ({
+            heroId: h.hero_id,
+            games: h.games,
+            win: h.win,
+            winrate: ((h.win / h.games) * 100).toFixed(1)
+        }));
+};
+
+/**
  * Fetches comprehensive player data from OpenDota
  * @param {string} steamId - SteamID64 or AccountID
+ * @param {number} position - Position ID (1-5) for position-specific heroes
  */
-export const fetchPlayerData = async (steamId) => {
+export const fetchPlayerData = async (steamId, position = null) => {
     // Basic heuristic: if length > 12 likely SteamID64
     const accountId = steamId.length > 12 ? steamIdToAccountId(steamId) : steamId;
 
@@ -71,18 +125,8 @@ export const fetchPlayerData = async (steamId) => {
             cs: `${Math.round(totalLH / count)}/${Math.round(totalDN / count)}`
         };
 
-        // Top 3 Heroes
-        // heroes endpoint returns all heroes. Sort by games played? Or winrate? 
-        // User said "najigraniji heroji" (most played).
-        const topHeroes = heroes
-            .sort((a, b) => b.games - a.games)
-            .slice(0, 3)
-            .map(h => ({
-                heroId: h.hero_id,
-                games: h.games,
-                win: h.win,
-                winrate: ((h.win / h.games) * 100).toFixed(1) // Calculate winrate here
-            }));
+        // Top 3 Heroes by position (or all heroes if no position specified)
+        const topHeroes = getTopHeroesByPosition(heroes, position);
 
         const winrate = ((wl.win / (wl.win + wl.lose || 1)) * 100).toFixed(1);
 
