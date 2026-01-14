@@ -1,7 +1,7 @@
 import { useTournament } from '../context/TournamentContext';
 import RankDisplay from '../components/ui/RankDisplay';
 import HeroTooltip, { HeroImage } from '../components/ui/HeroTooltip';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getMatchDetails, fetchPlayerData } from '../services/dotaApi';
 
 const PlayerModal = ({ player, onClose, stats }) => {
@@ -108,9 +108,114 @@ const Players = () => {
     const { teams, tournamentStats } = useTournament();
     const [viewMode, setViewMode] = useState('registration');
     const [selectedPlayer, setSelectedPlayer] = useState(null);
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
     // Flatten all players from all teams
     const allPlayers = teams.flatMap(t => t.players.map(p => ({ ...p, teamName: t.name })));
+
+    // Sort function
+    const sortedPlayers = useMemo(() => {
+        let sortablePlayers = [...allPlayers];
+        if (sortConfig.key !== null) {
+            sortablePlayers.sort((a, b) => {
+                let aValue, bValue;
+
+                // Get values based on sort key
+                switch (sortConfig.key) {
+                    case 'personaName':
+                        aValue = a.personaName || '';
+                        bValue = b.personaName || '';
+                        return sortConfig.direction === 'asc' 
+                            ? aValue.localeCompare(bValue)
+                            : bValue.localeCompare(aValue);
+                    
+                    case 'teamName':
+                        aValue = a.teamName || '';
+                        bValue = b.teamName || '';
+                        return sortConfig.direction === 'asc' 
+                            ? aValue.localeCompare(bValue)
+                            : bValue.localeCompare(aValue);
+                    
+                    case 'rankTier':
+                        aValue = a.rankTier || 0;
+                        bValue = b.rankTier || 0;
+                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    
+                    case 'winrate':
+                        const aStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
+                        const bStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
+                        aValue = aStats.matches ? (aStats.wins / aStats.matches) * 100 : 0;
+                        bValue = bStats.matches ? (bStats.wins / bStats.matches) * 100 : 0;
+                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    
+                    case 'gpm':
+                        const aGpmStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
+                        const bGpmStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
+                        aValue = aGpmStats.avgGpm || 0;
+                        bValue = bGpmStats.avgGpm || 0;
+                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    
+                    case 'xpm':
+                        const aXpmStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
+                        const bXpmStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
+                        aValue = aXpmStats.avgXpm || 0;
+                        bValue = bXpmStats.avgXpm || 0;
+                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    
+                    case 'matches':
+                        const aMatchStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
+                        const bMatchStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
+                        aValue = aMatchStats.matches || 0;
+                        bValue = bMatchStats.matches || 0;
+                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    
+                    case 'kills':
+                        const aKillStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
+                        const bKillStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
+                        aValue = aKillStats.kills || 0;
+                        bValue = bKillStats.kills || 0;
+                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    
+                    case 'deaths':
+                        const aDeathStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
+                        const bDeathStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
+                        aValue = aDeathStats.deaths || 0;
+                        bValue = bDeathStats.deaths || 0;
+                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    
+                    case 'assists':
+                        const aAssistStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
+                        const bAssistStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
+                        aValue = aAssistStats.assists || 0;
+                        bValue = bAssistStats.assists || 0;
+                        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    
+                    default:
+                        return 0;
+                }
+            });
+        }
+        return sortablePlayers;
+    }, [allPlayers, sortConfig, tournamentStats]);
+
+    // Handle sort click
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    // Sort icon component
+    const SortIcon = ({ columnKey }) => {
+        if (sortConfig.key !== columnKey) {
+            return <span style={{ opacity: 0.3, fontSize: '0.8rem', marginLeft: '4px' }}>↕</span>;
+        }
+        return <span style={{ fontSize: '0.8rem', marginLeft: '4px' }}>
+            {sortConfig.direction === 'asc' ? '↑' : '↓'}
+        </span>;
+    };
 
     return (
         <div className="container" style={{ padding: '4rem 0' }}>
@@ -146,18 +251,102 @@ const Players = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
                     <thead>
                         <tr style={{ backgroundColor: 'var(--bg-secondary)', textAlign: 'left' }}>
-                            <th style={{ padding: '1rem' }}>Igrač</th>
-                            <th style={{ padding: '1rem' }}>Tim</th>
+                            <th 
+                                style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
+                                onClick={() => handleSort('personaName')}
+                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                Igrač <SortIcon columnKey="personaName" />
+                            </th>
+                            <th 
+                                style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
+                                onClick={() => handleSort('teamName')}
+                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                Tim <SortIcon columnKey="teamName" />
+                            </th>
                             {viewMode === 'registration' ? (
                                 <>
-                                    <th style={{ padding: '1rem' }}>Rank</th>
-                                    <th style={{ padding: '1rem' }}>Winrate</th>
-                                    <th style={{ padding: '1rem' }}>GPM / XPM</th>
+                                    <th 
+                                        style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
+                                        onClick={() => handleSort('rankTier')}
+                                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                    >
+                                        Rank <SortIcon columnKey="rankTier" />
+                                    </th>
+                                    <th 
+                                        style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
+                                        onClick={() => handleSort('winrate')}
+                                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                    >
+                                        Winrate <SortIcon columnKey="winrate" />
+                                    </th>
+                                    <th style={{ padding: '1rem' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <span 
+                                                style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
+                                                onClick={() => handleSort('gpm')}
+                                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                                GPM <SortIcon columnKey="gpm" />
+                                            </span>
+                                            <span>/</span>
+                                            <span 
+                                                style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
+                                                onClick={() => handleSort('xpm')}
+                                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                                XPM <SortIcon columnKey="xpm" />
+                                            </span>
+                                        </div>
+                                    </th>
                                 </>
                             ) : (
                                 <>
-                                    <th style={{ padding: '1rem' }}>Mečeva</th>
-                                    <th style={{ padding: '1rem', title: 'Kills/Deaths/Assists' }}>K/D/A</th>
+                                    <th 
+                                        style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
+                                        onClick={() => handleSort('matches')}
+                                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                    >
+                                        Mečeva <SortIcon columnKey="matches" />
+                                    </th>
+                                    <th style={{ padding: '1rem', title: 'Kills/Deaths/Assists' }}>
+                                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                            <span 
+                                                style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
+                                                onClick={() => handleSort('kills')}
+                                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                                K <SortIcon columnKey="kills" />
+                                            </span>
+                                            <span>/</span>
+                                            <span 
+                                                style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
+                                                onClick={() => handleSort('deaths')}
+                                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                                D <SortIcon columnKey="deaths" />
+                                            </span>
+                                            <span>/</span>
+                                            <span 
+                                                style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
+                                                onClick={() => handleSort('assists')}
+                                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                                A <SortIcon columnKey="assists" />
+                                            </span>
+                                        </div>
+                                    </th>
                                     <th style={{ padding: '1rem' }}>Ciljevi (Rosh/Tor/Runes)</th>
                                     <th style={{ padding: '1rem' }}>Neutral Tokens</th>
                                 </>
@@ -165,7 +354,7 @@ const Players = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {allPlayers.length > 0 ? allPlayers.map((player, idx) => {
+                        {sortedPlayers.length > 0 ? sortedPlayers.map((player, idx) => {
                             const tStats = player.steamId && tournamentStats[player.steamId]
                                 ? tournamentStats[player.steamId]
                                 : { matches: 0, kills: 0, deaths: 0, assists: 0, roshansKilled: 0, tormentorsKilled: 0, runesActivated: 0, neutralTokens: 0 };
