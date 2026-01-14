@@ -418,7 +418,21 @@ const HeatmapOverlay = ({ players, wards }) => {
 
             {/* Map Container - Centered */}
             <div className="minimap-container" style={{ position: 'relative', width: '512px', height: '512px', flex: '0 0 auto', border: '1px solid #333', boxShadow: '0 0 20px rgba(0,0,0,0.5)' }}>
-                <div className="minimap" style={{ width: '100%', height: '100%', backgroundImage: `url('/assets/images/dota_map_733.png')`, backgroundSize: 'cover', position: 'relative' }}>
+                <div className="minimap" style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    <div 
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundImage: `url('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/minimap/minimap_simple.png')`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            filter: 'grayscale(100%) brightness(0.3) contrast(1.5)',
+                            zIndex: 1
+                        }}
+                    />
                     <canvas
                         ref={canvasRef}
                         width={512}
