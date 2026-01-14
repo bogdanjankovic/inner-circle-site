@@ -7,32 +7,10 @@ import { getMatchDetails, fetchPlayerData } from '../services/dotaApi';
 const PlayerModal = ({ player, onClose, stats }) => {
     if (!player) return null;
 
-    const [refreshedPlayer, setRefreshedPlayer] = useState(player);
-    const [isRefreshing, setIsRefreshing] = useState(false);
-
-    // Refresh heroes with new algorithm when modal opens
-    useEffect(() => {
-        const refreshHeroes = async () => {
-            if (player.steamId) {
-                setIsRefreshing(true);
-                try {
-                    const result = await fetchPlayerData(player.steamId, player.position);
-                    if (result.valid) {
-                        setRefreshedPlayer({
-                            ...player,
-                            topHeroes: result.topHeroes
-                        });
-                    }
-                } catch (error) {
-                    console.error('Failed to refresh heroes:', error);
-                } finally {
-                    setIsRefreshing(false);
-                }
-            }
-        };
-
-        refreshHeroes();
-    }, [player.steamId, player.position]);
+    // Use player data directly - no auto-refresh
+    // Heroes are refreshed only when:
+    // 1. Admin changes position in admin panel
+    // 2. Player registers for first time
 
     // Position data
     const positions = [
@@ -122,34 +100,24 @@ const PlayerModal = ({ player, onClose, stats }) => {
 
                 <div style={{ marginTop: '2rem' }}>
                     <h3>
-                        {refreshedPlayer.position 
-                            ? `Top ${positions.find(p => p.id === refreshedPlayer.position)?.name} Heroji` 
+                        {player.position 
+                            ? `Top ${positions.find(p => p.id === player.position)?.name} Heroji` 
                             : 'Najuspešniji Heroji (All Time)'}
-                        {isRefreshing && <span style={{ fontSize: '0.8rem', color: '#888' }}> (🔄 osvežavanje...)</span>}
                     </h3>
-                    {isRefreshing ? (
-                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', justifyContent: 'center' }}>
-                            <div style={{ textAlign: 'center', color: '#888' }}>
-                                <div>🔄 Analiziram poslednjih 100 mečeva...</div>
-                                <div style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>Brojim igare na poziciji + winrate</div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                            {refreshedPlayer.topHeroes?.map((h, i) => (
-                                <div key={i} className="card" style={{ padding: '1rem', flex: 1, textAlign: 'center' }}>
-                                    <div style={{ marginBottom: '0.5rem' }}>
-                                        <HeroImage heroId={h.heroId} style={{ width: '60px', height: '60px' }} />
-                                    </div>
-                                    <div style={{ color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336' }}>
-                                        {h.winrate}% Win
-                                    </div>
-                                    <div style={{ fontSize: '0.9rem', color: '#888' }}>{h.games} mečeva</div>
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                        {player.topHeroes?.map((h, i) => (
+                            <div key={i} className="card" style={{ padding: '1rem', flex: 1, textAlign: 'center' }}>
+                                <div style={{ marginBottom: '0.5rem' }}>
+                                    <HeroImage heroId={h.heroId} style={{ width: '60px', height: '60px' }} />
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                    {!refreshedPlayer.position && (
+                                <div style={{ color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336' }}>
+                                    {h.winrate}% Win
+                                </div>
+                                <div style={{ fontSize: '0.9rem', color: '#888' }}>{h.games} mečeva</div>
+                            </div>
+                        ))}
+                    </div>
+                    {!player.position && (
                         <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>
                             💡 Da bi video heroje za specifičnu poziciju, admin treba da postavi poziciju za ovog igrača.
                         </p>

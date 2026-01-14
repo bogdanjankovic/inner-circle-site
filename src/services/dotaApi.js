@@ -86,9 +86,7 @@ export const getTopHeroesByPosition = async (accountId, position) => {
         const response = await fetch(`${API_URL}/players/${accountId}/heroes?lane=${lane}`);
         const heroes = await response.json();
         
-        console.log(`Lane: ${lane}, Heroes found: ${heroes.length}`);
-        console.log('Raw heroes data:', heroes);
-        
+                
         // Prvo pokušaj sa minimum 10 igara
         let filteredHeroes = heroes.filter(h => h.games >= 10);
         
