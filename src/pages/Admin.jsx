@@ -6,6 +6,7 @@ import RankDisplay from '../components/ui/RankDisplay';
 import ImageUpload from '../components/ui/ImageUpload';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { fetchPlayerData } from '../services/dotaApi';
 
 // Position data
 const positions = [
@@ -21,11 +22,25 @@ const EditTeamModal = ({ team, onClose, onSave }) => {
     const [logo, setLogo] = useState(team.logo);
     const [players, setPlayers] = useState(JSON.parse(JSON.stringify(team.players)));
 
-    const handlePlayerChange = (idx, field, value) => {
+    const handlePlayerChange = async (idx, field, value) => {
         const newPlayers = [...players];
         if (field === 'personaName') newPlayers[idx].personaName = value;
         if (field === 'position') newPlayers[idx].position = parseInt(value);
         setPlayers(newPlayers);
+
+        // If position changed and player has steamId, refetch heroes
+        if (field === 'position' && newPlayers[idx].steamId) {
+            try {
+                const result = await fetchPlayerData(newPlayers[idx].steamId, parseInt(value));
+                if (result.valid) {
+                    const updatedPlayers = [...newPlayers];
+                    updatedPlayers[idx].topHeroes = result.topHeroes;
+                    setPlayers(updatedPlayers);
+                }
+            } catch (error) {
+                console.error('Failed to fetch position-specific heroes:', error);
+            }
+        }
     };
 
     const handleRemovePlayer = (idx) => {

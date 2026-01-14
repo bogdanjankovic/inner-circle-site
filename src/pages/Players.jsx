@@ -7,6 +7,15 @@ import { getMatchDetails, fetchPlayerData } from '../services/dotaApi';
 const PlayerModal = ({ player, onClose, stats }) => {
     if (!player) return null;
 
+    // Position data
+    const positions = [
+        { id: 1, name: 'Carry', icon: 'https://i.imgur.com/rL1ZwZ4.png' },
+        { id: 2, name: 'Midlane', icon: 'https://i.imgur.com/7oAbbDo.png' },
+        { id: 3, name: 'Offlaner', icon: 'https://i.imgur.com/ThXJQ0n.png' },
+        { id: 4, name: 'Soft Support', icon: 'https://i.imgur.com/NkAmIjB.png' },
+        { id: 5, name: 'Hard Support', icon: 'https://i.imgur.com/TGv7onk.png' }
+    ];
+
     // We can access tournamentStats from context if we really need independent lookup, 
     // but props 'stats' should be sufficient if passed correctly. 
     // However, to fix the specific "ReferenceError", we must ensure we don't treat 'tournamentStats' as a global.
@@ -85,18 +94,29 @@ const PlayerModal = ({ player, onClose, stats }) => {
                 </div>
 
                 <div style={{ marginTop: '2rem' }}>
-                    <h3>Najuspešniji Heroji</h3>
+                    <h3>
+                        {player.position 
+                            ? `Top ${positions.find(p => p.id === player.position)?.name} Heroji` 
+                            : 'Najuspešniji Heroji (All Time)'}
+                    </h3>
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                         {player.topHeroes?.map((h, i) => (
                             <div key={i} className="card" style={{ padding: '1rem', flex: 1, textAlign: 'center' }}>
                                 <div style={{ marginBottom: '0.5rem' }}>
                                     <HeroImage heroId={h.heroId} style={{ width: '60px', height: '60px' }} />
                                 </div>
-                                <div style={{ color: '#4caf50' }}>{h.winrate}% Win</div>
+                                <div style={{ color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336' }}>
+                                    {h.winrate}% Win
+                                </div>
                                 <div style={{ fontSize: '0.9rem', color: '#888' }}>{h.games} mečeva</div>
                             </div>
                         ))}
                     </div>
+                    {!player.position && (
+                        <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>
+                            💡 Da bi video heroje za specifičnu poziciju, admin treba da postavi poziciju za ovog igrača.
+                        </p>
+                    )}
                 </div>
 
             </div>
