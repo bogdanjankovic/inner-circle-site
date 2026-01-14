@@ -426,13 +426,11 @@ public class SimpleParser {
                     if (ownerEntity != null) {
                         // Check if owner is a player and get their team
                         String ownerName = ownerEntity.getDtClass().getDtName();
-                        log("DEBUG: Ward owner entity: " + ownerName + " (handle: " + ownerHandle + ")");
                         
                         if (ownerName.contains("Hero")) {
-                            // Get player team from PlayerResource
+                            // Sentry wards: Find which player owns this hero
                             Entity pr = entities.getByDtName("CDOTA_PlayerResource");
                             if (pr != null) {
-                                // Find which player owns this hero
                                 for (int i = 0; i < 24; i++) {
                                     Integer playerHeroHandle = getProperty(pr,
                                             "m_vecPlayerTeamData." + Util.arrayIdxToString(i) + ".m_hSelectedHero");
@@ -440,19 +438,16 @@ public class SimpleParser {
                                         Integer playerTeam = getProperty(pr, "m_vecPlayerData." + Util.arrayIdxToString(i) + ".m_iPlayerTeam");
                                         if (playerTeam != null) {
                                             team = (playerTeam == 2) ? "Radiant" : (playerTeam == 3) ? "Dire" : "Unknown";
-                                            log("DEBUG: Found player " + i + " with team " + playerTeam + " for ward");
                                         }
                                         break;
                                     }
                                 }
                             }
-                        } else {
-                            // Try alternative: maybe ward ownership is stored differently
-                            // Check if ward has direct team property
+                        } else if (ownerName.contains("PlayerController")) {
+                            // Observer wards: Use direct team property
                             Integer wardTeam = getIntPropertyDirect(e, "m_iTeamNum", 0);
                             if (wardTeam > 0) {
                                 team = (wardTeam == 2) ? "Radiant" : (wardTeam == 3) ? "Dire" : "Unknown";
-                                log("DEBUG: Ward has direct team property: " + wardTeam);
                             }
                         }
                     }
@@ -461,7 +456,7 @@ public class SimpleParser {
                 ward.put("team", team);
                 wardLog.add(ward);
                 
-                log("DEBUG: Ward placed - Type: " + type + ", Team: " + team + ", Owner: " + ownerHandle + ", X: " + x + ", Y: " + y);
+                log("DEBUG: Ward placed - Type: " + type + ", Team: " + team + ", X: " + x + ", Y: " + y);
             }
         }
     }
