@@ -166,24 +166,42 @@ const Players = () => {
                         return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
                     
                     case 'winrate':
-                        const aStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
-                        const bStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
-                        aValue = aStats.matches ? (aStats.wins / aStats.matches) * 100 : 0;
-                        bValue = bStats.matches ? (bStats.wins / bStats.matches) * 100 : 0;
+                        // For registration mode, use player.stats (pub stats), for tournament mode use tournamentStats
+                        if (viewMode === 'registration') {
+                            aValue = a.winrate || 0;
+                            bValue = b.winrate || 0;
+                        } else {
+                            const aStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
+                            const bStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
+                            aValue = aStats.matches ? (aStats.wins / aStats.matches) * 100 : 0;
+                            bValue = bStats.matches ? (bStats.wins / bStats.matches) * 100 : 0;
+                        }
                         return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
                     
                     case 'gpm':
-                        const aGpmStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
-                        const bGpmStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
-                        aValue = aGpmStats.avgGpm || 0;
-                        bValue = bGpmStats.avgGpm || 0;
+                        // For registration mode, use player.stats.gpm, for tournament mode use tournamentStats.avgGpm
+                        if (viewMode === 'registration') {
+                            aValue = a.stats?.gpm || 0;
+                            bValue = b.stats?.gpm || 0;
+                        } else {
+                            const aGpmStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
+                            const bGpmStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
+                            aValue = aGpmStats.avgGpm || 0;
+                            bValue = bGpmStats.avgGpm || 0;
+                        }
                         return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
                     
                     case 'xpm':
-                        const aXpmStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
-                        const bXpmStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
-                        aValue = aXpmStats.avgXpm || 0;
-                        bValue = bXpmStats.avgXpm || 0;
+                        // For registration mode, use player.stats.xpm, for tournament mode use tournamentStats.avgXpm
+                        if (viewMode === 'registration') {
+                            aValue = a.stats?.xpm || 0;
+                            bValue = b.stats?.xpm || 0;
+                        } else {
+                            const aXpmStats = a.steamId && tournamentStats[a.steamId] ? tournamentStats[a.steamId] : {};
+                            const bXpmStats = b.steamId && tournamentStats[b.steamId] ? tournamentStats[b.steamId] : {};
+                            aValue = aXpmStats.avgXpm || 0;
+                            bValue = bXpmStats.avgXpm || 0;
+                        }
                         return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
                     
                     case 'matches':
