@@ -48,9 +48,25 @@ export const getTopHeroesByPosition = async (accountId, position) => {
             const response = await fetch(`${API_URL}/players/${accountId}/heroes`);
             const heroes = await response.json();
             
-            return heroes
+            // Prvo pokušaj sa minimum 10 igara
+            let filteredHeroes = heroes.filter(h => h.games >= 10);
+            
+            if (filteredHeroes.length < 3) {
+                // Ako nema dovoljno heroja sa 10+ igara, spusti na 5 igara
+                filteredHeroes = heroes.filter(h => h.games >= 5);
+            }
+            
+            if (filteredHeroes.length < 3) {
+                // Ako i dalje nema dovoljno, uzmi sve sa najmanje 1 igrom
+                filteredHeroes = heroes.filter(h => h.games >= 1);
+            }
+            
+            return filteredHeroes
                 .sort((a, b) => b.games - a.games)
-                .slice(0, 3)
+                .slice(0, 10) // Uzmi top 10 po igrama
+                // Zatim sortiraj po winrate među najigranijima
+                .sort((a, b) => (b.win / b.games) - (a.win / a.games))
+                .slice(0, 3) // Uzmi top 3 po winrate-u
                 .map(h => ({
                     heroId: h.hero_id,
                     games: h.games,
@@ -70,15 +86,31 @@ export const getTopHeroesByPosition = async (accountId, position) => {
         const response = await fetch(`${API_URL}/players/${accountId}/heroes?lane=${lane}`);
         const heroes = await response.json();
         
-        return heroes
-            .sort((a, b) => b.games - a.games)
-            .slice(0, 3)
-            .map(h => ({
-                heroId: h.hero_id,
-                games: h.games,
-                win: h.win,
-                winrate: ((h.win / h.games) * 100).toFixed(1)
-            }));
+        // Prvo pokušaj sa minimum 10 igara
+            let filteredHeroes = heroes.filter(h => h.games >= 10);
+            
+            if (filteredHeroes.length < 3) {
+                // Ako nema dovoljno heroja sa 10+ igara, spusti na 5 igara
+                filteredHeroes = heroes.filter(h => h.games >= 5);
+            }
+            
+            if (filteredHeroes.length < 3) {
+                // Ako i dalje nema dovoljno, uzmi sve sa najmanje 1 igrom
+                filteredHeroes = heroes.filter(h => h.games >= 1);
+            }
+            
+            return filteredHeroes
+                .sort((a, b) => b.games - a.games)
+                .slice(0, 10) // Uzmi top 10 po igrama
+                // Zatim sortiraj po winrate među najigranijima
+                .sort((a, b) => (b.win / b.games) - (a.win / a.games))
+                .slice(0, 3) // Uzmi top 3 po winrate-u
+                .map(h => ({
+                    heroId: h.hero_id,
+                    games: h.games,
+                    win: h.win,
+                    winrate: ((h.win / h.games) * 100).toFixed(1)
+                }));
     } catch (error) {
         console.error(`Error fetching ${lane} heroes:`, error);
         return [];
