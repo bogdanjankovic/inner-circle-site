@@ -415,7 +415,7 @@ public class OpenDotaCompleteParserFixed {
                 matchData.start_time = entry.time;
                 break;
                 
-            case "player":
+            case "player_slot":
                 processPlayerEntry(entry, matchData, heroToSlot);
                 break;
                 
@@ -431,16 +431,25 @@ public class OpenDotaCompleteParserFixed {
                 processDamage(entry, matchData, heroToSlot);
                 break;
                 
-            case "DOTA_COMBATLOG_HEALING":
+            case "DOTA_COMBATLOG_HEAL":
                 processHealing(entry, matchData, heroToSlot);
                 break;
                 
-            case "ability_use":
+            case "DOTA_ABILITY_LEVEL":
+                processAbilityLevel(entry, matchData, heroToSlot);
+                break;
+                
+            case "DOTA_COMBATLOG_ABILITY":
                 processAbilityUse(entry, matchData, heroToSlot);
                 break;
                 
-            case "item_use":
-                processItemUse(entry, matchData, heroToSlot);
+            case "DOTA_COMBATLOG_PURCHASE":
+            case "CHAT_MESSAGE_ITEM_PURCHASE":
+                processPurchase(entry, matchData, heroToSlot);
+                break;
+                
+            case "STARTING_ITEM":
+                processStartingItem(entry, matchData, heroToSlot);
                 break;
                 
             case "obs":
@@ -453,20 +462,20 @@ public class OpenDotaCompleteParserFixed {
                 processWardLeft(entry, matchData, heroToSlot);
                 break;
                 
-            case "DOTA_COMBATLOG_PICKUP_RUNE":
+            case "CHAT_MESSAGE_RUNE_PICKUP":
                 processRunePickup(entry, matchData, heroToSlot);
-                break;
-                
-            case "purchase":
-                processPurchase(entry, matchData, heroToSlot);
                 break;
                 
             case "DOTA_COMBATLOG_BUYBACK":
                 processBuyback(entry, matchData, heroToSlot);
                 break;
                 
-            case "draft":
-                processDraft(entry, matchData);
+            case "draft_timings":
+                processDraftTimings(entry, matchData);
+                break;
+                
+            case "draft_start":
+                processDraftStart(entry, matchData);
                 break;
                 
             case "chat":
@@ -480,6 +489,26 @@ public class OpenDotaCompleteParserFixed {
                 
             case "DOTA_COMBATLOG_GAME_END":
                 processGameEnd(entry, matchData);
+                break;
+                
+            case "neutral_item_history":
+                processNeutralItem(entry, matchData, heroToSlot);
+                break;
+                
+            case "DOTA_COMBATLOG_GOLD":
+                processGold(entry, matchData, heroToSlot);
+                break;
+                
+            case "DOTA_COMBATLOG_XP":
+                processXP(entry, matchData, heroToSlot);
+                break;
+                
+            case "actions":
+                processActions(entry, matchData, heroToSlot);
+                break;
+                
+            case "pings":
+                processPings(entry, matchData, heroToSlot);
                 break;
         }
     }
@@ -499,11 +528,172 @@ public class OpenDotaCompleteParserFixed {
         }
     }
     
+    private static void processAbilityLevel(Entry entry, CompleteMatchData matchData, Map<String, Integer> heroToSlot) {
+        if (entry.player_slot != null && entry.player_slot >= 0 && entry.player_slot < 10) {
+            CompletePlayer player = matchData.players.get(entry.player_slot);
+            
+            AbilityUpgrade upgrade = new AbilityUpgrade();
+            upgrade.ability = entry.value;
+            upgrade.time = entry.time;
+            upgrade.level = entry.abilitylevel;
+            upgrade.ability_name = entry.key;
+            
+            player.ability_upgrades.add(upgrade);
+        }
+    }
+    
+    private static void processStartingItem(Entry entry, CompleteMatchData matchData, Map<String, Integer> heroToSlot) {
+        if (entry.player1 != null && entry.player1 >= 0 && entry.player1 < 10) {
+            CompletePlayer player = matchData.players.get(entry.player1);
+            
+            ItemPurchase purchase = new ItemPurchase();
+            purchase.time = entry.time;
+            purchase.key = entry.key;
+            purchase.item_name = entry.key;
+            purchase.gold_cost = entry.value;
+            purchase.slot = "starting";
+            
+            player.purchase_log.add(purchase);
+            player.purchase.put(entry.key, player.purchase.getOrDefault(entry.key, 0) + 1);
+        }
+    }
+    
+    private static void processDraftTimings(Entry entry, CompleteMatchData matchData) {
+        if (entry.draft_order != null) {
+            PickBan pickBan = new PickBan();
+            pickBan.order = entry.draft_order;
+            pickBan.is_pick = entry.pick;
+            pickBan.team = entry.draft_active_team;
+            pickBan.hero_id = entry.hero_id;
+            pickBan.time = entry.time;
+            pickBan.hero_name = entry.key;
+            
+            matchData.picks_bans.add(pickBan);
+            
+            DraftTiming draftTiming = new DraftTiming();
+            draftTiming.time = entry.time;
+            draftTiming.type = entry.pick ? "pick" : "ban";
+            draftTiming.team = entry.draft_active_team;
+            draftTiming.hero_id = entry.hero_id;
+            draftTiming.order = entry.draft_order;
+            
+            matchData.draft_timings.add(draftTiming);
+        }
+    }
+    
+    private static void processDraftStart(Entry entry, CompleteMatchData matchData) {
+        // Handle draft start if needed
+    }
+    
+    private static void processNeutralItem(Entry entry, CompleteMatchData matchData, Map<String, Integer> heroToSlot) {
+        if (entry.player_slot != null && entry.player_slot >= 0 && entry.player_slot < 10) {
+            CompletePlayer player = matchData.players.get(entry.player_slot);
+            
+            NeutralItem neutralItem = new NeutralItem();
+            neutralItem.time = entry.time;
+            neutralItem.item_name = entry.key;
+            neutralItem.tier = entry.value;
+            neutralItem.slot = entry.player_slot;
+            
+            player.neutral_items.add(neutralItem);
+        }
+    }
+    
+    private static void processGold(Entry entry, CompleteMatchData matchData, Map<String, Integer> heroToSlot) {
+        if (entry.targetname != null) {
+            Integer targetSlot = heroToSlot.get(entry.targetname);
+            if (targetSlot != null && targetSlot >= 0 && targetSlot < 10) {
+                CompletePlayer player = matchData.players.get(targetSlot);
+                
+                // Update gold reasons
+                String reason = getGoldReason(entry.gold_reason);
+                if (reason != null) {
+                    player.gold_reasons.put(reason, player.gold_reasons.getOrDefault(reason, 0) + entry.value);
+                }
+            }
+        }
+    }
+    
+    private static void processXP(Entry entry, CompleteMatchData matchData, Map<String, Integer> heroToSlot) {
+        if (entry.targetname != null) {
+            Integer targetSlot = heroToSlot.get(entry.targetname);
+            if (targetSlot != null && targetSlot >= 0 && targetSlot < 10) {
+                CompletePlayer player = matchData.players.get(targetSlot);
+                
+                // Update XP reasons
+                String reason = getXPReason(entry.xp_reason);
+                if (reason != null) {
+                    player.xp_reasons.put(reason, player.xp_reasons.getOrDefault(reason, 0) + entry.value);
+                }
+            }
+        }
+    }
+    
+    private static void processActions(Entry entry, CompleteMatchData matchData, Map<String, Integer> heroToSlot) {
+        if (entry.slot != null && entry.slot >= 0 && entry.slot < 10) {
+            CompletePlayer player = matchData.players.get(entry.slot);
+            
+            String actionType = entry.key;
+            if (actionType != null) {
+                player.actions.put(actionType, player.actions.getOrDefault(actionType, 0) + 1);
+            }
+        }
+    }
+    
+    private static void processPings(Entry entry, CompleteMatchData matchData, Map<String, Integer> heroToSlot) {
+        if (entry.slot != null && entry.slot >= 0 && entry.slot < 10) {
+            CompletePlayer player = matchData.players.get(entry.slot);
+            
+            String pingType = entry.key;
+            if (pingType != null) {
+                player.pings.put(pingType, player.pings.getOrDefault(pingType, 0) + 1);
+            }
+        }
+    }
+    
+    private static String getGoldReason(Integer goldReason) {
+        if (goldReason == null) return null;
+        switch (goldReason) {
+            case 0: return "gold_tick";
+            case 1: return "gold_hero_kill";
+            case 2: return "gold_creep_kill";
+            case 3: return "gold_roshan_kill";
+            case 4: return "gold_courier_kill";
+            case 5: return "gold_building_kill";
+            case 6: return "gold_neutral_kill";
+            case 7: return "gold_bounty_rune";
+            case 8: return "gold_buyback";
+            case 9: return "gold_sell_item";
+            case 10: return "gold_abandon";
+            case 11: return "gold_cheat";
+            case 12: return "gold_creature_kill";
+            case 13: return "gold_earnings";
+            default: return "gold_unknown_" + goldReason;
+        }
+    }
+    
+    private static String getXPReason(Integer xpReason) {
+        if (xpReason == null) return null;
+        switch (xpReason) {
+            case 0: return "xp_hero_kill";
+            case 1: return "xp_creep_kill";
+            case 2: return "xp_roshan_kill";
+            case 3: return "xp_neutral_kill";
+            case 4: return "xp_time";
+            case 5: return "xp_earnings";
+            default: return "xp_unknown_" + xpReason;
+        }
+    }
+    
     private static void processFirstBlood(Entry entry, CompleteMatchData matchData, Map<String, Integer> heroToSlot) {
         if (entry.attackername != null) {
             Integer attackerSlot = heroToSlot.get(entry.attackername);
             if (attackerSlot != null && attackerSlot >= 0 && attackerSlot < 10) {
                 CompletePlayer player = matchData.players.get(attackerSlot);
+                // Initialize firstblood_claimed if null
+                if (player.firstblood_claimed == null) {
+                    player.firstblood_claimed = 0;
+                }
                 player.firstblood_claimed = 1;
             }
         }
@@ -515,6 +705,10 @@ public class OpenDotaCompleteParserFixed {
         
         if (victimSlot != null && victimSlot >= 0 && victimSlot < 10) {
             CompletePlayer victim = matchData.players.get(victimSlot);
+            // Initialize deaths if null
+            if (victim.deaths == null) {
+                victim.deaths = 0;
+            }
             victim.deaths++;
             
             KillLog killLog = new KillLog();
@@ -529,6 +723,10 @@ public class OpenDotaCompleteParserFixed {
         
         if (attackerSlot != null && attackerSlot >= 0 && attackerSlot < 10) {
             CompletePlayer attacker = matchData.players.get(attackerSlot);
+            // Initialize kills if null
+            if (attacker.kills == null) {
+                attacker.kills = 0;
+            }
             attacker.kills++;
             
             if (victimSlot != null && victimSlot >= 0 && victimSlot < 10) {
@@ -547,6 +745,10 @@ public class OpenDotaCompleteParserFixed {
         
         if (attackerSlot != null && attackerSlot >= 0 && attackerSlot < 10) {
             CompletePlayer attacker = matchData.players.get(attackerSlot);
+            // Initialize hero_damage if null
+            if (attacker.hero_damage == null) {
+                attacker.hero_damage = 0;
+            }
             attacker.hero_damage += entry.value;
             
             if (targetSlot != null && targetSlot >= 0 && targetSlot < 10) {
@@ -565,6 +767,10 @@ public class OpenDotaCompleteParserFixed {
         
         if (targetSlot != null && targetSlot >= 0 && targetSlot < 10) {
             CompletePlayer target = matchData.players.get(targetSlot);
+            // Initialize damage_taken if null
+            if (target.damage_taken == null) {
+                target.damage_taken = 0;
+            }
             target.damage_taken += entry.value;
             
             if (attackerSlot != null && attackerSlot >= 0 && attackerSlot < 10) {
@@ -583,6 +789,10 @@ public class OpenDotaCompleteParserFixed {
         
         if (healerSlot != null && healerSlot >= 0 && healerSlot < 10) {
             CompletePlayer healer = matchData.players.get(healerSlot);
+            // Initialize hero_healing if null
+            if (healer.hero_healing == null) {
+                healer.hero_healing = 0;
+            }
             healer.hero_healing += entry.value;
             
             if (targetSlot != null && targetSlot >= 0 && targetSlot < 10) {
@@ -627,9 +837,17 @@ public class OpenDotaCompleteParserFixed {
             wardLog.key = entry.key;
             
             if ("obs".equals(entry.type)) {
+                // Initialize obs_placed if null
+                if (player.obs_placed == null) {
+                    player.obs_placed = 0;
+                }
                 player.obs_placed++;
                 player.obs_log.add(wardLog);
             } else if ("sen".equals(entry.type)) {
+                // Initialize sen_placed if null
+                if (player.sen_placed == null) {
+                    player.sen_placed = 0;
+                }
                 player.sen_placed++;
                 player.sen_log.add(wardLog);
             }
@@ -662,6 +880,11 @@ public class OpenDotaCompleteParserFixed {
     private static void processRunePickup(Entry entry, CompleteMatchData matchData, Map<String, Integer> heroToSlot) {
         if (entry.player_slot != null && entry.player_slot >= 0 && entry.player_slot < 10) {
             CompletePlayer player = matchData.players.get(entry.player_slot);
+            
+            // Initialize rune_pickups if null
+            if (player.rune_pickups == null) {
+                player.rune_pickups = 0;
+            }
             player.rune_pickups++;
             
             RuneLog runeLog = new RuneLog();
@@ -739,8 +962,93 @@ public class OpenDotaCompleteParserFixed {
     }
     
     private static void processInterval(Entry entry, CompleteMatchData matchData) {
-        // Process interval data for advantages over time
-        // This would need to be implemented based on actual interval data structure
+        if (entry.slot != null && entry.slot >= 0 && entry.slot < 10) {
+            CompletePlayer player = matchData.players.get(entry.slot);
+            
+            // This is the main source of player statistics!
+            // Update all player stats from interval data
+            if (entry.gold != null) {
+                player.net_worth = entry.gold;
+                player.gold_t.add(entry.gold);
+            }
+            if (entry.lh != null) {
+                player.last_hits = entry.lh;
+                player.lh_t.add(entry.lh);
+            }
+            if (entry.dn != null) {
+                player.denies = entry.dn;
+                player.dn_t.add(entry.dn);
+            }
+            if (entry.xp != null) {
+                player.total_xp = entry.xp;
+                player.xp_t.add(entry.xp);
+            }
+            if (entry.level != null) {
+                player.level = entry.level;
+            }
+            if (entry.kills != null) {
+                player.kills = entry.kills;
+            }
+            if (entry.deaths != null) {
+                player.deaths = entry.deaths;
+            }
+            if (entry.assists != null) {
+                player.assists = entry.assists;
+            }
+            if (entry.obs_placed != null) {
+                player.obs_placed = entry.obs_placed;
+            }
+            if (entry.sen_placed != null) {
+                player.sen_placed = entry.sen_placed;
+            }
+            if (entry.creeps_stacked != null) {
+                player.creeps_stacked = entry.creeps_stacked;
+            }
+            if (entry.camps_stacked != null) {
+                player.camps_stacked = entry.camps_stacked;
+            }
+            if (entry.rune_pickups != null) {
+                player.rune_pickups = entry.rune_pickups;
+            }
+            if (entry.randomed != null) {
+                player.randomed = entry.randomed;
+            }
+            if (entry.pred_vict != null) {
+                player.pred_vict = entry.pred_vict;
+            }
+            if (entry.firstblood_claimed != null) {
+                player.firstblood_claimed = entry.firstblood_claimed;
+            }
+            if (entry.teamfight_participation != null) {
+                player.teamfight_participation = entry.teamfight_participation;
+            }
+            if (entry.towers_killed != null) {
+                player.towers_killed = entry.towers_killed;
+            }
+            if (entry.roshans_killed != null) {
+                player.roshan_killed = entry.roshans_killed;
+            }
+            if (entry.obs_placed != null) {
+                player.observers_placed = entry.obs_placed;
+            }
+            if (entry.networth != null) {
+                player.net_worth = entry.networth;
+            }
+            
+            // Add time series data
+            player.times.add(entry.time);
+            
+            // Update match duration
+            if (matchData.duration == null || entry.time > matchData.duration) {
+                matchData.duration = entry.time;
+            }
+        }
+        
+        // Process advantages over time
+        if (entry.value != null) {
+            // This might contain radiant_gold_adv or radiant_xp_adv
+            // Need to check the actual structure
+        }
     }
     
     private static void processGameEnd(Entry entry, CompleteMatchData matchData) {

@@ -19,6 +19,17 @@ const supabase = createClient(
 const GUILD_ID = process.env.GUILD_ID;
 const CATEGORY_ID = process.env.VOICE_CATEGORY_ID;
 
+console.log('🚀 Pokrećem bota...');
+
+if (!process.env.DISCORD_TOKEN) {
+    console.error('❌ Greška: DISCORD_TOKEN nedostaje u ekološkim varijablama!');
+    process.exit(1);
+}
+
+client.on('error', (error) => {
+    console.error('❌ Discord client greška:', error);
+});
+
 client.once('ready', () => {
     console.log(`🤖 Bot je online kao ${client.user.tag}`);
 
@@ -111,4 +122,16 @@ async function createMatchChannels(match, tournamentName) {
     }
 }
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN)
+    .then(() => console.log('🔑 Login uspešan!'))
+    .catch(err => console.error('❌ Login neuspešan:', err));
+
+// Globalni error handler
+process.on('unhandledRejection', error => {
+    console.error('🚨 Unhandled promise rejection:', error);
+});
+
+process.on('uncaughtException', error => {
+    console.error('🚨 Uncaught exception:', error);
+    process.exit(1);
+});
