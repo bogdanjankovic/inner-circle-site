@@ -86,10 +86,10 @@ const EditTeamModal = ({ team, onClose, onSave }) => {
                             <select
                                 value={p.position || ''}
                                 onChange={(e) => handlePlayerChange(i, 'position', e.target.value)}
-                                style={{ 
-                                    padding: '0.2rem', 
-                                    background: '#333', 
-                                    color: 'white', 
+                                style={{
+                                    padding: '0.2rem',
+                                    background: '#333',
+                                    color: 'white',
                                     border: '1px solid #555',
                                     minWidth: '120px'
                                 }}
@@ -115,35 +115,431 @@ const EditTeamModal = ({ team, onClose, onSave }) => {
     );
 };
 
-const EditMatchModal = ({ match, onClose, onSave }) => {
+const EditMatchModal = ({ match, onClose, onSave, teams }) => {
     const [winner, setWinner] = useState(match.winner || 'Radiant');
+    const [radiantTeamId, setRadiantTeamId] = useState(match.radiantTeamId || match.radiant_team_id || '');
+    const [direTeamId, setDireTeamId] = useState(match.direTeamId || match.dire_team_id || '');
 
     const handleSave = () => {
-        onSave({ ...match, winner });
+        onSave({
+            ...match,
+            winner,
+            radiantTeamId: radiantTeamId || null,
+            direTeamId: direTeamId || null,
+            radiant_team_id: radiantTeamId || null,
+            dire_team_id: direTeamId || null
+        });
         onClose();
     };
 
     return (
         <div className="modal-overlay" onClick={onClose} style={{ zIndex: 3000 }}>
-            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
                 <button className="close-modal" onClick={onClose}>&times;</button>
-                <h2>Edit Match Result</h2>
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <p style={{ marginBottom: '0.5rem', color: '#888' }}>Match ID: {match.matchId}</p>
-                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Winner</label>
-                    <select
-                        value={winner}
-                        onChange={(e) => setWinner(e.target.value)}
-                        style={{ width: '100%', padding: '0.5rem', background: '#333', color: 'white', border: '1px solid #555' }}
-                    >
-                        <option value="Radiant">Radiant</option>
-                        <option value="Dire">Dire</option>
-                    </select>
+                <h2>Edit Match Details</h2>
+
+                <div style={{ marginBottom: '1.5rem', display: 'grid', gap: '1rem' }}>
+
+                    {/* Radiant Team */}
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.3rem', color: '#4caf50' }}>Radiant Team</label>
+                        <select
+                            value={radiantTeamId}
+                            onChange={(e) => setRadiantTeamId(e.target.value)}
+                            style={{ width: '100%', padding: '0.5rem', background: '#333', color: 'white', border: '1px solid #555' }}
+                        >
+                            <option value="">-- No Team Linked --</option>
+                            {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                    </div>
+
+                    {/* Dire Team */}
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.3rem', color: '#f44336' }}>Dire Team</label>
+                        <select
+                            value={direTeamId}
+                            onChange={(e) => setDireTeamId(e.target.value)}
+                            style={{ width: '100%', padding: '0.5rem', background: '#333', color: 'white', border: '1px solid #555' }}
+                        >
+                            <option value="">-- No Team Linked --</option>
+                            {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                    </div>
+
+                    {/* Winner */}
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.3rem' }}>Winner</label>
+                        <select
+                            value={winner}
+                            onChange={(e) => setWinner(e.target.value)}
+                            style={{ width: '100%', padding: '0.5rem', background: '#333', color: 'white', border: '1px solid #555' }}
+                        >
+                            <option value="Radiant">Radiant Faction</option>
+                            <option value="Dire">Dire Faction</option>
+                            {radiantTeamId && <option value={radiantTeamId}>Radiant Team (ID: {radiantTeamId})</option>}
+                            {direTeamId && <option value={direTeamId}>Dire Team (ID: {direTeamId})</option>}
+                        </select>
+                        <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.2rem' }}>Note: Selecting Faction is safer unless specific logic requires ID.</p>
+                    </div>
                 </div>
+
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                     <button onClick={onClose} className="btn" style={{ background: '#666' }}>Cancel</button>
                     <button onClick={handleSave} className="btn" style={{ background: '#4caf50' }}>Save Changes</button>
                 </div>
+            </div>
+        </div>
+    );
+};
+
+// Sub-component for clean management
+const ManageTournament = ({ tournament, teams, onMatchUpdate }) => {
+    const { finishTournament, matchHistory, processMatchStats, linkMatchToTournament } = useTournament();
+    const [winnerId, setWinnerId] = useState('');
+
+    // Find unique teams in this tournament
+    const participantIds = new Set();
+    if (tournament.bracket_data) {
+        tournament.bracket_data.forEach(m => {
+            if (m.team1) {
+                // Handle both object and ID ref just in case
+                participantIds.add(typeof m.team1 === 'object' ? m.team1.id : m.team1);
+            }
+            if (m.team2) {
+                participantIds.add(typeof m.team2 === 'object' ? m.team2.id : m.team2);
+            }
+        });
+    }
+    const participants = teams.filter(t => participantIds.has(t.id));
+
+    // Helper to update score
+    const updateScore = (m, teamKey) => {
+        const newBracket = [...tournament.bracket_data];
+        const matchIdx = newBracket.findIndex(x => x.matchId === m.matchId);
+        if (matchIdx !== -1) {
+            const currentMatch = newBracket[matchIdx];
+            const currentScore = currentMatch[`${teamKey}Score`] || 0;
+            const newScore = currentScore + 1;
+            currentMatch[`${teamKey}Score`] = newScore;
+
+            // Auto-Check Win Condition
+            const format = m.format || 'bo1';
+            const winsNeeded = format === 'bo3' ? 2 : (format === 'bo5' ? 3 : 1);
+
+            if (newScore >= winsNeeded) {
+                const teamName = m[teamKey].name;
+                if (confirm(`${teamName} has reached ${newScore} wins. End Series and advance info next round?`)) {
+                    currentMatch.winner = m[teamKey].id;
+                    // Advance helper
+                    const nextMatchId = currentMatch.nextMatchId;
+                    if (nextMatchId) {
+                        const nextIdx = newBracket.findIndex(x => x.matchId === nextMatchId);
+                        if (nextIdx !== -1) {
+                            if (!newBracket[nextIdx].team1) newBracket[nextIdx].team1 = m[teamKey];
+                            else if (!newBracket[nextIdx].team2) newBracket[nextIdx].team2 = m[teamKey];
+                        }
+                    }
+                }
+            }
+            onMatchUpdate(tournament.id, { bracket_data: newBracket });
+        }
+    };
+
+    // Helper to handle completion
+    const handleFinishTournament = (winId) => {
+        if (!winId && !winnerId) return alert("Izaberite pobednika!");
+        const finalId = winId || winnerId;
+        if (confirm(`Da li ste sigurni da je ${participants.find(p => p.id == finalId)?.name} OSVOJIO turnir? Ovo ce arhivirati turnir.`)) {
+            finishTournament(tournament.id, finalId);
+        }
+    };
+
+    // Group matches by round
+    const rounds = [];
+    if (tournament.bracket_data) {
+        const maxRound = Math.max(...tournament.bracket_data.map(m => m.round || 1));
+        for (let i = 1; i <= maxRound; i++) {
+            rounds.push(tournament.bracket_data.filter(m => m.round === i));
+        }
+    }
+
+    return (
+        <div className="card">
+            {/* Header / Controls */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid #333', paddingBottom: '1rem' }}>
+                <div>
+                    <h2 style={{ color: 'var(--accent)', margin: 0, fontSize: '2rem' }}>{tournament.name}</h2>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>
+                        <span style={{ fontSize: '0.9rem', color: '#888', background: '#222', padding: '2px 8px', borderRadius: '4px' }}>{tournament.status.toUpperCase()}</span>
+                        <span style={{ fontSize: '0.9rem', color: '#888' }}>{tournament.format?.toUpperCase()} • {tournament.type === 'single_elimination' ? 'Single Elimination' : 'Round Robin'}</span>
+                    </div>
+                </div>
+
+                {/* Finish Controls */}
+                {tournament.status !== 'completed' ? (
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: '#1a1a1a', padding: '1rem', borderRadius: '8px', border: '1px solid #333' }}>
+                        <span style={{ color: '#aaa', fontSize: '0.9rem' }}>Završi Turnir:</span>
+                        <select
+                            value={winnerId}
+                            onChange={e => setWinnerId(e.target.value)}
+                            style={{ padding: '0.5rem', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '4px' }}
+                        >
+                            <option value="">-- Izaberi Pobednika --</option>
+                            {participants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                        <button className="btn" style={{ background: '#ffd700', color: '#000', fontWeight: 'bold' }} onClick={() => handleFinishTournament()}>
+                            🏆 ZAVRŠI
+                        </button>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', color: '#ffd700', background: '#222', padding: '1rem', borderRadius: '8px' }}>
+                        <span style={{ fontSize: '1.5rem' }}>🏆</span>
+                        <span style={{ fontWeight: 'bold' }}>Winner: {teams.find(t => t.id == tournament.winner)?.name || 'Unknown'}</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Bracket Render */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+                {rounds.map((roundMatches, rIdx) => {
+                    // Determine Round Name Context
+                    const totalRounds = rounds.length;
+                    let roundName = `RUNDA ${rIdx + 1}`;
+                    if (tournament.type === 'single_elimination') {
+                        if (rIdx === totalRounds - 1) roundName = "FINALE (GRAND FINALS)";
+                        else if (rIdx === totalRounds - 2) roundName = "POLUFINALE (SEMI FINALS)";
+                        else if (rIdx === totalRounds - 3) roundName = "ČETVRTFINALE (QUARTER FINALS)";
+                    }
+
+                    return (
+                        <div key={rIdx}>
+                            <h3 style={{
+                                borderBottom: '1px solid #333',
+                                paddingBottom: '0.5rem',
+                                marginBottom: '1.5rem',
+                                color: '#aaa',
+                                textTransform: 'uppercase',
+                                letterSpacing: '2px',
+                                fontSize: '0.9rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '1rem'
+                            }}>
+                                <span style={{ background: '#333', color: 'white', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontSize: '0.8rem' }}>{rIdx + 1}</span>
+                                {roundName}
+                            </h3>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(450px, 1fr))', gap: '2rem' }}>
+                                {roundMatches.map((m) => (
+                                    <div key={m.matchId} style={{
+                                        background: m.winner ? 'linear-gradient(145deg, rgba(76, 175, 80, 0.05) 0%, rgba(0,0,0,0) 100%)' : '#1e1e1e',
+                                        border: m.winner ? '1px solid #4CAF50' : '1px solid #444',
+                                        borderRadius: '8px',
+                                        overflow: 'hidden',
+                                        boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+                                        transition: 'transform 0.2s',
+                                        position: 'relative'
+                                    }}>
+                                        {/* Match Header */}
+                                        <div style={{
+                                            padding: '0.5rem 1rem',
+                                            fontSize: '0.75rem',
+                                            color: '#666',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            background: 'rgba(0,0,0,0.2)',
+                                            borderBottom: '1px solid rgba(255,255,255,0.05)'
+                                        }}>
+                                            <span>MATCH #{m.matchId}</span>
+                                            <span>{m.format ? `BO${m.format === 'bo3' ? 3 : m.format === 'bo5' ? 5 : 1}` : 'BO1'}</span>
+                                        </div>
+
+                                        <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '1rem', alignItems: 'center' }}>
+                                            {/* Team 1 */}
+                                            <div style={{ textAlign: 'center', opacity: m.winner && m.winner !== m.team1?.id ? 0.5 : 1 }}>
+                                                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: m.winner === m.team1?.id ? '#4caf50' : 'white', marginBottom: '0.5rem', textShadow: m.winner === m.team1?.id ? '0 0 10px rgba(76,175,80,0.5)' : 'none' }}>
+                                                    {m.team1 ? m.team1.name : 'TBD'}
+                                                </div>
+                                                {m.team1 && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem' }}>
+                                                        <span style={{ fontSize: '2rem', fontWeight: '900', color: m.winner === m.team1?.id ? '#4caf50' : '#ccc' }}>{m.team1Score || 0}</span>
+                                                        {!m.winner && (
+                                                            <button
+                                                                onClick={() => updateScore(m, 'team1')}
+                                                                style={{ background: '#333', border: '1px solid #444', color: '#4caf50', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                                                                title="Add Win"
+                                                                onMouseEnter={e => e.target.style.background = '#444'}
+                                                                onMouseLeave={e => e.target.style.background = '#333'}
+                                                            >+</button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Center / VS */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                                                <div style={{ color: '#444', fontSize: '1.5rem', fontWeight: '900', fontStyle: 'italic' }}>VS</div>
+
+                                                {/* Date Picker (Compact) */}
+                                                <input
+                                                    type="datetime-local"
+                                                    value={m.scheduledTime ? new Date(m.scheduledTime).toISOString().slice(0, 16) : ''}
+                                                    onChange={(e) => {
+                                                        const newTime = new Date(e.target.value).getTime();
+                                                        const newBracket = [...tournament.bracket_data];
+                                                        const idx = newBracket.findIndex(x => x.matchId === m.matchId);
+                                                        newBracket[idx].scheduledTime = newTime;
+                                                        onMatchUpdate(tournament.id, { bracket_data: newBracket });
+                                                    }}
+                                                    style={{
+                                                        background: 'transparent',
+                                                        border: 'none',
+                                                        color: '#888',
+                                                        fontSize: '0.7rem',
+                                                        textAlign: 'center',
+                                                        cursor: 'pointer',
+                                                        width: '120px',
+                                                        marginTop: '-0.5rem'
+                                                    }}
+                                                />
+
+                                                {/* JSON Upload Button (Icon style) */}
+                                                {!m.winner && (
+                                                    <label
+                                                        className="btn"
+                                                        style={{
+                                                            background: 'rgba(76, 175, 80, 0.1)',
+                                                            color: '#4caf50',
+                                                            border: '1px dashed #4caf50',
+                                                            padding: '0.4rem 0.8rem',
+                                                            fontSize: '0.75rem',
+                                                            marginTop: '0.5rem',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '0.3rem',
+                                                            borderRadius: '4px',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(76, 175, 80, 0.2)'}
+                                                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(76, 175, 80, 0.1)'}
+                                                    >
+                                                        <span>📤 Upload Result</span>
+                                                        <input
+                                                            type="file"
+                                                            accept=".json"
+                                                            style={{ display: 'none' }}
+                                                            onChange={(e) => {
+                                                                const file = e.target.files[0];
+                                                                if (!file) return;
+
+                                                                const reader = new FileReader();
+                                                                reader.onload = async (ev) => {
+                                                                    try {
+                                                                        const json = JSON.parse(ev.target.result);
+                                                                        if (!json.matchId) throw new Error("Invalid JSON: Missing matchId");
+
+                                                                        // 1. Save Stats (Skip Auto Link to avoid double)
+                                                                        await processMatchStats(json, true);
+
+                                                                        // 2. Link to Tournament (Updates Score & Series)
+                                                                        await linkMatchToTournament(tournament.id, m.matchId, json);
+
+                                                                        alert("Meč uspešno učitan i bracket ažuriran!");
+                                                                    } catch (err) {
+                                                                        alert("Error parsing JSON: " + err.message);
+                                                                        console.error(err);
+                                                                    }
+                                                                };
+                                                                reader.readAsText(file);
+                                                                // Reset value
+                                                                e.target.value = '';
+                                                            }}
+                                                        />
+                                                    </label>
+                                                )}
+                                            </div>
+
+                                            {/* Team 2 */}
+                                            <div style={{ textAlign: 'center', opacity: m.winner && m.winner !== m.team2?.id ? 0.5 : 1 }}>
+                                                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: m.winner === m.team2?.id ? '#4caf50' : 'white', marginBottom: '0.5rem', textShadow: m.winner === m.team2?.id ? '0 0 10px rgba(76,175,80,0.5)' : 'none' }}>
+                                                    {m.team2 ? m.team2.name : 'TBD'}
+                                                </div>
+                                                {m.team2 && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem' }}>
+                                                        {!m.winner && (
+                                                            <button
+                                                                onClick={() => updateScore(m, 'team2')}
+                                                                style={{ background: '#333', border: '1px solid #444', color: '#4caf50', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                                                                title="Add Win"
+                                                                onMouseEnter={e => e.target.style.background = '#444'}
+                                                                onMouseLeave={e => e.target.style.background = '#333'}
+                                                            >+</button>
+                                                        )}
+                                                        <span style={{ fontSize: '2rem', fontWeight: '900', color: m.winner === m.team2?.id ? '#4caf50' : '#ccc' }}>{m.team2Score || 0}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Admin Controls (Force Win) */}
+                                        <details style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <summary style={{ padding: '0.5rem', cursor: 'pointer', fontSize: '0.7rem', color: '#555', textAlign: 'center', background: '#151515', listStyle: 'none', userSelect: 'none' }} onMouseEnter={e => e.target.style.color = '#888'} onMouseLeave={e => e.target.style.color = '#555'}>
+                                                ⚙️ Manage Result / Override
+                                            </summary>
+                                            <div style={{ padding: '1rem', display: 'flex', gap: '0.5rem', background: '#111' }}>
+                                                {m.team1 && <button
+                                                    onClick={() => {
+                                                        const confirmWin = confirm(`Set ${m.team1.name} as winner?`);
+                                                        if (!confirmWin) return;
+                                                        const newBracket = [...tournament.bracket_data];
+                                                        const matchIdx = newBracket.findIndex(x => x.matchId === m.matchId);
+                                                        const currentMatch = newBracket[matchIdx];
+                                                        currentMatch.winner = m.team1.id;
+                                                        if (currentMatch.nextMatchId) {
+                                                            const nextIdx = newBracket.findIndex(x => x.matchId === currentMatch.nextMatchId);
+                                                            if (nextIdx !== -1) {
+                                                                if (!newBracket[nextIdx].team1) newBracket[nextIdx].team1 = m.team1;
+                                                                else if (!newBracket[nextIdx].team2) newBracket[nextIdx].team2 = m.team1;
+                                                            }
+                                                        }
+                                                        onMatchUpdate(tournament.id, { bracket_data: newBracket });
+                                                    }}
+                                                    style={{ flex: 1, background: '#333', border: '1px solid #444', color: '#ccc', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem' }}
+                                                >
+                                                    Force Win: {m.team1.name}
+                                                </button>}
+                                                {m.team2 && <button
+                                                    onClick={() => {
+                                                        const confirmWin = confirm(`Set ${m.team2.name} as winner?`);
+                                                        if (!confirmWin) return;
+                                                        const newBracket = [...tournament.bracket_data];
+                                                        const matchIdx = newBracket.findIndex(x => x.matchId === m.matchId);
+                                                        const currentMatch = newBracket[matchIdx];
+                                                        currentMatch.winner = m.team2.id;
+                                                        if (currentMatch.nextMatchId) {
+                                                            const nextIdx = newBracket.findIndex(x => x.matchId === currentMatch.nextMatchId);
+                                                            if (nextIdx !== -1) {
+                                                                if (!newBracket[nextIdx].team1) newBracket[nextIdx].team1 = m.team2;
+                                                                else if (!newBracket[nextIdx].team2) newBracket[nextIdx].team2 = m.team2;
+                                                            }
+                                                        }
+                                                        onMatchUpdate(tournament.id, { bracket_data: newBracket });
+                                                    }}
+                                                    style={{ flex: 1, background: '#333', border: '1px solid #444', color: '#ccc', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem' }}
+                                                >
+                                                    Force Win: {m.team2.name}
+                                                </button>}
+                                            </div>
+                                        </details>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })}
+
+
             </div>
         </div>
     );
@@ -156,6 +552,19 @@ const Admin = () => {
     const [viewingTournament, setViewingTournament] = useState(null);
     const [activeTab, setActiveTab] = useState('teams');
     const [session, setSession] = useState(null);
+
+    // Tournament Config State
+    const [newTourneyName, setNewTourneyName] = useState('');
+    const [tourneyType, setTourneyType] = useState('single_elimination'); // 'single_elimination' | 'round_robin'
+    const [matchFormat, setMatchFormat] = useState('bo1'); // 'bo1' | 'bo2' | 'bo3' | 'bo5'
+    const [selectedTeamIds, setSelectedTeamIds] = useState([]);
+
+    // Initialize selected teams when teams load
+    useEffect(() => {
+        if (teams.length > 0 && selectedTeamIds.length === 0) {
+            setSelectedTeamIds(teams.map(t => t.id));
+        }
+    }, [teams]);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -194,7 +603,11 @@ const Admin = () => {
     const handleUpdateMatch = async (updatedMatch) => {
         const { error } = await supabase
             .from('matches')
-            .update({ winner: updatedMatch.winner })
+            .update({
+                winner: updatedMatch.winner,
+                radiant_team_id: updatedMatch.radiantTeamId,
+                dire_team_id: updatedMatch.direTeamId
+            })
             .eq('match_id', updatedMatch.matchId.toString());
 
         if (error) {
@@ -267,6 +680,7 @@ const Admin = () => {
                     match={editingMatch}
                     onClose={() => setEditingMatch(null)}
                     onSave={handleUpdateMatch}
+                    teams={teams}
                 />
             )}
 
@@ -307,24 +721,24 @@ const Admin = () => {
                                                         <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
                                                             {p.personaName}
                                                             {p.position && (
-                                                                <span style={{ 
-                                                                    marginLeft: '0.5rem', 
-                                                                    fontSize: '0.7rem', 
-                                                                    background: '#444', 
-                                                                    padding: '0.1rem 0.3rem', 
+                                                                <span style={{
+                                                                    marginLeft: '0.5rem',
+                                                                    fontSize: '0.7rem',
+                                                                    background: '#444',
+                                                                    padding: '0.1rem 0.3rem',
                                                                     borderRadius: '2px',
                                                                     display: 'inline-flex',
                                                                     alignItems: 'center',
                                                                     gap: '0.2rem'
                                                                 }}>
-                                                                    <img 
-                                                                        src={positions.find(pos => pos.id === p.position)?.icon} 
+                                                                    <img
+                                                                        src={positions.find(pos => pos.id === p.position)?.icon}
                                                                         alt={positions.find(pos => pos.id === p.position)?.name}
-                                                                        style={{ 
-                                                                            width: '12px', 
+                                                                        style={{
+                                                                            width: '12px',
                                                                             height: '12px',
                                                                             objectFit: 'contain'
-                                                                        }} 
+                                                                        }}
                                                                     />
                                                                     [{p.position}]
                                                                 </span>
@@ -372,24 +786,24 @@ const Admin = () => {
                                                     <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
                                                         {p.personaName}
                                                         {p.position && (
-                                                            <span style={{ 
-                                                                marginLeft: '0.5rem', 
-                                                                fontSize: '0.7rem', 
-                                                                background: '#444', 
-                                                                padding: '0.1rem 0.3rem', 
+                                                            <span style={{
+                                                                marginLeft: '0.5rem',
+                                                                fontSize: '0.7rem',
+                                                                background: '#444',
+                                                                padding: '0.1rem 0.3rem',
                                                                 borderRadius: '2px',
                                                                 display: 'inline-flex',
                                                                 alignItems: 'center',
                                                                 gap: '0.2rem'
                                                             }}>
-                                                                <img 
-                                                                    src={positions.find(pos => pos.id === p.position)?.icon} 
+                                                                <img
+                                                                    src={positions.find(pos => pos.id === p.position)?.icon}
                                                                     alt={positions.find(pos => pos.id === p.position)?.name}
-                                                                    style={{ 
-                                                                        width: '12px', 
+                                                                    style={{
+                                                                        width: '12px',
                                                                         height: '12px',
                                                                         objectFit: 'contain'
-                                                                    }} 
+                                                                    }}
                                                                 />
                                                                 [{p.position}]
                                                             </span>
@@ -432,10 +846,10 @@ const Admin = () => {
                             }}>
                                 <div>
                                     <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                                        <span style={{ color: m.winner === 'Radiant' ? '#4caf50' : '#fff' }}>Radiant</span> vs <span style={{ color: m.winner === 'Dire' ? '#f44336' : '#fff' }}>Dire</span>
+                                        <span style={{ color: (m.winner === 'Radiant' || m.winner == m.radiantTeamId) ? '#4caf50' : '#fff' }}>Radiant</span> vs <span style={{ color: (m.winner === 'Dire' || m.winner == m.direTeamId) ? '#f44336' : '#fff' }}>Dire</span>
                                     </div>
                                     <div style={{ fontSize: '0.8rem', color: '#888' }}>
-                                        ID: {m.matchId} | Pobednik: <span style={{ fontWeight: 'bold' }}>{m.winner}</span> | {new Date(m.timestamp).toLocaleString()}
+                                        ID: {m.matchId} | Pobednik: <span style={{ fontWeight: 'bold' }}>{teams.find(t => t.id == m.winner)?.name || m.winner}</span> | {new Date(m.timestamp).toLocaleString()}
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem' }}>
@@ -469,38 +883,264 @@ const Admin = () => {
                         <div className="card">
                             <h2 style={{ color: 'var(--accent)', fontSize: '1.2rem', marginBottom: '1rem' }}>Napravi Turnir</h2>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <input
-                                    type="text"
-                                    placeholder="Ime Turnira"
-                                    id="newTourneyName"
-                                    style={{ padding: '0.8rem', background: '#222', border: '1px solid #333', color: 'white' }}
-                                />
-                                <button className="btn btn-primary" onClick={() => {
-                                    const name = document.getElementById('newTourneyName').value;
-                                    if (!name) return alert("Enter a name");
-                                    if (teams.length < 2) return alert("Need at least 2 teams!");
+                                {/* Name */}
+                                <div>
+                                    <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '0.3rem' }}>Ime Turnira</label>
+                                    <input
+                                        type="text"
+                                        placeholder="npr. Winter Cup 2025"
+                                        value={newTourneyName}
+                                        onChange={(e) => setNewTourneyName(e.target.value)}
+                                        style={{ width: '100%', padding: '0.8rem', background: '#222', border: '1px solid #333', color: 'white' }}
+                                    />
+                                </div>
 
+                                {/* Configuration */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div>
+                                        <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '0.3rem' }}>Format Takmičenja</label>
+                                        <select
+                                            value={tourneyType}
+                                            onChange={(e) => setTourneyType(e.target.value)}
+                                            style={{ width: '100%', padding: '0.8rem', background: '#222', border: '1px solid #333', color: 'white' }}
+                                        >
+                                            <option value="single_elimination">Single Elimination (Knockout)</option>
+                                            <option value="round_robin">Round Robin (Svi protiv svih)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '0.3rem' }}>Format Meča</label>
+                                        <select
+                                            value={matchFormat}
+                                            onChange={(e) => setMatchFormat(e.target.value)}
+                                            style={{ width: '100%', padding: '0.8rem', background: '#222', border: '1px solid #333', color: 'white' }}
+                                        >
+                                            <option value="bo1">Best of 1</option>
+                                            <option value="bo2">Best of 2</option>
+                                            <option value="bo3">Best of 3</option>
+                                            <option value="bo5">Best of 5</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Team Selection */}
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                                        <label style={{ color: '#888', fontSize: '0.8rem' }}>Učesnici ({selectedTeamIds.length})</label>
+                                        <div>
+                                            <button
+                                                onClick={() => setSelectedTeamIds(teams.map(t => t.id))}
+                                                style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '0.7rem', cursor: 'pointer', marginRight: '0.5rem' }}
+                                            >
+                                                Select All
+                                            </button>
+                                            <button
+                                                onClick={() => setSelectedTeamIds([])}
+                                                style={{ background: 'none', border: 'none', color: '#666', fontSize: '0.7rem', cursor: 'pointer' }}
+                                            >
+                                                Clear
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div style={{ maxHeight: '400px', overflowY: 'auto', background: '#1a1a1a', border: '1px solid #333', borderRadius: '4px', padding: '0.5rem' }}>
+                                        {teams.map(t => {
+                                            // Calculate strength for all teams first to sort
+                                            let total = 0, count = 0;
+                                            if (t.players) t.players.forEach(p => { if (p.rankTier) { total += p.rankTier; count++; } });
+                                            t.strengthScore = count > 0 ? total / count : 0;
+                                            return t;
+                                        })
+                                            .sort((a, b) => b.strengthScore - a.strengthScore)
+                                            .map((team, index) => {
+                                                const isSelected = selectedTeamIds.includes(team.id);
+
+                                                // Color code top 3
+                                                let rankColor = '#666';
+                                                if (index === 0) rankColor = '#ffd700'; // Gold
+                                                if (index === 1) rankColor = '#c0c0c0'; // Silver
+                                                if (index === 2) rankColor = '#cd7f32'; // Bronze
+
+                                                return (
+                                                    <div
+                                                        key={team.id}
+                                                        onClick={() => {
+                                                            if (isSelected) setSelectedTeamIds(selectedTeamIds.filter(id => id !== team.id));
+                                                            else setSelectedTeamIds([...selectedTeamIds, team.id]);
+                                                        }}
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            padding: '0.8rem 0.5rem',
+                                                            borderBottom: '1px solid #2a2a2a',
+                                                            cursor: 'pointer',
+                                                            background: isSelected ? 'rgba(33, 150, 243, 0.1)' : 'transparent',
+                                                            transition: 'background 0.2s',
+                                                        }}
+                                                        onMouseOver={(e) => e.currentTarget.style.background = isSelected ? 'rgba(33, 150, 243, 0.2)' : 'rgba(255,255,255,0.05)'}
+                                                        onMouseOut={(e) => e.currentTarget.style.background = isSelected ? 'rgba(33, 150, 243, 0.1)' : 'transparent'}
+                                                    >
+                                                        {/* Checkbox Column - Fixed Width */}
+                                                        <div style={{ width: '50px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isSelected}
+                                                                onChange={() => { }}
+                                                                style={{ transform: 'scale(1.5)', cursor: 'pointer' }}
+                                                            />
+                                                        </div>
+
+                                                        {/* Logo Column - Fixed Width */}
+                                                        <div style={{ width: '70px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                                                            <img
+                                                                src={team.logo}
+                                                                style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #333' }}
+                                                                alt={team.name}
+                                                            />
+                                                        </div>
+
+                                                        {/* Name & Info Column - Flexible */}
+                                                        <div style={{ flex: 1, paddingLeft: '1rem' }}>
+                                                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white', lineHeight: '1.2' }}>{team.name}</div>
+                                                            <div style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.2rem' }}>
+                                                                {team.players.length} igrača
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Power Rank Column - Fixed Width */}
+                                                        <div style={{ width: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                                                            <div style={{
+                                                                fontSize: '1.5rem',
+                                                                fontWeight: 'bold',
+                                                                color: rankColor,
+                                                                textShadow: index < 3 ? '0 0 10px rgba(255,255,255,0.1)' : 'none'
+                                                            }}>
+                                                                #{index + 1}
+                                                            </div>
+                                                            <span style={{ fontSize: '0.7rem', color: '#666', marginTop: '4px' }}>Power Rank</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                </div>
+
+                                <button className="btn btn-primary" onClick={() => {
+                                    if (!newTourneyName) return alert("Morate uneti ime turnira!");
+
+                                    const participatingTeams = teams.filter(t => selectedTeamIds.includes(t.id));
+
+                                    if (participatingTeams.length < 2) return alert("Potrebno je bar 2 tima za turnir!");
+
+                                    // 1. Calculate Strength for Sorting
                                     const getTeamMMR = (team) => {
                                         let total = 0, count = 0;
                                         if (!team.players) return 0;
                                         team.players.forEach(p => { if (p.rankTier) { total += p.rankTier; count++; } });
                                         return count > 0 ? total / count : 0;
                                     };
-                                    const sortedTeams = [...teams].sort((a, b) => getTeamMMR(b) - getTeamMMR(a));
-                                    const round1 = [];
-                                    const pool = [...sortedTeams];
-                                    while (pool.length >= 2) {
-                                        const strong = pool.shift();
-                                        const weak = pool.pop();
-                                        round1.push({
+
+                                    // Sort strong to weak
+                                    const sortedTeams = [...participatingTeams].sort((a, b) => getTeamMMR(b) - getTeamMMR(a));
+                                    const matches = [];
+
+                                    // 2. Generate Draw based on Type
+                                    if (tourneyType === 'single_elimination') {
+                                        // A. Generate Round 1 (Seeded)
+                                        const pairs = [];
+                                        const pool = [...sortedTeams];
+
+                                        // Logic: balanced seeding? 
+                                        // For 4 teams: 1v4, 2v3.
+                                        // For 8 teams: 1v8, 2v7, 3v6, 4v5.
+                                        // Ideally we order them: (1v8) next to (4v5).
+
+                                        const initialPairs = [];
+                                        while (pool.length >= 2) {
+                                            const strong = pool.shift();
+                                            const weak = pool.pop();
+                                            initialPairs.push({ strong, weak });
+                                        }
+
+                                        // Simple reordering for 4 or 8 teams to ensure top seeds don't meet too early
+                                        let orderedPairs = [];
+                                        if (initialPairs.length === 4) {
+                                            // 1v8(0), 4v5(3), 2v7(1), 3v6(2)
+                                            orderedPairs = [initialPairs[0], initialPairs[3], initialPairs[1], initialPairs[2]];
+                                        } else {
+                                            // Default (works for 2 or 4 pairs mostly ok)
+                                            orderedPairs = initialPairs;
+                                        }
+
+                                        // Creating Match Objects for Round 1
+                                        let currentRoundMatches = orderedPairs.map(p => ({
                                             matchId: Date.now() + Math.random(),
-                                            team1: strong,
-                                            team2: weak,
+                                            team1: p.strong,
+                                            team2: p.weak,
                                             winner: null,
-                                            isPlaceholder: false
-                                        });
+                                            round: 1,
+                                            format: matchFormat
+                                        }));
+
+                                        matches.push(...currentRoundMatches);
+
+                                        // B. Generate Subsequent Rounds (TBD)
+                                        let roundNum = 2;
+                                        while (currentRoundMatches.length > 1) {
+                                            const nextRoundMatches = [];
+                                            for (let i = 0; i < currentRoundMatches.length; i += 2) {
+                                                const m1 = currentRoundMatches[i];
+                                                const m2 = currentRoundMatches[i + 1];
+
+                                                if (!m2) {
+                                                    // Odd number advance? Or just bye.
+                                                    // Ideally shouldn't happen if power of 2.
+                                                    continue;
+                                                }
+
+                                                const nextMatch = {
+                                                    matchId: Date.now() + Math.random(),
+                                                    team1: null, // TBD
+                                                    team2: null, // TBD
+                                                    winner: null,
+                                                    round: roundNum,
+                                                    format: matchFormat, // Could increase for semis/finals?
+                                                    placeholder: true
+                                                };
+
+                                                // Link previous matches to this one
+                                                m1.nextMatchId = nextMatch.matchId;
+                                                m2.nextMatchId = nextMatch.matchId;
+
+                                                nextRoundMatches.push(nextMatch);
+                                                matches.push(nextMatch);
+                                            }
+                                            currentRoundMatches = nextRoundMatches;
+                                            roundNum++;
+                                        }
+
+                                        if (pool.length > 0) {
+                                            alert(`Napomena: ${pool[0].name} nije raspoređen (neparan broj).`);
+                                        }
+
+                                    } else if (tourneyType === 'round_robin') {
+                                        // All vs All
+                                        for (let i = 0; i < sortedTeams.length; i++) {
+                                            for (let j = i + 1; j < sortedTeams.length; j++) {
+                                                matches.push({
+                                                    matchId: Date.now() + Math.random(),
+                                                    team1: sortedTeams[i],
+                                                    team2: sortedTeams[j],
+                                                    winner: null,
+                                                    isPlaceholder: false,
+                                                    format: matchFormat
+                                                });
+                                            }
+                                        }
                                     }
-                                    createTournament(name, round1);
+
+                                    createTournament(newTourneyName, matches, { type: tourneyType, format: matchFormat });
+                                    setNewTourneyName('');
+                                    alert("Turnir uspešno napravljen!");
                                 }}>Generiši Žreb</button>
                             </div>
                         </div>
@@ -511,42 +1151,19 @@ const Admin = () => {
                             {tournaments.length === 0 ? <p style={{ color: '#666' }}>Nema pronađenih turnira.</p> : (
                                 <ul style={{ listStyle: 'none', padding: 0 }}>
                                     {tournaments.map(t => (
-                                        <li key={t.id} style={{
-                                            padding: '1rem',
-                                            border: '1px solid #333',
-                                            marginBottom: '0.5rem',
-                                            background: '#1a1a1a',
-                                            borderRadius: '4px'
-                                        }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                                <strong style={{ color: 'white' }}>{t.name}</strong>
-                                                <span style={{
-                                                    fontSize: '0.7rem',
-                                                    padding: '2px 6px',
-                                                    borderRadius: '4px',
-                                                    background: t.status === 'active' ? '#4caf50' : '#444',
-                                                    color: 'white'
-                                                }}>{t.status.toUpperCase()}</span>
+                                        <li key={t.id} style={{ marginBottom: '0.8rem', padding: '0.5rem', border: '1px solid #333', borderRadius: '4px', background: t.status === 'active' ? 'rgba(33, 150, 243, 0.1)' : 'transparent' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontWeight: t.status === 'active' ? 'bold' : 'normal', color: t.status === 'active' ? '#2196f3' : '#fff' }}>
+                                                    {t.name} {t.status === 'active' && '(Aktivni)'}
+                                                    {t.status === 'archived' && <span style={{ fontSize: '0.8rem', color: '#aaa' }}> (Arhiviran: {teams.find(tm => tm.id == t.winner)?.name})</span>}
+                                                </span>
+                                                <div style={{ display: 'flex', gap: '5px' }}>
+                                                    <button onClick={() => setViewingTournament(t)} className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}>Otvori</button>
+                                                    {t.status === 'draft' && <button onClick={() => publishTournament(t.id)} className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', background: '#4caf50' }}>Aktiviraj</button>}
+                                                    <button onClick={() => deleteTournament(t.id)} className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', background: '#f44336' }}>X</button>
+                                                </div>
                                             </div>
-                                            <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '1rem' }}>
-                                                {new Date(t.created_at).toLocaleDateString('en-GB')}
-                                            </div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                                                <button className="btn" onClick={() => setViewingTournament(t)} style={{ background: '#2196f3', fontSize: '0.8rem', padding: '0.5rem' }}>
-                                                    Upravljaj
-                                                </button>
-                                                {t.status === 'draft' ? (
-                                                    <button className="btn" onClick={() => publishTournament(t.id)} style={{ fontSize: '0.8rem', padding: '0.5rem' }}>Objavi</button>
-                                                ) : (
-                                                    <button className="btn" disabled style={{ background: 'transparent', border: '1px solid #444', color: '#444', fontSize: '0.8rem' }}>Aktivan</button>
-                                                )}
-                                            </div>
-                                            <button
-                                                onClick={() => deleteTournament(t.id)}
-                                                style={{ width: '100%', marginTop: '0.5rem', background: 'transparent', border: 'none', color: '#f44336', fontSize: '0.8rem', cursor: 'pointer' }}
-                                            >
-                                                Obriši Turnir
-                                            </button>
+                                            <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '2px' }}>{new Date(t.created_at).toLocaleDateString()}</div>
                                         </li>
                                     ))}
                                 </ul>
@@ -554,149 +1171,20 @@ const Admin = () => {
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN: Active Tournament Details (or Placeholder) */}
+                    {/* RIGHT COLUMN: Active Tournament Details */}
                     <div>
-                        {activeTournament ? (
-                            <div className="card" style={{ borderTop: '4px solid #4caf50' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                                    <div>
-                                        <h2 style={{ color: '#4caf50', margin: 0 }}>ACTIVE: {activeTournament.name}</h2>
-                                        <span style={{ color: '#888', fontSize: '0.9rem' }}>Live on public site</span>
-                                    </div>
-                                    <button className="btn" onClick={() => deleteTournament(activeTournament.id)} style={{ background: '#f44336' }}>Delete Active</button>
-                                </div>
-
-                                {/* Quick Bracket Preview */}
-                                <div style={{ display: 'grid', gap: '0.5rem' }}>
-                                    {activeTournament.bracket_data?.map((m, i) => (
-                                        <div key={i} style={{ padding: '0.5rem', background: '#222', fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
-                                            <span>{m.team1?.name || 'TBD'} vs {m.team2?.name || 'TBD'}</span>
-                                            <span style={{ color: m.winner ? '#4caf50' : '#888' }}>{m.winner ? 'Finished' : 'Pending'}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                        {viewingTournament || activeTournament ? (
+                            <ManageTournament
+                                tournament={viewingTournament || activeTournament}
+                                teams={teams}
+                                onMatchUpdate={updateTournament}
+                            />
                         ) : (
-                            <div className="card" style={{ textAlign: 'center', padding: '4rem', color: '#666', border: '2px dashed #333' }}>
-                                <h2>No Active Tournament</h2>
-                                <p>Select a draft from the left and click "Publish" to go live.</p>
+                            <div className="card" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>
+                                <p>Izaberite turnir za pregled ili napravite novi.</p>
                             </div>
                         )}
                     </div>
-
-                    {/* Tournament Editor / Details Modal or Section */}
-                    {viewingTournament && (
-                        <div className="modal-overlay" style={{
-                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                            background: 'rgba(0,0,0,0.9)', zIndex: 1000, overflowY: 'auto', padding: '2rem'
-                        }}>
-                            <div className="card" style={{ maxWidth: '900px', margin: '0 auto', position: 'relative' }}>
-                                <button
-                                    onClick={() => setViewingTournament(null)}
-                                    style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'transparent', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}
-                                >
-                                    &times;
-                                </button>
-
-                                <h2 style={{ color: 'var(--accent)' }}>Manage Tournament</h2>
-
-                                <div style={{ marginBottom: '2rem' }}>
-                                    <label style={{ display: 'block', color: '#888', marginBottom: '0.5rem' }}>Tournament Name</label>
-                                    <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <input
-                                            type="text"
-                                            value={viewingTournament.name}
-                                            onChange={(e) => setViewingTournament({ ...viewingTournament, name: e.target.value })}
-                                            style={{ flex: 1, padding: '0.5rem' }}
-                                        />
-                                        <button className="btn" onClick={() => updateTournament(viewingTournament.id, { name: viewingTournament.name })}>Save Name</button>
-                                    </div>
-                                </div>
-
-                                <div style={{ marginBottom: '2rem' }}>
-                                    <h3>Bracket & Matches</h3>
-                                    <div style={{ display: 'grid', gap: '1rem' }}>
-                                        {viewingTournament.bracket_data?.map((match, idx) => (
-                                            <div key={match.matchId} style={{
-                                                display: 'grid', gridTemplateColumns: '1fr auto 1fr auto auto', gap: '1rem', alignItems: 'center',
-                                                padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px'
-                                            }}>
-                                                {/* Team 1 Selector */}
-                                                <select
-                                                    value={match.team1?.id || ''}
-                                                    onChange={(e) => {
-                                                        const newTeam = teams.find(t => t.id === e.target.value) || null;
-                                                        const newBracket = [...viewingTournament.bracket_data];
-                                                        newBracket[idx] = { ...newBracket[idx], team1: newTeam };
-                                                        setViewingTournament({ ...viewingTournament, bracket_data: newBracket });
-                                                    }}
-                                                    style={{ padding: '0.3rem', background: '#222', color: 'white', border: '1px solid #444', maxWidth: '200px' }}
-                                                >
-                                                    <option value="">TBD / Slot</option>
-                                                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                                </select>
-
-                                                <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>VS</span>
-
-                                                {/* Team 2 Selector */}
-                                                <select
-                                                    value={match.team2?.id || ''}
-                                                    onChange={(e) => {
-                                                        const newTeam = teams.find(t => t.id === e.target.value) || null;
-                                                        const newBracket = [...viewingTournament.bracket_data];
-                                                        newBracket[idx] = { ...newBracket[idx], team2: newTeam };
-                                                        setViewingTournament({ ...viewingTournament, bracket_data: newBracket });
-                                                    }}
-                                                    style={{ padding: '0.3rem', background: '#222', color: 'white', border: '1px solid #444', maxWidth: '200px' }}
-                                                >
-                                                    <option value="">TBD / Slot</option>
-                                                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                                </select>
-
-                                                {/* Schedule Picker */}
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                                    <label style={{ fontSize: '0.7rem', color: '#888' }}>Schedule Time:</label>
-                                                    <input
-                                                        type="datetime-local"
-                                                        value={match.scheduledTime || ''}
-                                                        onChange={(e) => {
-                                                            const newBracket = [...viewingTournament.bracket_data];
-                                                            newBracket[idx] = { ...newBracket[idx], scheduledTime: e.target.value };
-                                                            setViewingTournament({ ...viewingTournament, bracket_data: newBracket });
-                                                        }}
-                                                        style={{
-                                                            padding: '0.3rem',
-                                                            background: '#222',
-                                                            color: 'white',
-                                                            border: '1px solid #444',
-                                                            fontSize: '0.8rem',
-                                                            fontFamily: 'inherit'
-                                                        }}
-                                                    />
-                                                </div>
-
-                                                {/* Status / Actions */}
-                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.8rem', color: '#888' }}>
-                                                    <span>{match.winner ? 'Finished' : 'Pending'}</span>
-                                                    {match.winner && <span style={{ color: '#4caf50' }}>Winner: {match.winner === match.team1?.id ? match.team1?.name : match.team2?.name}</span>}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <button
-                                        className="btn btn-primary"
-                                        style={{ marginTop: '1rem', width: '100%' }}
-                                        onClick={() => {
-                                            updateTournament(viewingTournament.id, { bracket_data: viewingTournament.bracket_data });
-                                            alert("Bracket updated!");
-                                        }}
-                                    >
-                                        Save Changes to Bracket
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
         </div>

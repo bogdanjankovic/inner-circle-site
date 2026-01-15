@@ -1,0 +1,251 @@
+/* Main Container */
+.bracket-centered-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem;
+    overflow-x: auto;
+    background: #0b0b0b;
+    border-radius: 8px;
+    min-height: 500px;
+}
+
+/* Side Containers */
+.bracket-side {
+    display: flex;
+    align-items: center;
+}
+
+.bracket-side.left-side {
+    justify-content: flex-end;
+    margin-right: 2rem;
+}
+
+.bracket-side.right-side {
+    justify-content: flex-start;
+    margin-left: 2rem;
+    /* Mirror the right side horizontally for symmetry logic? 
+       No, recursive node logic 'direction' handles order. 
+       Just need Flex Direction reverse? 
+    */
+    /* Actually better to handle direction in the Node render logic (flex-direction: row vs row-reverse) */
+}
+
+/* Recursive Node Structure */
+.bracket-node {
+    display: flex;
+    align-items: center;
+    position: relative;
+    /* IMPORTANT: Margin serves as vertical spacing between neighbor nodes */
+    margin: 1rem 0;
+}
+
+.bracket-node.left {
+    flex-direction: row;
+    /* Children -> Node */
+}
+
+.bracket-node.right {
+    flex-direction: row-reverse;
+    /* Children -> Node (but reversed direction visually: Node <- Children) */
+}
+
+.node-children {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-right: 2rem;
+    /* Gap between columns */
+}
+
+.bracket-node.right .node-children {
+    margin-right: 0;
+    margin-left: 2rem;
+}
+
+/* Connectors */
+.node-connector-wrapper {
+    position: absolute;
+    /* Centered between children and parent node? No, usually sits 'after' children container */
+}
+
+/* Visual Styling of match card */
+.match-card {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    width: 180px;
+    padding: 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 2;
+}
+
+.match-card.finished {
+    border-color: #555;
+}
+
+.match-card.final-card {
+    width: 220px;
+    border: 2px solid #ffd700;
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
+    text-align: center;
+    background: #111;
+}
+
+.team-row {
+    padding: 0.5rem 0.8rem;
+    border-bottom: 1px solid #222;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+.team-row:last-child {
+    border-bottom: none;
+}
+
+.team-row.win {
+    color: #4caf50;
+    font-weight: bold;
+    background: rgba(76, 175, 80, 0.05);
+}
+
+.team-row.placeholder {
+    font-style: italic;
+    color: #555;
+    font-size: 0.8rem;
+}
+
+.final-label {
+    padding: 5px;
+    background: linear-gradient(to right, transparent, rgba(255, 215, 0, 0.1), transparent);
+}
+
+.vs-badge {
+    font-size: 0.7rem;
+    color: #555;
+    background: #000;
+    padding: 2px 0;
+}
+
+.winner-trophy {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5rem;
+    animation: float 2s infinite ease-in-out;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    50% {
+        transform: translateX(-50%) translateY(-5px);
+    }
+}
+
+/* --- Connector Lines (The Hard Part in CSS Flex) --- */
+/* 
+   We will utilize ::before/::after on specific containers.
+   
+   Logic:
+   The 'node-children' container holds the 2 branches.
+   We need a vertical line spanning the center of child 1 to center of child 2.
+   And a horizontal line from that vertical mid-point to the current node.
+*/
+
+.node-children {
+    position: relative;
+}
+
+/* Vertical Line connecting the two children */
+.node-children::after {
+    content: '';
+    position: absolute;
+    right: -1rem;
+    /* In the middle of the gap */
+    top: 25%;
+    /* Roughly - needs precise calc? No, flexbox difficult. */
+    /* Alternate Solution: ::after on EACH child? */
+}
+
+/* Let's try simpler connector logic on the Node itself */
+/* 
+   The BracketNode renders its children. 
+   We can enforce that node-children is flex-column.
+   We draw a specialized connector div absolute positioned.
+*/
+.node-connector-wrapper {
+    display: none;
+    /* Placeholder for now, hard to implement generic CSS connectors without fixed heights */
+}
+
+/* 
+   Alternative: Simple horizontal lines.
+   Left Tree: Line to the right of each child.
+*/
+.match-card::after {
+    /* Line OUT to parent? */
+}
+
+/* 
+   Let's stick to simple horizontal connectors for now as requested by user initially.
+   "Left pair, Right pair -> line connecting to center".
+   We will just draw lines sticking out pointing to center.
+*/
+
+.bracket-node.left .match-card::after {
+    /* Line to RIGHT (towards center) */
+    content: '';
+    position: absolute;
+    right: -2rem;
+    top: 50%;
+    width: 2rem;
+    height: 1px;
+    background: #444;
+    z-index: 1;
+}
+
+.bracket-node.right .match-card::after {
+    /* Line to LEFT (towards center) */
+    content: '';
+    position: absolute;
+    left: -2rem;
+    top: 50%;
+    width: 2rem;
+    height: 1px;
+    background: #444;
+    z-index: 1;
+}
+
+/* Final Card connectors */
+.finals-connector-left {
+    width: 2rem;
+    height: 1px;
+    background: #444;
+    position: absolute;
+    left: -2rem;
+    top: 50%;
+}
+
+.finals-connector-right {
+    width: 2rem;
+    height: 1px;
+    background: #444;
+    position: absolute;
+    right: -2rem;
+    top: 50%;
+}
+
+.bracket-center {
+    position: relative;
+    margin: 0 1rem;
+}

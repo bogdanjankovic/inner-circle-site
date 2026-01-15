@@ -17,7 +17,7 @@ const AdminUpload = () => {
     const [radiantTeamId, setRadiantTeamId] = useState('');
     const [direTeamId, setDireTeamId] = useState('');
     const [playerMapping, setPlayerMapping] = useState({}); // { steamId: registeredId }
-    
+
     // Facet data and hero mapping
     const [heroFacets, setHeroFacets] = useState({}); // { heroName: { facetIndex: { title, icon } } }
     const [heroIdToName, setHeroIdToName] = useState({}); // { heroId: heroName }
@@ -28,25 +28,25 @@ const AdminUpload = () => {
         const loadHeroFacets = async () => {
             try {
                 setLoadingFacets(true);
-                
+
                 // Load hero abilities (facets)
                 const abilitiesResponse = await fetch('https://raw.githubusercontent.com/odota/dotaconstants/master/build/hero_abilities.json');
                 const heroAbilities = await abilitiesResponse.json();
-                
+
                 // Load heroes for ID to name mapping
                 const heroesResponse = await fetch('https://raw.githubusercontent.com/odota/dotaconstants/master/build/heroes.json');
                 const heroes = await heroesResponse.json();
-                
+
                 const facets = {};
                 const heroIdToName = {};
-                
+
                 // Create hero ID to name mapping
                 Object.values(heroes).forEach(hero => {
                     if (hero.id && hero.name) {
                         heroIdToName[hero.id] = hero.name;
                     }
                 });
-                
+
                 // Process facets
                 Object.entries(heroAbilities).forEach(([heroKey, heroData]) => {
                     if (heroData.facets && Array.isArray(heroData.facets)) {
@@ -61,7 +61,7 @@ const AdminUpload = () => {
                         });
                     }
                 });
-                
+
                 setHeroFacets(facets);
                 setHeroIdToName(heroIdToName);
                 console.log('Loaded hero facets from hero_abilities.json:', facets);
@@ -72,7 +72,7 @@ const AdminUpload = () => {
                 setLoadingFacets(false);
             }
         };
-        
+
         loadHeroFacets();
     }, []);
 
@@ -89,37 +89,38 @@ const AdminUpload = () => {
     };
 
     // Link to Tournament Stats
-    const { activeTournament, linkMatchToTournament } = useTournament();
+    const { activeTournament, linkMatchToTournament, processMatchStats } = useTournament();
     const [bracketMatchId, setBracketMatchId] = useState('');
 
     // Get facet info for a hero
     const getFacetInfo = (heroId, facetId) => {
+        // ... (elided)
         // If facetId is 0 or null, return empty
         if (!facetId || facetId === 0) {
             return { title: '', icon: '' };
         }
-        
+
         // Get hero name from heroId
         const heroName = heroIdToName[heroId];
         if (!heroName) {
             return { title: `Facet ${facetId}`, icon: '' };
         }
-        
+
         // Convert facetId from .dem (1-based) to array index (0-based)
         const facetIndex = facetId - 1;
-        
+
         // Get facet info for this hero
         const heroFacetsData = heroFacets[heroName];
         if (!heroFacetsData || !heroFacetsData[facetIndex]) {
             return { title: `Facet ${facetId}`, icon: '' };
         }
-        
+
         return heroFacetsData[facetIndex];
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!parsedData) return;
-        
+
         // Wait for facets to load
         if (loadingFacets) {
             alert('Molimo sačekajte da se podaci o facetima učitaju...');
@@ -130,7 +131,7 @@ const AdminUpload = () => {
         const finalPlayers = parsedData.players.map(p => {
             const registeredId = playerMapping[p.steamId || p.name];
             const facetInfo = getFacetInfo(p.heroId, p.facet || 0);
-            
+
             return {
                 ...p,
                 tournamentPlayerId: registeredId || null,
@@ -141,6 +142,8 @@ const AdminUpload = () => {
 
         const finalMatch = {
             ...parsedData,
+            timestamp: parsedData.timestamp || parsedData.start_time || Math.floor(Date.now() / 1000), // Normalize timestamp
+            duration: parsedData.duration || 0,
             radiantTeamId,
             direTeamId,
             players: finalPlayers
@@ -148,26 +151,17 @@ const AdminUpload = () => {
 
         // If bracket match selected, link it. Otherwise just add standard match
         if (bracketMatchId && activeTournament) {
-            // This also saves the match to history internally within the context logic if we implemented it that way,
-            // BUT our linkMatchToTournament only updates the bracket JSON in the plan.
-            // We need to SAVE the match first, then LINK it? 
-            // Actually, linkMatchToTournament in context updates the bracket to point to the REAL match ID.
-            // So we must: 1. Add Match (get ID), 2. Link.
-            // The dispatch('ADD_MATCH') doesn't return the ID easily in the current reducer, 
-            // but processMatchStats is async. 
-            // Refactor: call processMatchStats directly.
+            // We know the bracket match explicitly. 
+            // 1. Save stats but SKIP auto-link (to avoid double count)
+            await processMatchStats(finalMatch, true);
 
-            // However, processMatchStats in context uses matchData.matchId (from parser).
-            // So we know the ID: finalMatch.matchId
-
-            dispatch({ type: 'ADD_MATCH', payload: finalMatch });
-
-            // Wait a moment or trust optimistic?
-            // Let's call the link directly
-            linkMatchToTournament(activeTournament.id, bracketMatchId, finalMatch);
+            // 2. Link Explicitly
+            await linkMatchToTournament(activeTournament.id, bracketMatchId, finalMatch);
             alert("Match linked to Tournament Bracket!");
         } else {
-            dispatch({ type: 'ADD_MATCH', payload: finalMatch });
+            // Just add match. If it happens to match a bracket node by teams, 
+            // processMatchStats (default false) will auto-link it.
+            await processMatchStats(finalMatch, false);
         }
 
         navigate('/results'); // Go to results to see it

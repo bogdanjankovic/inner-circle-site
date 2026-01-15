@@ -26,34 +26,86 @@ export const TournamentProvider = ({ children }) => {
             const { data: pendingData } = await supabase.from('pending_teams').select('*');
             if (pendingData) setPendingTeams(pendingData);
 
-            const { data: matchesData } = await supabase.from('matches').select('*').order('timestamp', { ascending: false });
-            if (matchesData) {
-                // Parse the data column if needed, but our table struct has data as jsonb. 
-                // However, our app acts on the flattened object. 
-                // The 'data' column contains the JSON.
-                // We need to map it back to the flat format used by the app.
-                const flatMatches = matchesData.map(m => ({
-                    ...m.data, // Spread the original JSON
-                    matchId: m.match_id // Ensure ID consistency
-                }));
-                setMatchHistory(flatMatches);
-                recalculateStats(flatMatches);
-            }
-
+            // Fetch Tournaments FIRST to use for Trophies
+            let fetchedTournaments = [];
             const { data: tourneyData } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
             if (tourneyData) {
+                fetchedTournaments = tourneyData;
                 setTournaments(tourneyData);
                 const active = tourneyData.find(t => t.status === 'active');
                 if (active) setActiveTournament(active);
+            }
+
+            const { data: matchesData } = await supabase.from('matches').select('*').order('timestamp', { ascending: false });
+            if (matchesData) {
+                const flatMatches = matchesData.map(m => ({
+                    ...m.data, // Spread the original JSON
+                    matchId: m.match_id, // Ensure ID consistency
+                    winner: m.winner, // Use top-level column which is editable
+                    radiantTeamId: m.radiant_team_id, // Use top-level column
+                    direTeamId: m.dire_team_id // Use top-level column
+                }));
+                setMatchHistory(flatMatches);
+                recalculateStats(flatMatches, teamsData, fetchedTournaments);
             }
         } catch (error) {
             console.error("Error fetching data:", error);
         }
     };
 
-    const recalculateStats = (history) => {
+
+
+
+    const recalculateStats = (history, teamsOverride = null, tournamentsOverride = null) => {
+        // 1. Player Stats
         const newStats = {};
+
+        // 2. Team Stats Accumulators
+        const currentTeams = teamsOverride || teams;
+        const currentTournaments = tournamentsOverride || tournaments;
+
+        const teamStatsMap = {};
+        currentTeams.forEach(t => {
+            teamStatsMap[t.id] = { wins: 0, losses: 0, matchesPlayed: [], trophies: [] };
+
+            // Calculate Trophies
+            if (currentTournaments) {
+                const teamTrophies = currentTournaments.filter(tourney =>
+                    tourney.status === 'archived' &&
+                    tourney.winner === t.id // Assuming 'winner' column holds team ID
+                );
+                teamStatsMap[t.id].trophies = teamTrophies;
+            }
+        });
+
+        // Match Logic
         history.forEach(match => {
+            // Normalize IDs to strings for loose comparison
+            const winnerStr = match.winner ? match.winner.toString() : null;
+            const radiantIdStr = match.radiantTeamId ? match.radiantTeamId.toString() : null;
+            const direIdStr = match.direTeamId ? match.direTeamId.toString() : null;
+
+            let winningTeamId = null;
+            let losingTeamId = null;
+
+            if (winnerStr === radiantIdStr || winnerStr === 'Radiant') {
+                winningTeamId = match.radiantTeamId;
+                losingTeamId = match.direTeamId;
+            } else if (winnerStr === direIdStr || winnerStr === 'Dire') {
+                winningTeamId = match.direTeamId;
+                losingTeamId = match.radiantTeamId;
+            }
+
+            if (winningTeamId && teamStatsMap[winningTeamId]) {
+                teamStatsMap[winningTeamId].wins += 1;
+                teamStatsMap[winningTeamId].matchesPlayed.push(match.matchId || match.match_id);
+            }
+            if (losingTeamId && teamStatsMap[losingTeamId]) {
+                teamStatsMap[losingTeamId].losses += 1;
+                teamStatsMap[losingTeamId].matchesPlayed.push(match.matchId || match.match_id);
+            }
+
+            // Player Logic
             if (!match.players) return;
             match.players.forEach(p => {
                 const tid = p.tournamentPlayerId;
@@ -91,6 +143,23 @@ export const TournamentProvider = ({ children }) => {
                 s.neutralTokens += (p.neutralTokens || 0);
             });
         });
+
+        // Apply Team Stats to State
+        setTeams(prevTeams => prevTeams.map(t => {
+            const stats = teamStatsMap[t.id] || { wins: 0, losses: 0, matchesPlayed: [], trophies: [] };
+            const total = stats.wins + stats.losses;
+            const winrate = total > 0 ? ((stats.wins / total) * 100).toFixed(1) : 0;
+            return {
+                ...t,
+                trophies: stats.trophies || [], // Attach trophies here
+                stats: {
+                    ...t.stats,
+                    ...stats,
+                    winrate
+                }
+            };
+        }));
+
         setTournamentStats(newStats);
     };
 
@@ -148,7 +217,7 @@ export const TournamentProvider = ({ children }) => {
 
     // --- Matches ---
 
-    const processMatchStats = async (matchData) => {
+    const processMatchStats = async (matchData, skipAutoLink = false) => {
         if (!matchData || !matchData.players) return;
 
         // Check deduplication in state first
@@ -181,6 +250,31 @@ export const TournamentProvider = ({ children }) => {
             const newHistory = [matchData, ...matchHistory];
             setMatchHistory(newHistory);
             recalculateStats(newHistory);
+
+            // AUTO-LINKING TO TOURNAMENT
+            if (!skipAutoLink && activeTournament) {
+                const rId = matchData.radiantTeamId ? matchData.radiantTeamId.toString() : null;
+                const dId = matchData.direTeamId ? matchData.direTeamId.toString() : null;
+
+                if (rId && dId) {
+                    const bracketMatch = activeTournament.bracket_data.find(m => {
+                        if (m.winner) return false; // Already finished in bracket? Maybe update anyway? Let's skip if strictly finished.
+                        if (!m.team1 || !m.team2) return false;
+                        const t1 = m.team1.id.toString();
+                        const t2 = m.team2.id.toString();
+                        // Check both permutations
+                        return (t1 === rId && t2 === dId) || (t1 === dId && t2 === rId);
+                    });
+
+                    if (bracketMatch) {
+                        console.log("Found matching tournament match! Auto-linking...", bracketMatch);
+                        await linkMatchToTournament(activeTournament.id, bracketMatch.matchId, matchData);
+                        alert("Utakmica uspešno sačuvana I automatski povezana sa aktivnim turnirom!");
+                        return;
+                    }
+                }
+            }
+
             alert("Utakmica uspesno sačuvana!");
         }
     };
@@ -210,26 +304,43 @@ export const TournamentProvider = ({ children }) => {
     // Helper to advance bracket
     const advanceBracket = (bracket, matchId, winnerTeamId) => {
         const newBracket = [...bracket];
-        const matchIndex = newBracket.findIndex(m => m.matchId === matchId);
+        const matchIndex = newBracket.findIndex(m => m.matchId.toString() === matchId.toString());
         if (matchIndex === -1) return newBracket;
 
-        newBracket[matchIndex].winner = winnerTeamId;
-
-        // Logic to move winner to next round
-        // Simple binary tree assumption: match N feeds into match (totalMatches - (matchesPerRound/2) ... complex general logic)
-        // For now, we'll assume the Admin manually edits the next match, OR we implement a 'nextMatchId' pointer.
-        // Let's rely on manual bracket editing for advanced progression for now, or simple assumption:
-        // If we have a 'nextMatchId' in the object, use it.
         const finishedMatch = newBracket[matchIndex];
-        if (finishedMatch.nextMatchId) {
-            const nextMatchIndex = newBracket.findIndex(m => m.matchId === finishedMatch.nextMatchId);
-            if (nextMatchIndex !== -1) {
-                // Determine if it's team1 or team2 slot based on seed or prior arrangement? 
-                // We'll just fill the first empty slot for simplicity, or strict check.
-                if (!newBracket[nextMatchIndex].team1) {
-                    newBracket[nextMatchIndex].team1 = winnerTeamId === finishedMatch.team1.id ? finishedMatch.team1 : finishedMatch.team2;
-                } else if (!newBracket[nextMatchIndex].team2) {
-                    newBracket[nextMatchIndex].team2 = winnerTeamId === finishedMatch.team1.id ? finishedMatch.team1 : finishedMatch.team2;
+
+        // Ensure winner is set on the match
+        newBracket[matchIndex] = {
+            ...finishedMatch,
+            winner: winnerTeamId
+        };
+
+        if (!finishedMatch.nextMatchId) return newBracket;
+
+        const nextMatchIndex = newBracket.findIndex(m => m.matchId === finishedMatch.nextMatchId);
+        if (nextMatchIndex !== -1) {
+            // Find the full team object
+            let winningTeamObj = null;
+            if (finishedMatch.team1 && finishedMatch.team1.id.toString() === winnerTeamId.toString()) {
+                winningTeamObj = finishedMatch.team1;
+            } else if (finishedMatch.team2 && finishedMatch.team2.id.toString() === winnerTeamId.toString()) {
+                winningTeamObj = finishedMatch.team2;
+            }
+
+            if (winningTeamObj) {
+                // Place into next match
+                // Logic: If team1 is empty, put there. Else if team2 is empty, put there. 
+                // Determine slot consistency? 
+                // For a specific match, usually the "top" feeder goes to Team 1 and "bottom" feeder to Team 2.
+                // But without explicit slot mapping, first-come-first-served is acceptable for now.
+                const nextMatch = newBracket[nextMatchIndex];
+                if (!nextMatch.team1) {
+                    newBracket[nextMatchIndex] = { ...nextMatch, team1: winningTeamObj };
+                } else if (!nextMatch.team2) {
+                    // Ensure we don't overwrite if it's already this team (idempotency)
+                    if (nextMatch.team1.id.toString() !== winningTeamObj.id.toString()) {
+                        newBracket[nextMatchIndex] = { ...nextMatch, team2: winningTeamObj };
+                    }
                 }
             }
         }
@@ -278,25 +389,102 @@ export const TournamentProvider = ({ children }) => {
         const tournament = tournaments.find(t => t.id === tournamentId);
         if (!tournament) return;
 
-        let bracket = tournament.bracket_data;
+        let bracket = [...tournament.bracket_data];
         // Find the bracket match
         const matchIdx = bracket.findIndex(m => m.matchId.toString() === bracketMatchId.toString());
         if (matchIdx === -1) return;
 
-        const winnerTeamId = realMatchData.winner === 'Radiant' ? realMatchData.radiantTeamId : realMatchData.direTeamId;
+        const realWinnerId = realMatchData.winner === 'Radiant' ? realMatchData.radiantTeamId : realMatchData.direTeamId;
+        const currentMatch = bracket[matchIdx];
 
-        // Update the specific match in bracket
-        bracket[matchIdx] = {
-            ...bracket[matchIdx],
-            realMatchId: realMatchData.matchId,
-            winner: winnerTeamId,
-            status: 'completed'
-        };
+        // Determine which bracket team won this specific game
+        let winnerTeam = null; // 'team1' or 'team2'
+        if ((currentMatch.team1 && currentMatch.team1.id.toString() === realWinnerId.toString()) ||
+            (realWinnerId && currentMatch.team1 && realMatchData.winner === 'Radiant' && !realMatchData.direTeamId)) { /* fallback logic if mapping vague */
+            winnerTeam = 'team1';
+        }
 
-        // Advance winner logic (simplified for immediate needs)
-        const updatedBracket = advanceBracket(bracket, bracketMatchId, winnerTeamId);
+        // Robust ID check
+        if (currentMatch.team1 && currentMatch.team1.id.toString() == realWinnerId?.toString()) winnerTeam = 'team1';
+        else if (currentMatch.team2 && currentMatch.team2.id.toString() == realWinnerId?.toString()) winnerTeam = 'team2';
+
+        if (!winnerTeam) {
+            console.warn("Could not map Replay Winner to Bracket Team", realWinnerId, currentMatch);
+            // We might still proceed if we trust the dragging, but safer to warn.
+            // For now, let's assume if it matches team1 ID ok, else team2.
+        }
+
+        // Increment Score
+        if (winnerTeam === 'team1') {
+            currentMatch.team1Score = (currentMatch.team1Score || 0) + 1;
+        } else if (winnerTeam === 'team2') {
+            currentMatch.team2Score = (currentMatch.team2Score || 0) + 1;
+        }
+
+        // Link the Replay ID
+        // push to 'games' array for history of the series
+        if (!currentMatch.games) currentMatch.games = [];
+        // Avoid duplicates in games array
+        if (!currentMatch.games.find(g => g.matchId === realMatchData.matchId)) {
+            currentMatch.games.push({
+                matchId: realMatchData.matchId,
+                winner: realMatchData.winner,
+                timestamp: realMatchData.timestamp,
+                duration: realMatchData.duration,
+                radiantTeamId: realMatchData.radiantTeamId,
+                direTeamId: realMatchData.direTeamId
+            });
+        }
+
+        // Backward compatibility: realMatchId points to the *latest* match
+        currentMatch.realMatchId = realMatchData.matchId;
+
+        // Check Format logic
+        const format = currentMatch.format || 'bo1';
+        const winsNeeded = format === 'bo3' ? 2 : (format === 'bo5' ? 3 : 1);
+
+        let seriesWinnerId = null;
+        if ((currentMatch.team1Score || 0) >= winsNeeded) seriesWinnerId = currentMatch.team1.id;
+        if ((currentMatch.team2Score || 0) >= winsNeeded) seriesWinnerId = currentMatch.team2.id;
+
+        if (seriesWinnerId) {
+            currentMatch.winner = seriesWinnerId;
+            currentMatch.status = 'completed';
+        }
+
+        bracket[matchIdx] = currentMatch;
+
+        // Advance winner logic if Series is won
+        let updatedBracket = bracket;
+        if (seriesWinnerId) {
+            updatedBracket = advanceBracket(bracket, bracketMatchId, seriesWinnerId);
+        }
 
         await updateTournament(tournamentId, { bracket_data: updatedBracket });
+    };
+
+    const finishTournament = async (tournamentId, winnerTeamId) => {
+        const { error } = await supabase.from('tournaments')
+            .update({ status: 'archived', winner: winnerTeamId })
+            .eq('id', tournamentId);
+
+        if (error) {
+            console.error("Error archiving tournament:", error);
+            alert("Error finishing tournament.");
+        } else {
+            // Optimistic update
+            setTournaments(prev => prev.map(t =>
+                t.id === tournamentId ? { ...t, status: 'archived', winner: winnerTeamId } : t
+            ));
+            setActiveTournament(null);
+
+            // Re-fetch to ensure trophies are calculated
+            // Actually, we can just trigger a manual recalculate if we had the new tournaments list
+            // But since trophies are calculated in recalculateStats using tournaments list...
+            // better to just window.location.reload() or force fetch. 
+            // Simple way:
+            window.location.reload();
+        }
     };
 
     const dispatch = (action) => {
@@ -312,7 +500,7 @@ export const TournamentProvider = ({ children }) => {
     return (
         <TournamentContext.Provider value={{
             teams, pendingTeams, registerTeam, approveTeam, rejectTeam, deleteTeam, updateTeam,
-            tournaments, activeTournament, createTournament: saveTournament, updateTournament, deleteTournament, publishTournament, linkMatchToTournament,
+            tournaments, activeTournament, createTournament: saveTournament, updateTournament, deleteTournament, publishTournament, linkMatchToTournament, finishTournament,
             tournamentStats, processMatchStats,
             matchHistory,
             deleteMatch,

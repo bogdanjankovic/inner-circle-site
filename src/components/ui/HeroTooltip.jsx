@@ -29,22 +29,32 @@ const useHeroMap = () => {
 
 export const HeroImage = ({ heroId, style }) => {
     const heroMap = useHeroMap();
-    const heroData = heroMap[heroId];
-
-    // Debug log for specific missing heroes or general check
-    if (!heroData && heroId) {
-        console.warn(`[HeroImage] Hero ID ${heroId} not found in map. Map size: ${Object.keys(heroMap).length}`);
-    } else if (heroData && !heroData.img) {
-        console.warn(`[HeroImage] Hero ID ${heroId} found but missing 'img' property.`, heroData);
+    
+    console.log(`[HeroImage] Looking for hero ID ${heroId}. Map size: ${Object.keys(heroMap).length}`);
+    
+    if (!heroId) return null;
+    
+    const hero = heroMap[heroId];
+    if (!hero) {
+        // Only log warning for unique hero IDs to reduce spam
+        if (!window.loggedHeroWarnings) window.loggedHeroWarnings = new Set();
+        if (!window.loggedHeroWarnings.has(heroId)) {
+            console.warn(`[HeroImage] Hero ID ${heroId} not found in map. Map size: ${Object.keys(heroMap).length}`);
+            window.loggedHeroWarnings.add(heroId);
+        }
+        return null;
+    }
+    if (hero && !hero.img) {
+        console.warn(`[HeroImage] Hero ID ${heroId} found but missing 'img' property.`, hero);
     }
 
     // OpenDota constants provide paths like "/apps/dota2/images/dota_react/heroes/icons/antimage.png?"
     // We downloaded them to /assets/images/dota/heroes/{heroName}.png
-    // We need to derive the clean name from heroData.name (npc_dota_hero_antimage)
+    // We need to derive the clean name from hero.name (npc_dota_hero_antimage)
 
     let localImgPath = null;
-    if (heroData && heroData.name) {
-        const cleanName = heroData.name.replace('npc_dota_hero_', '');
+    if (hero && hero.name) {
+        const cleanName = hero.name.replace('npc_dota_hero_', '');
         localImgPath = `/assets/images/dota/heroes/${cleanName}.png`;
     }
 
@@ -54,8 +64,8 @@ export const HeroImage = ({ heroId, style }) => {
         return (
             <img
                 src={imgSrc}
-                alt={heroData?.localized_name || heroId}
-                title={heroData?.localized_name}
+                alt={hero?.localized_name || heroId}
+                title={hero?.localized_name}
                 style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover', backgroundColor: '#222', ...style }}
                 onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
             />

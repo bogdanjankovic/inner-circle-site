@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+import { useTournament } from '../../context/TournamentContext';
 import './MatchDetails.css';
 import { HeroImage } from '../ui/HeroTooltip';
 
@@ -239,7 +241,7 @@ const TeamTable = ({ teamName, players, winner }) => {
                 // Handle numeric values
                 aValue = aValue || 0;
                 bValue = bValue || 0;
-                
+
                 if (sortConfig.direction === 'asc') {
                     return aValue - bValue;
                 } else {
@@ -489,7 +491,7 @@ const HeatmapOverlay = ({ players, wards }) => {
             {/* Map Container - Centered */}
             <div className="minimap-container" style={{ position: 'relative', width: '512px', height: '512px', flex: '0 0 auto', border: '1px solid #333', boxShadow: '0 0 20px rgba(0,0,0,0.5)' }}>
                 <div className="minimap" style={{ width: '100%', height: '100%', position: 'relative' }}>
-                    <div 
+                    <div
                         style={{
                             position: 'absolute',
                             top: 0,
@@ -512,7 +514,7 @@ const HeatmapOverlay = ({ players, wards }) => {
                     {(showObs || showSent) && wards && wards.map((w, i) => {
                         if (w.type === 'Observer' && !showObs) return null;
                         if (w.type === 'Sentry' && !showSent) return null;
-                        
+
                         // Team filter
                         if (wardTeamFilter !== 'all') {
                             const wardTeam = (w.team || '').toLowerCase();
@@ -665,13 +667,48 @@ const HeatmapOverlay = ({ players, wards }) => {
     );
 };
 
-const MatchDetails = ({ match }) => {
+const MatchDetails = ({ match: propMatch }) => {
+    const { id } = useParams();
+    const { teams, matchHistory } = useTournament(); // Access teams data
     const [activeTab, setActiveTab] = React.useState('overview');
 
-    if (!match || !match.players) return <div style={{ padding: '1rem', color: '#888' }}>No match details available</div>;
+    // Resolve match from prop or context history
+    const match = propMatch || matchHistory.find(m => m.matchId.toString() === id);
+
+    if (!match) return <div style={{ padding: '2rem', textAlign: 'center', color: '#888' }}>Match not found (ID: {id})</div>;
+    if (!match.players) return <div style={{ padding: '2rem', textAlign: 'center', color: '#888' }}>Match data incomplete</div>;
 
     const radiantPlayers = match.players.filter(p => p.team === 'Radiant');
     const direPlayers = match.players.filter(p => p.team === 'Dire');
+
+    // Resolve Winner Name and Class
+    let winnerName = match.winner;
+    let winnerClass = 'radiant-text'; // default
+
+    // Check if winner is ID or Side
+    if (match.winner === 'Radiant') {
+        winnerClass = 'radiant-text';
+        if (match.radiantTeamId) {
+            const t = teams.find(team => team.id.toString() === match.radiantTeamId.toString());
+            if (t) winnerName = t.name;
+        }
+    } else if (match.winner === 'Dire') {
+        winnerClass = 'dire-text';
+        if (match.direTeamId) {
+            const t = teams.find(team => team.id.toString() === match.direTeamId.toString());
+            if (t) winnerName = t.name;
+        }
+    } else {
+        // Winner might be a Team ID directly
+        const teamName = teams.find(t => t.id == match.winner)?.name;
+        if (teamName) winnerName = teamName;
+
+        // Try to deduce color class
+        if (match.radiantTeamId && match.winner == match.radiantTeamId) winnerClass = 'radiant-text';
+        else if (match.direTeamId && match.winner == match.direTeamId) winnerClass = 'dire-text';
+    }
+
+
 
     // Create a hero ID map from players to at least show names for picked heroes
     const heroIdMap = {};
@@ -686,8 +723,8 @@ const MatchDetails = ({ match }) => {
                     <span className="match-id">Match {match.matchId}</span>
                     <span className="match-duration">{(match.duration / 60).toFixed(0)}:{(match.duration % 60).toFixed(0).padStart(2, '0')}</span>
                 </div>
-                <div className={`winner-label ${match.winner === 'Radiant' ? 'radiant-text' : 'dire-text'}`}>
-                    {match.winner} Victory
+                <div className={`winner-label ${winnerClass}`}>
+                    {winnerName} Victory
                 </div>
             </div>
 

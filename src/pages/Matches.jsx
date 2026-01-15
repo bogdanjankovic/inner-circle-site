@@ -27,7 +27,14 @@ const Matches = () => {
                                     style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', cursor: 'pointer', background: '#15191f', gap: '1rem' }}
                                     onClick={() => toggleMatch(m.matchId)}
                                 >
-                                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem', textAlign: 'right' }}>{m.team1?.name || 'TBD'}</div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem', textAlign: 'right' }}>
+                                        {m.team1?.name || 'TBD'}
+                                        {(m.team1Score > 0 || m.team2Score > 0) && (
+                                            <span style={{ marginLeft: '10px', color: m.team1Score > m.team2Score ? '#4caf50' : '#888' }}>
+                                                ({m.team1Score})
+                                            </span>
+                                        )}
+                                    </div>
 
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                         <div style={{ color: 'var(--accent)', fontWeight: 'bold', fontSize: '1.5rem' }}>VS</div>
@@ -40,7 +47,14 @@ const Matches = () => {
                                         )}
                                     </div>
 
-                                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem', textAlign: 'left' }}>{m.team2?.name || 'TBD'}</div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem', textAlign: 'left' }}>
+                                        {(m.team1Score > 0 || m.team2Score > 0) && (
+                                            <span style={{ marginRight: '10px', color: m.team2Score > m.team1Score ? '#4caf50' : '#888' }}>
+                                                ({m.team2Score})
+                                            </span>
+                                        )}
+                                        {m.team2?.name || 'TBD'}
+                                    </div>
                                 </div>
 
                                 {/* Expandable Details */}

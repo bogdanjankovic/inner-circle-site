@@ -2,15 +2,91 @@ import { useTournament } from '../context/TournamentContext';
 import RankDisplay from '../components/ui/RankDisplay';
 import HeroTooltip, { HeroImage } from '../components/ui/HeroTooltip';
 import React, { useState, useMemo, useEffect } from 'react';
-import { getMatchDetails, fetchPlayerData } from '../services/dotaApi';
+import { getMatchDetails, fetchPlayerData, getPositionHeroesFromStratz, clearPlayerPositionCache } from '../services/dotaApi';
+import { useNavigate } from 'react-router-dom';
 
 const PlayerModal = ({ player, onClose, stats }) => {
     if (!player) return null;
 
-    // Use player data directly - no auto-refresh
-    // Heroes are refreshed only when:
-    // 1. Admin changes position in admin panel
-    // 2. Player registers for first time
+    const navigate = useNavigate();
+    const [refreshedPlayer, setRefreshedPlayer] = useState(player);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [positionHeroes, setPositionHeroes] = useState([]);
+
+    // Refresh heroes with STRATZ API when modal opens (with caching)
+    useEffect(() => {
+        const refreshHeroes = async () => {
+            if (player.steamId) {
+                setIsRefreshing(true);
+                try {
+                    console.log('=== REFRESHING PLAYER HEROES (WITH CACHE) ===');
+                    
+                    // Use existing topHeroes from player object (from hover card)
+                    const existingTopHeroes = player.topHeroes || [];
+                    console.log('DEBUG: Using existing topHeroes:', existingTopHeroes);
+                    
+                    // Get position-specific heroes from STRATZ (if position exists) - will use cache
+                    let posHeroes = [];
+                    if (player.position && player.position !== 0) {
+                        console.log('=== GETTING POSITION HEROES FROM STRATZ (CACHED) ===');
+                        posHeroes = await getPositionHeroesFromStratz(player.accountId, player.position, player.steamId, false);
+                    }
+                    
+                    // Get Dota Plus heroes from STRATZ (with caching)
+                    let dotaPlusHeroes = [];
+                    try {
+                        const { getTopDotaPlusHeroes, steamIdToStratzAccountId } = await import("../services/stratzApi.js");
+                        const stratzAccountId = steamIdToStratzAccountId(player.steamId);
+                        dotaPlusHeroes = await getTopDotaPlusHeroes(stratzAccountId);
+                        console.log('DEBUG: Dota Plus heroes:', dotaPlusHeroes);
+                    } catch (error) {
+                        console.error('Error fetching Dota Plus heroes:', error);
+                    }
+                    
+                    setRefreshedPlayer({
+                        ...player,
+                        topHeroes: existingTopHeroes,
+                        dotaPlusHeroes: dotaPlusHeroes || []
+                    });
+                    setPositionHeroes(posHeroes || []);
+                    console.log('=== HEROES REFRESHED SUCCESSFULLY (USING EXISTING DATA) ===');
+                } catch (error) {
+                    console.error('Failed to refresh heroes:', error);
+                    // Fallback to existing data
+                    setRefreshedPlayer({
+                        ...player,
+                        topHeroes: player.topHeroes || [],
+                        dotaPlusHeroes: []
+                    });
+                    setPositionHeroes([]);
+                } finally {
+                    setIsRefreshing(false);
+                }
+            }
+        };
+
+        refreshHeroes();
+    }, [player.steamId, player.position, player.accountId]);
+
+    // Force refresh STRATZ data when position changes
+    useEffect(() => {
+        const refreshPositionHeroes = async () => {
+            if (player.steamId && player.position && player.position !== 0) {
+                try {
+                    console.log('=== POSITION CHANGED - FORCE REFRESHING STRATZ ===');
+                    const posHeroes = await getPositionHeroesFromStratz(player.accountId, player.position, player.steamId, true);
+                    setPositionHeroes(posHeroes);
+                } catch (error) {
+                    console.error('Failed to refresh position heroes:', error);
+                }
+            }
+        };
+
+        // This will trigger when position changes
+        if (positionHeroes.length > 0) {
+            refreshPositionHeroes();
+        }
+    }, [player.position]);
 
     // Position data
     const positions = [
@@ -38,57 +114,143 @@ const PlayerModal = ({ player, onClose, stats }) => {
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '90vh', overflowY: 'auto' }}>
                 <button className="close-modal" onClick={onClose}>&times;</button>
 
-                <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <img
                         src={player.avatar || 'https://via.placeholder.com/150'}
                         alt={player.personaName}
-                        style={{ width: '120px', height: '120px', borderRadius: '50%', border: '4px solid var(--accent)' }}
+                        style={{ width: '80px', height: '80px', borderRadius: '50%', border: '3px solid var(--accent)' }}
                     />
-                    <div>
-                        <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{player.personaName}</h2>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                            <h2 style={{ fontSize: '1.8rem', margin: 0 }}>{player.personaName}</h2>
+                            {player.isCaptain && (
+                                <span style={{ 
+                                    padding: '0.2rem 0.5rem', 
+                                    background: '#ffd700', 
+                                    color: '#000',
+                                    borderRadius: '4px', 
+                                    fontSize: '0.8rem',
+                                    fontWeight: 'bold'
+                                }}>
+                                    ♔ Kapiten
+                                </span>
+                            )}
+                            <span style={{ 
+                                padding: '0.2rem 0.5rem', 
+                                background: 'var(--accent)', 
+                                borderRadius: '4px', 
+                                fontSize: '0.8rem',
+                                fontWeight: 'bold'
+                            }}>
+                                {player.position ? positions.find(p => p.id === player.position)?.name : 'Nema pozicije'}
+                            </span>
+                        </div>
                         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                            <RankDisplay rankTier={player.rankTier} leaderboardRank={player.leaderboardRank} width="60px" />
-                            <span style={{ fontSize: '1.2rem', color: '#ccc' }}>{player.teamName}</span>
+                            <RankDisplay rankTier={player.rankTier} leaderboardRank={player.leaderboardRank} width="40px" />
+                            {player.teamName ? (
+                                <button
+                                    onClick={() => {
+                                        // Navigate to teams page and trigger team modal
+                                        navigate('/teams', { 
+                                            state: { 
+                                                openTeamModal: true, 
+                                                teamName: player.teamName 
+                                            } 
+                                        });
+                                    }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        background: 'rgba(255,255,255,0.1)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '4px',
+                                        padding: '0.3rem 0.6rem',
+                                        color: '#fff',
+                                        cursor: 'pointer',
+                                        fontSize: '0.9rem',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.target.style.background = 'rgba(255,255,255,0.2)';
+                                        e.target.style.borderColor = 'var(--accent)';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.target.style.background = 'rgba(255,255,255,0.1)';
+                                        e.target.style.borderColor = 'rgba(255,255,255,0.2)';
+                                    }}
+                                >
+                                    {player.teamLogo && (
+                                        <img 
+                                            src={player.teamLogo} 
+                                            alt={player.teamName}
+                                            style={{ width: '20px', height: '20px', borderRadius: '2px' }}
+                                        />
+                                    )}
+                                    <span>{player.teamName}</span>
+                                </button>
+                            ) : (
+                                <span style={{ fontSize: '1rem', color: '#ccc' }}>Nema tima</span>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                    <div className="card">
-                        <h3>Pub Statistika</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="card" style={{ padding: '1rem' }}>
+                        <h3 style={{ fontSize: '1.1rem', marginBottom: '0.8rem' }}>Pub Statistika</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
                             <div>
-                                <label style={{ color: '#888', fontSize: '0.9rem' }}>Winrate</label>
-                                <div style={{ fontSize: '1.5rem' }}>{player.winrate}%</div>
+                                <label style={{ color: '#888', fontSize: '0.8rem' }}>Winrate</label>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{player.winrate}%</div>
                             </div>
                             <div>
-                                <label style={{ color: '#888', fontSize: '0.9rem' }}>Mečeva (Recorded)</label>
-                                <div style={{ fontSize: '1.5rem' }}>{player.winCount + player.lossCount}</div>
+                                <label style={{ color: '#888', fontSize: '0.8rem' }}>Mečeva</label>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{player.winCount + player.lossCount}</div>
                             </div>
                             <div>
-                                <label style={{ color: '#888', fontSize: '0.9rem' }}>GPM / XPM</label>
-                                <div style={{ fontSize: '1.2rem' }}>{player.stats?.gpm} / {player.stats?.xpm}</div>
+                                <label style={{ color: '#888', fontSize: '0.8rem' }}>GPM / XPM</label>
+                                <div style={{ fontSize: '1rem' }}>{player.stats?.gpm} / {player.stats?.xpm}</div>
+                            </div>
+                            <div>
+                                <label style={{ color: '#888', fontSize: '0.8rem' }}>KDA</label>
+                                <div style={{ fontSize: '1rem' }}>
+                                    {(() => {
+                                        if (player.stats?.kda && !isNaN(player.stats.kda)) {
+                                            return player.stats.kda;
+                                        }
+                                        const kills = Number(player.stats?.kills) || 0;
+                                        const deaths = Number(player.stats?.deaths) || 0;
+                                        const assists = Number(player.stats?.assists) || 0;
+                                        
+                                        if (kills > 0 || assists > 0) {
+                                            const kda = (kills + assists) / Math.max(deaths, 1);
+                                            return isNaN(kda) ? 'N/A' : kda.toFixed(2);
+                                        }
+                                        return 'N/A';
+                                    })()}
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="card" style={{ border: '1px solid var(--accent)' }}>
-                        <h3 style={{ color: 'var(--accent)' }}>Turnir Statistika</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+                    <div className="card" style={{ border: '1px solid var(--accent)', padding: '1rem' }}>
+                        <h3 style={{ color: 'var(--accent)', fontSize: '1.1rem', marginBottom: '0.8rem' }}>Turnir Statistika</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
                             <div>
-                                <label style={{ color: '#888', fontSize: '0.9rem' }}>K / D / A</label>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                                <label style={{ color: '#888', fontSize: '0.8rem' }}>K / D / A</label>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
                                     <span style={{ color: '#4caf50' }}>{displayStats.kills}</span> / <span style={{ color: '#f44336' }}>{displayStats.deaths}</span> / <span>{displayStats.assists}</span>
                                 </div>
                             </div>
                             <div>
-                                <label style={{ color: '#888', fontSize: '0.9rem' }}>Mečeva</label>
-                                <div style={{ fontSize: '1.5rem' }}>{displayStats.matches}</div>
+                                <label style={{ color: '#888', fontSize: '0.8rem' }}>Mečeva</label>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{displayStats.matches}</div>
                             </div>
-                            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)', padding: '0.5rem', borderRadius: '4px' }}>
+                            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)', padding: '0.3rem', borderRadius: '4px', fontSize: '0.8rem' }}>
                                 <div title="Roshans Killed">🦁 {displayStats.roshansKilled}</div>
                                 <div title="Tormentors Killed">🧊 {displayStats.tormentorsKilled}</div>
                                 <div title="Runes">💧 {displayStats.runesActivated}</div>
@@ -98,71 +260,96 @@ const PlayerModal = ({ player, onClose, stats }) => {
                     </div>
                 </div>
 
-                <div style={{ marginTop: '2rem' }}>
-                    <h3>
-                        {player.position 
-                            ? `Top ${positions.find(p => p.id === player.position)?.name} Heroji` 
-                            : 'Najuspešniji Heroji (All Time)'}
+                {/* All-Time Heroes Section */}
+                <div style={{ marginTop: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1.1rem' }}>
+                        Najuspešniji Heroji (All Time)
+                        {isRefreshing && <span style={{ fontSize: '0.7rem', color: '#888' }}> (🔄 osvežavanje...)</span>}
                     </h3>
-                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                        {player.topHeroes?.map((h, i) => (
-                            <div key={i} className="card" style={{ padding: '1rem', flex: 1, textAlign: 'center' }}>
-                                <div style={{ marginBottom: '0.5rem' }}>
-                                    <HeroImage heroId={h.heroId} style={{ width: '60px', height: '60px' }} />
-                                </div>
-                                <div style={{ color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336' }}>
-                                    {h.winrate}% Win
-                                </div>
-                                <div style={{ fontSize: '0.9rem', color: '#888' }}>{h.games} mečeva</div>
+                    {isRefreshing ? (
+                        <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem', justifyContent: 'center' }}>
+                            <div style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>
+                                <div>🔄 Učitavam...</div>
                             </div>
-                        ))}
-                    </div>
-                    {!player.position && (
-                        <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>
-                            💡 Da bi video heroje za specifičnu poziciju, admin treba da postavi poziciju za ovog igrača.
-                        </p>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem' }}>
+                            {(refreshedPlayer.topHeroes && Array.isArray(refreshedPlayer.topHeroes) ? refreshedPlayer.topHeroes : []).map((h, i) => (
+                                <div key={i} className="card" style={{ padding: '0.8rem', flex: 1, textAlign: 'center' }}>
+                                    <div style={{ marginBottom: '0.4rem' }}>
+                                        <HeroImage heroId={h.heroId} style={{ width: '45px', height: '45px' }} />
+                                    </div>
+                                    <div style={{ color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                        {h.winrate}%
+                                    </div>
+                                    <div style={{ fontSize: '0.7rem', color: '#888' }}>{h.games} mečeva</div>
+                                </div>
+                            ))}
+                        </div>
                     )}
+                </div>
+
+                {/* Position-Specific Heroes Section (STRATZ) */}
+                {refreshedPlayer.position && refreshedPlayer.position !== 0 && (
+                    <div style={{ marginTop: '1.5rem' }}>
+                        <h3 style={{ color: '#2196f3', fontSize: '1.1rem' }}>
+                            Top {positions.find(p => p.id === refreshedPlayer.position)?.name} Heroji u poslednje vreme
+                        </h3>
+                        {positionHeroes.length > 0 ? (
+                            <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem' }}>
+                                {positionHeroes.map((h, i) => (
+                                    <div key={i} className="card" style={{ 
+                                        padding: '0.8rem', 
+                                        flex: 1, 
+                                        textAlign: 'center',
+                                        border: '2px solid #2196f3',
+                                        background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(33, 150, 243, 0.05))'
+                                    }}>
+                                        <div style={{ marginBottom: '0.4rem' }}>
+                                            <HeroImage heroId={h.heroId} style={{ width: '45px', height: '45px' }} />
+                                        </div>
+                                        <div style={{ color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                            {h.winrate}%
+                                        </div>
+                                        <div style={{ fontSize: '0.7rem', color: '#888' }}>{h.games} mečeva</div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', color: '#888', marginTop: '0.8rem', fontSize: '0.9rem' }}>
+                                <div>📊 Nema podataka za poziciju</div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Dota Plus Heroes */}
-                {player.dotaPlusHeroes && player.dotaPlusHeroes.length > 0 && (
-                    <div style={{ marginTop: '2rem' }}>
-                        <h3 style={{ color: '#e63946', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {refreshedPlayer.dotaPlusHeroes && refreshedPlayer.dotaPlusHeroes.length > 0 && (
+                    <div style={{ marginTop: '1.5rem' }}>
+                        <h3 style={{ color: '#e63946', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             ⭐ Dota Plus Heroji
                         </h3>
-                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                            {player.dotaPlusHeroes.map((h, i) => (
+                        <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem' }}>
+                            {refreshedPlayer.dotaPlusHeroes.map((h, i) => (
                                 <div key={i} className="card" style={{ 
-                                    padding: '1rem', 
+                                    padding: '0.8rem', 
                                     flex: 1, 
                                     textAlign: 'center',
                                     border: '2px solid #e63946',
-                                    background: 'linear-gradient(135deg, rgba(230, 57, 70, 0.1), rgba(230, 57, 70, 0.05)'
+                                    background: 'linear-gradient(135deg, rgba(230, 57, 70, 0.1), rgba(230, 57, 70, 0.05))'
                                 }}>
-                                    <div style={{ marginBottom: '0.5rem' }}>
-                                        <HeroImage heroId={h.heroId} style={{ width: '60px', height: '60px' }} />
+                                    <div style={{ marginBottom: '0.4rem' }}>
+                                        <HeroImage heroId={h.heroId} style={{ width: '45px', height: '45px' }} />
                                     </div>
-                                    <div style={{ 
-                                        color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336',
-                                        fontWeight: 'bold'
-                                    }}>
-                                        {h.winrate}% Win
+                                    <div style={{ color: '#e63946', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                        Lvl {h.level}
                                     </div>
-                                    <div style={{ fontSize: '0.9rem', color: '#888' }}>{h.games} mečeva</div>
-                                    <div style={{ 
-                                        fontSize: '0.8rem', 
-                                        color: '#e63946', 
-                                        fontWeight: 'bold',
-                                        marginTop: '0.25rem'
-                                    }}>
-                                        Level {h.level}
-                                    </div>
+                                    <div style={{ fontSize: '0.7rem', color: '#888' }}>Dota Plus</div>
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
-                                    </div>
-
             </div>
         </div>
     );

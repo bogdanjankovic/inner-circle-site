@@ -1,5 +1,6 @@
 // STRATZ GraphQL API Service
-const STRATZ_API_URL = 'https://api.stratz.com/graphql';
+// STRATZ GraphQL API Service
+const STRATZ_API_URL = '/api/stratz';
 const STRATZ_API_KEY = import.meta.env.VITE_STRATZ_API_KEY || ''; // Add to .env file
 
 // Position mapping for STRATZ
@@ -17,15 +18,16 @@ const STRATZ_POSITIONS = {
 const getPlayerHeroesByPositionQuery = (steamAccountId, position) => `
 query {
   player(steamAccountId: ${steamAccountId}) {
-    heroStats {
+    heroesPerformance(request: {
+      startDateTime: 1672531200
+      endDateTime: ${Math.floor(Date.now() / 1000)}
+      take: 3000
+      isStats: true
+      positionIds: [POSITION_${position}]
+    }) {
       heroId
-      winCount
       matchCount
-      withRole {
-        role
-        winCount
-        matchCount
-      }
+      winCount
     }
   }
 }
@@ -54,91 +56,111 @@ query {
  */
 export const getTopHeroesByPositionStratz = async (steamAccountId, position) => {
     try {
-        const query = position ? 
-            getPlayerHeroesByPositionQuery(steamAccountId, position) : 
+        console.log('STRATZ: Fetching for steamAccountId:', steamAccountId, 'position:', position);
+        console.log('STRATZ: API Key available:', !!STRATZ_API_KEY);
+
+        const query = position ?
+            getPlayerHeroesByPositionQuery(steamAccountId, position) :
             getAllPlayerHeroesQuery(steamAccountId);
+
+        console.log('STRATZ: Query:', query.substring(0, 100) + '...');
 
         const headers = {
             'Content-Type': 'application/json',
         };
-        
+
         // Add API key if available
         if (STRATZ_API_KEY) {
             headers['Authorization'] = `Bearer ${STRATZ_API_KEY}`;
+            console.log('STRATZ: Using API key');
+        } else {
+            console.log('STRATZ: No API key found');
         }
+
+        const requestBody = JSON.stringify({ query });
+        console.log('STRATZ: Request body:', requestBody);
+        console.log('STRATZ: Request headers:', headers);
 
         const response = await fetch(STRATZ_API_URL, {
             method: 'POST',
             headers,
-            body: JSON.stringify({ query })
+            body: requestBody
         });
 
+        console.log('STRATZ: Response status:', response.status);
+        console.log('STRATZ: Response headers:', response.headers);
+
         if (!response.ok) {
-            throw new Error(`STRATZ API error: ${response.status}`);
+            // Try to get error details from 400 response
+            const errorText = await response.text();
+            console.log('STRATZ: Error response body:', errorText);
+            throw new Error(`STRATZ API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
-        
+
+        console.log('STRATZ: Full response data:', data);
+
         if (data.errors) {
+            console.log('STRATZ: GraphQL errors:', data.errors);
+            data.errors.forEach((error, index) => {
+                console.log(`STRATZ Error ${index + 1}:`, error.message);
+                console.log(`STRATZ Error ${index + 1} Locations:`, error.locations);
+                console.log(`STRATZ Error ${index + 1} Path:`, error.path);
+            });
             throw new Error(`GraphQL error: ${data.errors[0].message}`);
         }
 
-        const heroStats = data.data?.player?.heroStats || [];
-        
-        if (!position) {
-            // Return all heroes sorted by games and winrate
-            return heroStats
-                .filter(h => h.matchCount >= 10)
-                .sort((a, b) => b.matchCount - a.matchCount)
-                .slice(0, 10)
-                .sort((a, b) => (b.winCount / b.matchCount) - (a.winCount / a.matchCount))
-                .slice(0, 3)
-                .map(h => ({
-                    heroId: h.heroId,
-                    games: h.matchCount,
-                    win: h.winCount,
-                    winrate: ((h.winCount / h.matchCount) * 100).toFixed(1)
-                }));
+        const heroesPerformance = data.data?.player?.heroesPerformance || [];
+        console.log('STRATZ: Raw heroes performance count:', heroesPerformance.length);
+
+        // Debug: prikaži sve podatke koje dolaze iz STRATZ-a
+        console.log('STRATZ: Full heroesPerformance data:', heroesPerformance);
+        heroesPerformance.forEach((h, index) => {
+            console.log(`STRATZ Hero ${index + 1}:`, {
+                heroId: h.heroId,
+                matchCount: h.matchCount,
+                winCount: h.winCount,
+                calculatedWinrate: ((h.winCount / h.matchCount) * 100).toFixed(1)
+            });
+        });
+
+        // Return all heroes sorted by winrate and match count (minimum 10 matches)
+        console.log('STRATZ: Processing heroes with match counts:', heroesPerformance.map(h => ({ heroId: h.heroId, matchCount: h.matchCount })));
+
+        // Filter heroes with minimum matches
+        let filteredHeroes = heroesPerformance.filter(h => h.matchCount >= 10);
+
+        // If not enough heroes with 10+ matches, lower to 5
+        if (filteredHeroes.length < 3) {
+            filteredHeroes = heroesPerformance.filter(h => h.matchCount >= 5);
         }
 
-        // Filter heroes by position
-        const stratzRole = STRATZ_POSITIONS[position];
-        const positionHeroes = heroStats
-            .filter(hero => {
-                const roleStats = hero.withRole?.find(r => r.role === stratzRole);
-                return roleStats && roleStats.matchCount >= 5;
-            })
-            .map(hero => {
-                const roleStats = hero.withRole?.find(r => r.role === stratzRole);
-                return {
-                    heroId: hero.heroId,
-                    games: roleStats.matchCount,
-                    win: roleStats.winCount,
-                    winrate: ((roleStats.winCount / roleStats.matchCount) * 100).toFixed(1)
-                };
-            })
-            .sort((a, b) => b.games - a.games)
-            .slice(0, 10)
-            .sort((a, b) => (b.win / b.games) - (a.win / a.games))
-            .slice(0, 3);
-
-        // If not enough heroes with position data, fallback to all heroes
-        if (positionHeroes.length < 3) {
-            return heroStats
-                .filter(h => h.matchCount >= 5)
-                .sort((a, b) => b.matchCount - a.matchCount)
-                .slice(0, 10)
-                .sort((a, b) => (b.winCount / b.matchCount) - (a.winCount / a.matchCount))
-                .slice(0, 3)
-                .map(h => ({
-                    heroId: h.heroId,
-                    games: h.matchCount,
-                    win: h.winCount,
-                    winrate: ((h.winCount / h.matchCount) * 100).toFixed(1)
-                }));
+        // If still not enough, take all with at least 1 match
+        if (filteredHeroes.length < 3) {
+            filteredHeroes = heroesPerformance.filter(h => h.matchCount >= 1);
         }
 
-        return positionHeroes;
+        return filteredHeroes
+            .sort((a, b) => {
+                // Primarno rangiranje po winrate
+                const aWinrate = a.winCount / a.matchCount;
+                const bWinrate = b.winCount / b.matchCount;
+
+                // Ako je winrate razlika manja od 5%, rangiraj po broju mečeva
+                if (Math.abs(aWinrate - bWinrate) < 0.05) {
+                    return b.matchCount - a.matchCount; // Više mečeva = bolji
+                }
+
+                return bWinrate - aWinrate; // Viši winrate = bolji
+            })
+            .slice(0, 3)
+            .map(h => ({
+                heroId: h.heroId,
+                games: h.matchCount,
+                win: h.winCount,
+                winrate: ((h.winCount / h.matchCount) * 100).toFixed(1)
+            }));
 
     } catch (error) {
         console.error('Error fetching STRATZ data:', error);
@@ -155,75 +177,94 @@ query {
     dotaPlus {
       heroId
       level
-      winCount
-      matchCount
-      winRate
     }
   }
 }
 `;
 
 /**
- * Fetches player's Dota Plus heroes using STRATZ GraphQL API
- * @param {string} steamAccountId - Player's Steam Account ID
- * @returns {Array} Top 3 Dota Plus heroes by level and winrate
+ * Fetches top 3 Dota Plus heroes for a player with caching
+ * @param {string} steamAccountId - Player's Steam account ID
+ * @param {boolean} forceRefresh - Force API call even if cached
+ * @returns {Array} Top 3 Dota Plus heroes
  */
-export const getTopDotaPlusHeroes = async (steamAccountId) => {
-    try {
-        const query = getDotaPlusHeroesQuery(steamAccountId);
+export const getTopDotaPlusHeroes = async (steamAccountId, forceRefresh = false) => {
+    if (!STRATZ_API_KEY) {
+        console.warn('STRATZ API key not found, skipping Dota Plus heroes fetch');
+        return [];
+    }
 
-        const headers = {
-            'Content-Type': 'application/json',
-        };
-        
-        // Add API key if available
-        if (STRATZ_API_KEY) {
-            headers['Authorization'] = `Bearer ${STRATZ_API_KEY}`;
+    // Import cache
+    const { heroCache } = await import('./heroCache.js');
+
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+        const cachedHeroes = heroCache.getDotaPlus(steamAccountId);
+        if (cachedHeroes) {
+            console.log('Using cached Dota Plus heroes');
+            return cachedHeroes;
         }
+    } else {
+        console.log('Force refresh - clearing Dota Plus cache');
+        heroCache.clearDotaPlus(steamAccountId);
+    }
 
+    const query = getDotaPlusHeroesQuery(steamAccountId);
+
+    try {
+        console.log('Fetching fresh Dota Plus heroes from STRATZ');
         const response = await fetch(STRATZ_API_URL, {
             method: 'POST',
-            headers,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${STRATZ_API_KEY}`
+            },
             body: JSON.stringify({ query })
         });
 
         if (!response.ok) {
             throw new Error(`STRATZ API error: ${response.status}`);
+            throw new Error(`STRATZ API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
-        
+
+        console.log('STRATZ Dota Plus: Full response data:', data);
+
         if (data.errors) {
+            console.log('STRATZ Dota Plus: GraphQL errors:', data.errors);
+            data.errors.forEach((error, index) => {
+                console.log(`STRATZ Dota Plus Error ${index + 1}:`, error.message);
+                console.log(`STRATZ Dota Plus Error ${index + 1} Locations:`, error.locations);
+                console.log(`STRATZ Dota Plus Error ${index + 1} Path:`, error.path);
+            });
             throw new Error(`GraphQL error: ${data.errors[0].message}`);
         }
 
         const dotaPlusHeroes = data.data?.player?.dotaPlus || [];
-        
+
         if (dotaPlusHeroes.length === 0) {
             return [];
         }
 
-        // Sort by level first, then by winrate, then by match count
-        return dotaPlusHeroes
-            .sort((a, b) => {
-                // First by level (descending)
-                if (b.level !== a.level) {
-                    return b.level - a.level;
-                }
-                // Then by winrate (descending)
-                if (b.winRate !== a.winRate) {
-                    return b.winRate - a.winRate;
-                }
-                // Finally by match count (descending)
-                return b.matchCount - a.matchCount;
-            })
+        // Remove duplicates and keep highest level for each hero
+        const uniqueHeroes = {};
+        dotaPlusHeroes.forEach(hero => {
+            if (!uniqueHeroes[hero.heroId] || hero.level > uniqueHeroes[hero.heroId].level) {
+                uniqueHeroes[hero.heroId] = hero;
+            }
+        });
+
+        // Sort by level (descending) and take top 3
+        return Object.values(uniqueHeroes)
+            .sort((a, b) => b.level - a.level)
             .slice(0, 3)
             .map(hero => ({
                 heroId: hero.heroId,
                 level: hero.level,
-                games: hero.matchCount,
-                win: hero.winCount,
-                winrate: hero.winRate.toFixed(1)
+                games: 0, // Not available in STRATZ Dota Plus
+                win: 0,    // Not available in STRATZ Dota Plus
+                winrate: 0 // Not available in STRATZ Dota Plus
             }));
 
     } catch (error) {

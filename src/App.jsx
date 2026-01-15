@@ -14,6 +14,7 @@ import Results from './pages/Results';
 import Admin from './pages/Admin';
 import AdminUpload from './pages/AdminUpload';
 import Login from './pages/Login';
+import MatchDetails from './components/matches/MatchDetails';
 
 function App() {
   console.log("Current App Version: 1.3 (Supabase + Auth)");
@@ -37,6 +38,7 @@ function App() {
           <Route path="/players" element={<Players />} />
           <Route path="/tournaments" element={<Tournaments />} />
           <Route path="/matches" element={<Matches />} />
+          <Route path="/matches/:id" element={<MatchDetails />} />
           <Route path="/results" element={<Results />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/upload" element={<AdminUpload />} />
