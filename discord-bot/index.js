@@ -43,8 +43,8 @@ client.on('error', (error) => {
     console.error('❌ Discord client greška:', error);
 });
 
-client.once('ready', () => {
-    console.log(`🤖 Bot je online kao ${client.user.tag}`);
+client.once('ready', (c) => {
+    console.log(`🤖 Bot je online kao ${c.user.tag}`);
 
     // Start listening to Supabase changes
     setupRealtimeSubscription();
@@ -72,23 +72,35 @@ function setupRealtimeSubscription() {
 }
 
 async function processBracketUpdate(tournament) {
-    const matches = tournament.bracket_data || [];
+    // Clone to avoid mutation issues
+    const matches = JSON.parse(JSON.stringify(tournament.bracket_data || []));
+    let updated = false;
 
     for (const match of matches) {
         // We only care about scheduled matches that have teams but NO channels yet
-        // In a real app, we should track which matches already have channels to avoid duplicates
         if (match.team1 && match.team2 && match.scheduledTime && !match.channelsCreated) {
             console.log(`🎬 Kreiram kanale za meč: ${match.team1.name} vs ${match.team2.name}`);
 
             try {
                 await createMatchChannels(match, tournament.name);
-                // Note: Ideally, we should update the DB here to mark match.channelsCreated = true
-                // But since we are listening to the SAME table, we need to be careful with infinite loops.
-                // A better way is a separate 'match_channels' table.
+                match.channelsCreated = true;
+                updated = true;
             } catch (err) {
                 console.error('Greška pri kreiranju kanala:', err);
             }
         }
+    }
+
+    // Persist changes back to DB
+    if (updated) {
+        console.log('💾 Ažuriram bazu sa statusom kreiranih kanala...');
+        const { error } = await supabase
+            .from('tournaments')
+            .update({ bracket_data: matches })
+            .eq('id', tournament.id);
+
+        if (error) console.error('Greška pri ažuriranju baze:', error);
+        else console.log('✅ Baza uspešno ažurirana.');
     }
 }
 
