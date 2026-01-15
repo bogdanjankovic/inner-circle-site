@@ -167,7 +167,7 @@ export const TournamentProvider = ({ children }) => {
         const newTeam = {
             id: Date.now().toString(),
             name: teamData.name,
-            logo: teamData.logo || 'https://via.placeholder.com/150?text=Team',
+            logo: teamData.logo || 'https://placehold.co/150?text=Team',
             players: teamData.players,
             captain_id: teamData.captainId,
             stats: { wins: 0, losses: 0, winrate: 0, matchesPlayed: [] }

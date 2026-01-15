@@ -179,7 +179,11 @@ async function createMatchChannels(match, tournamentName) {
             permissionOverwrites: overwrites
         });
 
-        console.log(`✅ Kreiran kanal: ${channelName} (Admini: ${adminIds.length}, Igrači: ${team.players.length})`);
+        if (team.players.some(p => p.discord_id)) {
+            console.log(`✅ Kreiran kanal: ${channelName} (Igrači: ${team.players.filter(p => p.discord_id).length})`);
+        } else {
+            console.log(`⚠️  Kreiran prazan kanal: ${channelName} (Nijedan igrač nema unet Discord ID)`);
+        }
     }
 }
 
