@@ -173,6 +173,7 @@
   ],
   "players": [
     {
+      "hero_name": "npc_dota_hero_warlock",
       "kills": 3,
       "deaths": 1,
       "assists": 19,
@@ -182,6 +183,9 @@
       "gold_per_min": 378,
       "xp_per_min": 536,
       "level": 18,
+      "hero_damage": 51753,
+      "hero_healing": 13760,
+      "damage_taken": 12694,
       "total_xp": 19060,
       "roshan_kills": 0,
       "towers_killed": 4,
@@ -619,7 +623,223 @@
       "runes_log": [],
       "neutral_items": [],
       "neutral_tokens_log": [],
-      "ability_upgrades": [],
+      "ability_upgrades": [
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "warlock_fatal_bonds"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "warlock_shadow_word"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "warlock_upheaval"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "warlock_eldritch_summoning"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "generic_hidden"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "warlock_rain_of_chaos"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_warlock_5"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_warlock_upheaval_aoe"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_warlock_10"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_warlock_7"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_warlock_4"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_warlock_3"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_warlock_2"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_warlock_1"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_capture"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "abyssal_underlord_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "twin_gate_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_lamp_use"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_high_five"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_guild_banner"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "warlock_black_grimoire"
+        },
+        {
+          "time": -51,
+          "level": 1,
+          "ability_name": "warlock_fatal_bonds"
+        },
+        {
+          "time": 117,
+          "level": 1,
+          "ability_name": "warlock_shadow_word"
+        },
+        {
+          "time": 232,
+          "level": 2,
+          "ability_name": "warlock_shadow_word"
+        },
+        {
+          "time": 423,
+          "level": 2,
+          "ability_name": "warlock_fatal_bonds"
+        },
+        {
+          "time": 481,
+          "level": 3,
+          "ability_name": "warlock_shadow_word"
+        },
+        {
+          "time": 542,
+          "level": 2,
+          "ability_name": "warlock_eldritch_summoning"
+        },
+        {
+          "time": 542,
+          "level": 1,
+          "ability_name": "warlock_rain_of_chaos"
+        },
+        {
+          "time": 718,
+          "level": 4,
+          "ability_name": "warlock_shadow_word"
+        },
+        {
+          "time": 837,
+          "level": 3,
+          "ability_name": "warlock_fatal_bonds"
+        },
+        {
+          "time": 989,
+          "level": 4,
+          "ability_name": "warlock_fatal_bonds"
+        },
+        {
+          "time": 1140,
+          "level": 1,
+          "ability_name": "special_bonus_unique_warlock_5"
+        },
+        {
+          "time": 1268,
+          "level": 1,
+          "ability_name": "warlock_upheaval"
+        },
+        {
+          "time": 1307,
+          "level": 3,
+          "ability_name": "warlock_eldritch_summoning"
+        },
+        {
+          "time": 1307,
+          "level": 2,
+          "ability_name": "warlock_rain_of_chaos"
+        },
+        {
+          "time": 1373,
+          "level": 2,
+          "ability_name": "warlock_upheaval"
+        },
+        {
+          "time": 1552,
+          "level": 3,
+          "ability_name": "warlock_upheaval"
+        },
+        {
+          "time": 1685,
+          "level": 1,
+          "ability_name": "special_bonus_unique_warlock_10"
+        },
+        {
+          "time": 1787,
+          "level": 4,
+          "ability_name": "warlock_upheaval"
+        },
+        {
+          "time": 2009,
+          "level": 1,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 2119,
+          "level": 4,
+          "ability_name": "warlock_eldritch_summoning"
+        },
+        {
+          "time": 2119,
+          "level": 3,
+          "ability_name": "warlock_rain_of_chaos"
+        }
+      ],
       "ability_uses": {},
       "ability_targets": {},
       "purchase_log": [],
@@ -629,14 +849,56 @@
       "obs": {},
       "sen": {},
       "positions": [],
-      "kills_log": [],
+      "kills_log": [
+        {
+          "time": 720,
+          "victim": "npc_dota_hero_warlock",
+          "attacker": "npc_dota_hero_storm_spirit",
+          "inflictor": "storm_spirit_static_remnant",
+          "is_first_blood": false
+        }
+      ],
       "buyback_log": [],
-      "killed": {},
-      "damage": {},
-      "damage_taken_map": {},
+      "killed": {
+        "npc_dota_hero_centaur": 1
+      },
+      "damage": {
+        "npc_dota_hero_warlock": 75,
+        "npc_dota_hero_rubick": 3877,
+        "npc_dota_hero_centaur": 5487,
+        "npc_dota_hero_kunkka": 922,
+        "npc_dota_hero_furion": 295
+      },
+      "damage_taken_map": {
+        "npc_dota_hero_warlock": 75,
+        "npc_dota_hero_rubick": 1074,
+        "npc_dota_hero_centaur": 1757,
+        "npc_dota_hero_kunkka": 2903,
+        "npc_dota_hero_furion": 2123
+      },
       "damage_inflictor": {},
       "damage_inflictor_received": {},
-      "healing": {},
+      "healing": {
+        "npc_dota_hero_warlock": 3692,
+        "npc_dota_hero_axe": 2979,
+        "npc_dota_hero_tiny": 2264,
+        "npc_dota_hero_sven": 3448,
+        "npc_dota_hero_shadow_demon": 1377
+      },
+      "max_hero_hit": {
+        "time": 2017,
+        "type": "DOTA_COMBATLOG_DAMAGE",
+        "value": 382,
+        "attackername": "npc_dota_hero_warlock",
+        "targetname": "npc_dota_neutral_grown_frog_mage",
+        "sourcename": "npc_dota_hero_warlock",
+        "targetsourcename": "npc_dota_neutral_grown_frog_mage",
+        "attackerhero": true,
+        "targethero": false,
+        "attackerillusion": false,
+        "targetillusion": false,
+        "inflictor": "warlock_fatal_bonds"
+      },
       "actions": {
         "33": 197,
         "11": 15,
@@ -16071,8 +16333,26 @@
         19060,
         19060
       ],
-      "gold_reasons": {},
-      "xp_reasons": {},
+      "gold_reasons": {
+        "gold_unknown_16": 175,
+        "gold_hero_kill": -49,
+        "gold_unknown_15": 485,
+        "gold_earnings": 2337,
+        "gold_neutral_kill": 225,
+        "gold_unknown_17": 458,
+        "gold_cheat": 2275,
+        "gold_unknown_19": 461,
+        "gold_creature_kill": 3087,
+        "gold_unknown_20": 735,
+        "gold_unknown_14": 576
+      },
+      "xp_reasons": {
+        "xp_neutral_kill": 230,
+        "xp_hero_kill": 602,
+        "xp_creep_kill": 8088,
+        "xp_roshan_kill": 7900,
+        "xp_time": 2240
+      },
       "kill_streaks": {},
       "multi_kills": {},
       "life_state": {},
@@ -16083,6 +16363,7 @@
       "pred_vict": false
     },
     {
+      "hero_name": "npc_dota_hero_axe",
       "kills": 8,
       "deaths": 3,
       "assists": 12,
@@ -16092,6 +16373,9 @@
       "gold_per_min": 566,
       "xp_per_min": 824,
       "level": 23,
+      "hero_damage": 188228,
+      "hero_healing": 4672,
+      "damage_taken": 31433,
       "total_xp": 29311,
       "roshan_kills": 0,
       "towers_killed": 0,
@@ -16105,7 +16389,243 @@
       "runes_log": [],
       "neutral_items": [],
       "neutral_tokens_log": [],
-      "ability_upgrades": [],
+      "ability_upgrades": [
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "axe_berserkers_call"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "axe_battle_hunger"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "axe_counter_helix"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "generic_hidden"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "axe_culling_blade"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "axe_coat_of_blood"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_axe_culling_blade_speed_duration"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_axe_8"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_axe_6"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_axe_7"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_axe_5"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_axe_4"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_axe_2"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_axe"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_capture"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "abyssal_underlord_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "twin_gate_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_lamp_use"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_high_five"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_guild_banner"
+        },
+        {
+          "time": -51,
+          "level": 1,
+          "ability_name": "axe_battle_hunger"
+        },
+        {
+          "time": 148,
+          "level": 1,
+          "ability_name": "axe_berserkers_call"
+        },
+        {
+          "time": 204,
+          "level": 1,
+          "ability_name": "axe_counter_helix"
+        },
+        {
+          "time": 246,
+          "level": 2,
+          "ability_name": "axe_counter_helix"
+        },
+        {
+          "time": 367,
+          "level": 3,
+          "ability_name": "axe_counter_helix"
+        },
+        {
+          "time": 467,
+          "level": 1,
+          "ability_name": "axe_culling_blade"
+        },
+        {
+          "time": 467,
+          "level": 2,
+          "ability_name": "axe_coat_of_blood"
+        },
+        {
+          "time": 518,
+          "level": 4,
+          "ability_name": "axe_counter_helix"
+        },
+        {
+          "time": 574,
+          "level": 2,
+          "ability_name": "axe_berserkers_call"
+        },
+        {
+          "time": 652,
+          "level": 3,
+          "ability_name": "axe_berserkers_call"
+        },
+        {
+          "time": 726,
+          "level": 4,
+          "ability_name": "axe_berserkers_call"
+        },
+        {
+          "time": 824,
+          "level": 2,
+          "ability_name": "axe_battle_hunger"
+        },
+        {
+          "time": 870,
+          "level": 2,
+          "ability_name": "axe_culling_blade"
+        },
+        {
+          "time": 870,
+          "level": 3,
+          "ability_name": "axe_coat_of_blood"
+        },
+        {
+          "time": 1043,
+          "level": 3,
+          "ability_name": "axe_battle_hunger"
+        },
+        {
+          "time": 1101,
+          "level": 4,
+          "ability_name": "axe_battle_hunger"
+        },
+        {
+          "time": 1196,
+          "level": 1,
+          "ability_name": "special_bonus_unique_axe_6"
+        },
+        {
+          "time": 1272,
+          "level": 1,
+          "ability_name": "special_bonus_unique_axe_8"
+        },
+        {
+          "time": 1371,
+          "level": 1,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 1529,
+          "level": 3,
+          "ability_name": "axe_culling_blade"
+        },
+        {
+          "time": 1529,
+          "level": 4,
+          "ability_name": "axe_coat_of_blood"
+        },
+        {
+          "time": 1579,
+          "level": 2,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 1791,
+          "level": 1,
+          "ability_name": "special_bonus_unique_axe_5"
+        },
+        {
+          "time": 1835,
+          "level": 3,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 2022,
+          "level": 4,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 2117,
+          "level": 5,
+          "ability_name": "special_bonus_attributes"
+        }
+      ],
       "ability_uses": {},
       "ability_targets": {},
       "purchase_log": [],
@@ -16115,14 +16635,67 @@
       "obs": {},
       "sen": {},
       "positions": [],
-      "kills_log": [],
+      "kills_log": [
+        {
+          "time": -45,
+          "victim": "npc_dota_hero_axe",
+          "attacker": "npc_dota_hero_centaur",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 587,
+          "victim": "npc_dota_hero_axe",
+          "attacker": "npc_dota_hero_storm_spirit",
+          "inflictor": "storm_spirit_overload",
+          "is_first_blood": false
+        },
+        {
+          "time": 2117,
+          "victim": "npc_dota_hero_axe",
+          "attacker": "npc_dota_hero_kunkka",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        }
+      ],
       "buyback_log": [],
-      "killed": {},
-      "damage": {},
-      "damage_taken_map": {},
+      "killed": {
+        "npc_dota_hero_rubick": 2,
+        "npc_dota_hero_centaur": 1,
+        "npc_dota_hero_kunkka": 2,
+        "npc_dota_hero_furion": 1
+      },
+      "damage": {
+        "npc_dota_hero_rubick": 2918,
+        "npc_dota_hero_centaur": 6134,
+        "npc_dota_hero_kunkka": 6271,
+        "npc_dota_hero_furion": 3710
+      },
+      "damage_taken_map": {
+        "npc_dota_hero_rubick": 870,
+        "npc_dota_hero_centaur": 3851,
+        "npc_dota_hero_kunkka": 6326,
+        "npc_dota_hero_furion": 6260
+      },
       "damage_inflictor": {},
       "damage_inflictor_received": {},
-      "healing": {},
+      "healing": {
+        "npc_dota_hero_axe": 4672
+      },
+      "max_hero_hit": {
+        "time": 2115,
+        "type": "DOTA_COMBATLOG_DAMAGE",
+        "value": 632,
+        "attackername": "npc_dota_hero_axe",
+        "targetname": "npc_dota_hero_centaur",
+        "sourcename": "npc_dota_hero_axe",
+        "targetsourcename": "npc_dota_hero_centaur",
+        "attackerhero": true,
+        "targethero": true,
+        "attackerillusion": false,
+        "targetillusion": false,
+        "inflictor": "axe_culling_blade"
+      },
       "actions": {
         "11": 15,
         "24": 1,
@@ -31555,8 +32128,24 @@
         29311,
         29311
       ],
-      "gold_reasons": {},
-      "xp_reasons": {},
+      "gold_reasons": {
+        "gold_unknown_16": 175,
+        "gold_hero_kill": -620,
+        "gold_unknown_15": 485,
+        "gold_earnings": 5418,
+        "gold_neutral_kill": 365,
+        "gold_unknown_17": 458,
+        "gold_cheat": 1665,
+        "gold_unknown_19": 790,
+        "gold_creature_kill": 5218,
+        "gold_unknown_14": 3590
+      },
+      "xp_reasons": {
+        "xp_hero_kill": 83,
+        "xp_creep_kill": 11354,
+        "xp_roshan_kill": 17314,
+        "xp_time": 560
+      },
       "kill_streaks": {},
       "multi_kills": {},
       "life_state": {},
@@ -31567,6 +32156,7 @@
       "pred_vict": false
     },
     {
+      "hero_name": "npc_dota_hero_tiny",
       "kills": 9,
       "deaths": 1,
       "assists": 12,
@@ -31576,6 +32166,9 @@
       "gold_per_min": 619,
       "xp_per_min": 850,
       "level": 23,
+      "hero_damage": 213314,
+      "hero_healing": 3073,
+      "damage_taken": 37359,
       "total_xp": 30208,
       "roshan_kills": 0,
       "towers_killed": 1,
@@ -31653,7 +32246,268 @@
       "runes_log": [],
       "neutral_items": [],
       "neutral_tokens_log": [],
-      "ability_upgrades": [],
+      "ability_upgrades": [
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "tiny_avalanche"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "tiny_toss"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "tiny_tree_grab"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "tiny_tree_channel"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "tiny_craggy_exterior"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "tiny_grow"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "tiny_toss_tree"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_tiny_4"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_strength_8"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_tiny_6"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_tiny"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_tiny_7"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_tiny_5"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_tiny_3"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_tiny_2"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_capture"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "abyssal_underlord_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "twin_gate_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_lamp_use"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_high_five"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_guild_banner"
+        },
+        {
+          "time": -88,
+          "level": 1,
+          "ability_name": "tiny_tree_grab"
+        },
+        {
+          "time": -88,
+          "level": 1,
+          "ability_name": "tiny_toss_tree"
+        },
+        {
+          "time": 61,
+          "level": 1,
+          "ability_name": "tiny_avalanche"
+        },
+        {
+          "time": 106,
+          "level": 2,
+          "ability_name": "tiny_avalanche"
+        },
+        {
+          "time": 159,
+          "level": 1,
+          "ability_name": "tiny_toss"
+        },
+        {
+          "time": 224,
+          "level": 2,
+          "ability_name": "tiny_toss"
+        },
+        {
+          "time": 307,
+          "level": 2,
+          "ability_name": "tiny_craggy_exterior"
+        },
+        {
+          "time": 307,
+          "level": 1,
+          "ability_name": "tiny_grow"
+        },
+        {
+          "time": 416,
+          "level": 3,
+          "ability_name": "tiny_toss"
+        },
+        {
+          "time": 568,
+          "level": 4,
+          "ability_name": "tiny_toss"
+        },
+        {
+          "time": 642,
+          "level": 3,
+          "ability_name": "tiny_avalanche"
+        },
+        {
+          "time": 807,
+          "level": 4,
+          "ability_name": "tiny_avalanche"
+        },
+        {
+          "time": 938,
+          "level": 2,
+          "ability_name": "tiny_tree_grab"
+        },
+        {
+          "time": 938,
+          "level": 2,
+          "ability_name": "tiny_toss_tree"
+        },
+        {
+          "time": 1043,
+          "level": 3,
+          "ability_name": "tiny_craggy_exterior"
+        },
+        {
+          "time": 1043,
+          "level": 2,
+          "ability_name": "tiny_grow"
+        },
+        {
+          "time": 1126,
+          "level": 3,
+          "ability_name": "tiny_toss_tree"
+        },
+        {
+          "time": 1126,
+          "level": 3,
+          "ability_name": "tiny_tree_grab"
+        },
+        {
+          "time": 1267,
+          "level": 4,
+          "ability_name": "tiny_tree_grab"
+        },
+        {
+          "time": 1267,
+          "level": 4,
+          "ability_name": "tiny_toss_tree"
+        },
+        {
+          "time": 1391,
+          "level": 1,
+          "ability_name": "special_bonus_unique_tiny"
+        },
+        {
+          "time": 1505,
+          "level": 1,
+          "ability_name": "special_bonus_strength_8"
+        },
+        {
+          "time": 1580,
+          "level": 1,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 1609,
+          "level": 4,
+          "ability_name": "tiny_craggy_exterior"
+        },
+        {
+          "time": 1609,
+          "level": 3,
+          "ability_name": "tiny_grow"
+        },
+        {
+          "time": 1717,
+          "level": 2,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 1867,
+          "level": 1,
+          "ability_name": "special_bonus_unique_tiny_7"
+        },
+        {
+          "time": 1946,
+          "level": 3,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 2022,
+          "level": 4,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 2117,
+          "level": 5,
+          "ability_name": "special_bonus_attributes"
+        }
+      ],
       "ability_uses": {},
       "ability_targets": {},
       "purchase_log": [],
@@ -31663,14 +32517,54 @@
       "obs": {},
       "sen": {},
       "positions": [],
-      "kills_log": [],
+      "kills_log": [
+        {
+          "time": 725,
+          "victim": "npc_dota_hero_tiny",
+          "attacker": "npc_dota_hero_rubick",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        }
+      ],
       "buyback_log": [],
-      "killed": {},
-      "damage": {},
-      "damage_taken_map": {},
+      "killed": {
+        "npc_dota_hero_rubick": 5,
+        "npc_dota_hero_centaur": 2,
+        "npc_dota_hero_kunkka": 2
+      },
+      "damage": {
+        "npc_dota_hero_rubick": 4907,
+        "npc_dota_hero_centaur": 5462,
+        "npc_dota_hero_tiny": 5440,
+        "npc_dota_hero_kunkka": 3789,
+        "npc_dota_hero_furion": 2892
+      },
+      "damage_taken_map": {
+        "npc_dota_hero_rubick": 4087,
+        "npc_dota_hero_centaur": 4015,
+        "npc_dota_hero_tiny": 5440,
+        "npc_dota_hero_kunkka": 4097,
+        "npc_dota_hero_furion": 3429
+      },
       "damage_inflictor": {},
       "damage_inflictor_received": {},
-      "healing": {},
+      "healing": {
+        "npc_dota_hero_tiny": 3073
+      },
+      "max_hero_hit": {
+        "time": 1921,
+        "type": "DOTA_COMBATLOG_DAMAGE",
+        "value": 1072,
+        "attackername": "npc_dota_hero_tiny",
+        "targetname": "npc_dota_creep_badguys_ranged",
+        "sourcename": "npc_dota_hero_tiny",
+        "targetsourcename": "npc_dota_creep_badguys_ranged",
+        "attackerhero": true,
+        "targethero": false,
+        "attackerillusion": false,
+        "targetillusion": false,
+        "inflictor": "dota_unknown"
+      },
       "actions": {
         "11": 15,
         "33": 160,
@@ -47103,8 +47997,26 @@
         30208,
         30208
       ],
-      "gold_reasons": {},
-      "xp_reasons": {},
+      "gold_reasons": {
+        "gold_unknown_16": 95,
+        "gold_hero_kill": -135,
+        "gold_unknown_15": 485,
+        "gold_earnings": 8609,
+        "gold_neutral_kill": 4357,
+        "gold_unknown_17": 458,
+        "gold_cheat": 1923,
+        "gold_unknown_19": 1064,
+        "gold_unknown_21": 80,
+        "gold_creature_kill": 5213,
+        "gold_unknown_20": 110,
+        "gold_unknown_14": 1256
+      },
+      "xp_reasons": {
+        "xp_neutral_kill": 230,
+        "xp_hero_kill": 222,
+        "xp_creep_kill": 12115,
+        "xp_roshan_kill": 17641
+      },
       "kill_streaks": {},
       "multi_kills": {},
       "life_state": {},
@@ -47115,6 +48027,7 @@
       "pred_vict": false
     },
     {
+      "hero_name": "npc_dota_hero_sven",
       "kills": 11,
       "deaths": 1,
       "assists": 9,
@@ -47124,6 +48037,9 @@
       "gold_per_min": 780,
       "xp_per_min": 919,
       "level": 24,
+      "hero_damage": 332678,
+      "hero_healing": 14945,
+      "damage_taken": 37878,
       "total_xp": 32674,
       "roshan_kills": 0,
       "towers_killed": 3,
@@ -47137,7 +48053,253 @@
       "runes_log": [],
       "neutral_items": [],
       "neutral_tokens_log": [],
-      "ability_upgrades": [],
+      "ability_upgrades": [
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "sven_storm_bolt"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "sven_great_cleave"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "sven_warcry"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "generic_hidden"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "sven_gods_strength"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "sven_vanquisher"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_sven_5"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_sven"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_sven_3"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_sven_8"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_sven_gods_strength_slow_resist"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_sven_7"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_sven_2"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_sven_4"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_capture"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "abyssal_underlord_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "twin_gate_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_lamp_use"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_high_five"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_guild_banner"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "sven_wrath_of_god"
+        },
+        {
+          "time": -52,
+          "level": 1,
+          "ability_name": "sven_storm_bolt"
+        },
+        {
+          "time": 123,
+          "level": 1,
+          "ability_name": "sven_warcry"
+        },
+        {
+          "time": 238,
+          "level": 1,
+          "ability_name": "sven_great_cleave"
+        },
+        {
+          "time": 290,
+          "level": 2,
+          "ability_name": "sven_great_cleave"
+        },
+        {
+          "time": 372,
+          "level": 3,
+          "ability_name": "sven_great_cleave"
+        },
+        {
+          "time": 485,
+          "level": 1,
+          "ability_name": "sven_gods_strength"
+        },
+        {
+          "time": 485,
+          "level": 2,
+          "ability_name": "sven_wrath_of_god"
+        },
+        {
+          "time": 573,
+          "level": 4,
+          "ability_name": "sven_great_cleave"
+        },
+        {
+          "time": 609,
+          "level": 2,
+          "ability_name": "sven_storm_bolt"
+        },
+        {
+          "time": 699,
+          "level": 3,
+          "ability_name": "sven_storm_bolt"
+        },
+        {
+          "time": 767,
+          "level": 4,
+          "ability_name": "sven_storm_bolt"
+        },
+        {
+          "time": 871,
+          "level": 2,
+          "ability_name": "sven_warcry"
+        },
+        {
+          "time": 912,
+          "level": 2,
+          "ability_name": "sven_gods_strength"
+        },
+        {
+          "time": 912,
+          "level": 3,
+          "ability_name": "sven_wrath_of_god"
+        },
+        {
+          "time": 979,
+          "level": 3,
+          "ability_name": "sven_warcry"
+        },
+        {
+          "time": 1108,
+          "level": 4,
+          "ability_name": "sven_warcry"
+        },
+        {
+          "time": 1258,
+          "level": 1,
+          "ability_name": "special_bonus_unique_sven_3"
+        },
+        {
+          "time": 1373,
+          "level": 1,
+          "ability_name": "special_bonus_unique_sven"
+        },
+        {
+          "time": 1429,
+          "level": 1,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 1505,
+          "level": 3,
+          "ability_name": "sven_gods_strength"
+        },
+        {
+          "time": 1505,
+          "level": 4,
+          "ability_name": "sven_wrath_of_god"
+        },
+        {
+          "time": 1598,
+          "level": 2,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 1643,
+          "level": 1,
+          "ability_name": "special_bonus_unique_sven_7"
+        },
+        {
+          "time": 1723,
+          "level": 3,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 1863,
+          "level": 4,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 2022,
+          "level": 5,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 2117,
+          "level": 6,
+          "ability_name": "special_bonus_attributes"
+        }
+      ],
       "ability_uses": {},
       "ability_targets": {},
       "purchase_log": [],
@@ -47147,14 +48309,53 @@
       "obs": {},
       "sen": {},
       "positions": [],
-      "kills_log": [],
+      "kills_log": [
+        {
+          "time": 1105,
+          "victim": "npc_dota_hero_sven",
+          "attacker": "npc_dota_hero_storm_spirit",
+          "inflictor": "storm_spirit_overload",
+          "is_first_blood": false
+        }
+      ],
       "buyback_log": [],
-      "killed": {},
-      "damage": {},
-      "damage_taken_map": {},
+      "killed": {
+        "npc_dota_hero_rubick": 4,
+        "npc_dota_hero_centaur": 1,
+        "npc_dota_hero_kunkka": 3,
+        "npc_dota_hero_furion": 2
+      },
+      "damage": {
+        "npc_dota_hero_centaur": 6962,
+        "npc_dota_hero_rubick": 6291,
+        "npc_dota_hero_kunkka": 10553,
+        "npc_dota_hero_furion": 748
+      },
+      "damage_taken_map": {
+        "npc_dota_hero_rubick": 4940,
+        "npc_dota_hero_centaur": 4954,
+        "npc_dota_hero_kunkka": 6529,
+        "npc_dota_hero_furion": 4344
+      },
       "damage_inflictor": {},
       "damage_inflictor_received": {},
-      "healing": {},
+      "healing": {
+        "npc_dota_hero_sven": 14945
+      },
+      "max_hero_hit": {
+        "time": 2123,
+        "type": "DOTA_COMBATLOG_DAMAGE",
+        "value": 1656,
+        "attackername": "npc_dota_hero_sven",
+        "targetname": "npc_dota_creep_badguys_melee",
+        "sourcename": "npc_dota_hero_sven",
+        "targetsourcename": "npc_dota_creep_badguys_melee",
+        "attackerhero": true,
+        "targethero": false,
+        "attackerillusion": false,
+        "targetillusion": false,
+        "inflictor": "dota_unknown"
+      },
       "actions": {
         "33": 157,
         "11": 15,
@@ -62587,8 +63788,25 @@
         32674,
         32674
       ],
-      "gold_reasons": {},
-      "xp_reasons": {},
+      "gold_reasons": {
+        "gold_unknown_16": 80,
+        "gold_hero_kill": -277,
+        "gold_unknown_15": 485,
+        "gold_earnings": 8159,
+        "gold_neutral_kill": 300,
+        "gold_unknown_17": 458,
+        "gold_cheat": 2545,
+        "gold_unknown_19": 968,
+        "gold_unknown_21": 95,
+        "gold_creature_kill": 5557,
+        "gold_unknown_14": 6204
+      },
+      "xp_reasons": {
+        "xp_neutral_kill": 230,
+        "xp_hero_kill": 132,
+        "xp_creep_kill": 11468,
+        "xp_roshan_kill": 20844
+      },
       "kill_streaks": {},
       "multi_kills": {},
       "life_state": {},
@@ -62599,6 +63817,7 @@
       "pred_vict": false
     },
     {
+      "hero_name": "npc_dota_hero_shadow_demon",
       "kills": 2,
       "deaths": 5,
       "assists": 23,
@@ -62608,6 +63827,9 @@
       "gold_per_min": 322,
       "xp_per_min": 516,
       "level": 18,
+      "hero_damage": 33088,
+      "hero_healing": 4132,
+      "damage_taken": 20699,
       "total_xp": 18365,
       "roshan_kills": 1,
       "towers_killed": 0,
@@ -62975,7 +64197,218 @@
       "runes_log": [],
       "neutral_items": [],
       "neutral_tokens_log": [],
-      "ability_upgrades": [],
+      "ability_upgrades": [
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "shadow_demon_disruption"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "shadow_demon_disseminate"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "shadow_demon_shadow_poison"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "shadow_demon_shadow_poison_release"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "shadow_demon_demonic_cleanse"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "shadow_demon_demonic_purge"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "shadow_demon_menace"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_shadow_demon_4"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_strength_10"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_movement_speed_25"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_shadow_demon_3"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_shadow_demon_disseminate_damage"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_shadow_demon_1"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_shadow_demon_9"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_shadow_demon_7"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_capture"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "abyssal_underlord_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "twin_gate_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_lamp_use"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_high_five"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_guild_banner"
+        },
+        {
+          "time": -69,
+          "level": 1,
+          "ability_name": "shadow_demon_disruption"
+        },
+        {
+          "time": 150,
+          "level": 1,
+          "ability_name": "shadow_demon_shadow_poison"
+        },
+        {
+          "time": 150,
+          "level": 1,
+          "ability_name": "shadow_demon_shadow_poison_release"
+        },
+        {
+          "time": 380,
+          "level": 2,
+          "ability_name": "shadow_demon_shadow_poison"
+        },
+        {
+          "time": 473,
+          "level": 1,
+          "ability_name": "shadow_demon_disseminate"
+        },
+        {
+          "time": 642,
+          "level": 3,
+          "ability_name": "shadow_demon_shadow_poison"
+        },
+        {
+          "time": 757,
+          "level": 1,
+          "ability_name": "shadow_demon_demonic_purge"
+        },
+        {
+          "time": 845,
+          "level": 4,
+          "ability_name": "shadow_demon_shadow_poison"
+        },
+        {
+          "time": 990,
+          "level": 2,
+          "ability_name": "shadow_demon_disseminate"
+        },
+        {
+          "time": 1072,
+          "level": 3,
+          "ability_name": "shadow_demon_disseminate"
+        },
+        {
+          "time": 1245,
+          "level": 1,
+          "ability_name": "shadow_demon_demonic_cleanse"
+        },
+        {
+          "time": 1269,
+          "level": 4,
+          "ability_name": "shadow_demon_disseminate"
+        },
+        {
+          "time": 1366,
+          "level": 2,
+          "ability_name": "shadow_demon_disruption"
+        },
+        {
+          "time": 1558,
+          "level": 2,
+          "ability_name": "shadow_demon_demonic_purge"
+        },
+        {
+          "time": 1686,
+          "level": 1,
+          "ability_name": "special_bonus_strength_10"
+        },
+        {
+          "time": 1717,
+          "level": 3,
+          "ability_name": "shadow_demon_disruption"
+        },
+        {
+          "time": 1818,
+          "level": 1,
+          "ability_name": "special_bonus_unique_shadow_demon_3"
+        },
+        {
+          "time": 1864,
+          "level": 4,
+          "ability_name": "shadow_demon_disruption"
+        },
+        {
+          "time": 2027,
+          "level": 1,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 2124,
+          "level": 3,
+          "ability_name": "shadow_demon_demonic_purge"
+        }
+      ],
       "ability_uses": {},
       "ability_targets": {},
       "purchase_log": [],
@@ -62985,14 +64418,85 @@
       "obs": {},
       "sen": {},
       "positions": [],
-      "kills_log": [],
+      "kills_log": [
+        {
+          "time": 201,
+          "victim": "npc_dota_hero_shadow_demon",
+          "attacker": "npc_dota_neutral_froglet",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 853,
+          "victim": "npc_dota_hero_shadow_demon",
+          "attacker": "npc_dota_hero_storm_spirit",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 1366,
+          "victim": "npc_dota_hero_shadow_demon",
+          "attacker": "npc_dota_hero_furion",
+          "inflictor": "furion_curse_of_the_forest",
+          "is_first_blood": false
+        },
+        {
+          "time": 1485,
+          "victim": "npc_dota_hero_shadow_demon",
+          "attacker": "npc_dota_hero_furion",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 1645,
+          "victim": "npc_dota_hero_shadow_demon",
+          "attacker": "npc_dota_hero_centaur",
+          "inflictor": "centaur_double_edge",
+          "is_first_blood": false
+        }
+      ],
       "buyback_log": [],
-      "killed": {},
-      "damage": {},
-      "damage_taken_map": {},
+      "killed": {
+        "npc_dota_hero_centaur": 1,
+        "npc_dota_hero_furion": 1
+      },
+      "damage": {
+        "npc_dota_hero_rubick": 1026,
+        "npc_dota_hero_centaur": 3190,
+        "npc_dota_hero_kunkka": 2728,
+        "npc_dota_hero_furion": 1023,
+        "npc_dota_hero_shadow_demon": 225
+      },
+      "damage_taken_map": {
+        "npc_dota_hero_centaur": 4506,
+        "npc_dota_hero_rubick": 395,
+        "npc_dota_hero_kunkka": 3783,
+        "npc_dota_hero_furion": 5524,
+        "npc_dota_hero_shadow_demon": 225
+      },
       "damage_inflictor": {},
       "damage_inflictor_received": {},
-      "healing": {},
+      "healing": {
+        "npc_dota_hero_warlock": 330,
+        "npc_dota_hero_axe": 450,
+        "npc_dota_hero_tiny": 450,
+        "npc_dota_hero_shadow_demon": 2002,
+        "npc_dota_hero_sven": 900
+      },
+      "max_hero_hit": {
+        "time": 2026,
+        "type": "DOTA_COMBATLOG_DAMAGE",
+        "value": 498,
+        "attackername": "npc_dota_hero_shadow_demon",
+        "targetname": "npc_dota_hero_centaur",
+        "sourcename": "npc_dota_hero_shadow_demon",
+        "targetsourcename": "npc_dota_hero_centaur",
+        "attackerhero": true,
+        "targethero": true,
+        "attackerillusion": false,
+        "targetillusion": false,
+        "inflictor": "shadow_demon_shadow_poison"
+      },
       "actions": {
         "11": 15,
         "33": 315,
@@ -78425,8 +79929,26 @@
         18365,
         18365
       ],
-      "gold_reasons": {},
-      "xp_reasons": {},
+      "gold_reasons": {
+        "gold_unknown_16": 175,
+        "gold_hero_kill": -555,
+        "gold_unknown_15": 757,
+        "gold_earnings": 663,
+        "gold_neutral_kill": 25,
+        "gold_unknown_17": 458,
+        "gold_cheat": 1665,
+        "gold_unknown_19": 141,
+        "gold_creature_kill": 3783,
+        "gold_unknown_20": 214,
+        "gold_unknown_14": 478
+      },
+      "xp_reasons": {
+        "xp_neutral_kill": 230,
+        "xp_hero_kill": 298,
+        "xp_creep_kill": 10394,
+        "xp_roshan_kill": 4643,
+        "xp_time": 2800
+      },
       "kill_streaks": {},
       "multi_kills": {},
       "life_state": {},
@@ -78437,6 +79959,7 @@
       "pred_vict": false
     },
     {
+      "hero_name": "npc_dota_hero_kunkka",
       "kills": 1,
       "deaths": 7,
       "assists": 6,
@@ -78446,6 +79969,9 @@
       "gold_per_min": 528,
       "xp_per_min": 684,
       "level": 21,
+      "hero_damage": 301491,
+      "hero_healing": 1990,
+      "damage_taken": 45113,
       "total_xp": 24308,
       "roshan_kills": 0,
       "towers_killed": 0,
@@ -78459,7 +79985,238 @@
       "runes_log": [],
       "neutral_items": [],
       "neutral_tokens_log": [],
-      "ability_upgrades": [],
+      "ability_upgrades": [
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "kunkka_torrent"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "kunkka_tidebringer"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "kunkka_x_marks_the_spot"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "kunkka_admirals_rum"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "kunkka_tidal_wave"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "kunkka_ghostship"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "kunkka_return"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_kunkka_tidebringer_slow"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_kunkka_3"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_kunkka_7"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_kunkka_2"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_kunkka_torrent_cooldown"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_kunkka_rum"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_spell_aoe_100"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_kunkka_4"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_capture"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "abyssal_underlord_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "twin_gate_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_lamp_use"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_high_five"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_guild_banner"
+        },
+        {
+          "time": -52,
+          "level": 1,
+          "ability_name": "kunkka_torrent"
+        },
+        {
+          "time": 115,
+          "level": 1,
+          "ability_name": "kunkka_tidebringer"
+        },
+        {
+          "time": 168,
+          "level": 1,
+          "ability_name": "kunkka_x_marks_the_spot"
+        },
+        {
+          "time": 168,
+          "level": 1,
+          "ability_name": "kunkka_return"
+        },
+        {
+          "time": 276,
+          "level": 2,
+          "ability_name": "kunkka_tidebringer"
+        },
+        {
+          "time": 356,
+          "level": 3,
+          "ability_name": "kunkka_tidebringer"
+        },
+        {
+          "time": 422,
+          "level": 1,
+          "ability_name": "kunkka_ghostship"
+        },
+        {
+          "time": 501,
+          "level": 4,
+          "ability_name": "kunkka_tidebringer"
+        },
+        {
+          "time": 577,
+          "level": 2,
+          "ability_name": "kunkka_torrent"
+        },
+        {
+          "time": 634,
+          "level": 2,
+          "ability_name": "kunkka_x_marks_the_spot"
+        },
+        {
+          "time": 634,
+          "level": 2,
+          "ability_name": "kunkka_return"
+        },
+        {
+          "time": 701,
+          "level": 3,
+          "ability_name": "kunkka_torrent"
+        },
+        {
+          "time": 761,
+          "level": 4,
+          "ability_name": "kunkka_torrent"
+        },
+        {
+          "time": 854,
+          "level": 2,
+          "ability_name": "kunkka_ghostship"
+        },
+        {
+          "time": 954,
+          "level": 3,
+          "ability_name": "kunkka_x_marks_the_spot"
+        },
+        {
+          "time": 954,
+          "level": 3,
+          "ability_name": "kunkka_return"
+        },
+        {
+          "time": 1079,
+          "level": 4,
+          "ability_name": "kunkka_x_marks_the_spot"
+        },
+        {
+          "time": 1079,
+          "level": 4,
+          "ability_name": "kunkka_return"
+        },
+        {
+          "time": 1205,
+          "level": 1,
+          "ability_name": "special_bonus_unique_kunkka_2"
+        },
+        {
+          "time": 1291,
+          "level": 1,
+          "ability_name": "special_bonus_unique_kunkka_tidebringer_slow"
+        },
+        {
+          "time": 1449,
+          "level": 1,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 1711,
+          "level": 3,
+          "ability_name": "kunkka_ghostship"
+        },
+        {
+          "time": 1824,
+          "level": 2,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 2118,
+          "level": 3,
+          "ability_name": "special_bonus_attributes"
+        }
+      ],
       "ability_uses": {},
       "ability_targets": {},
       "purchase_log": [],
@@ -78469,14 +80226,100 @@
       "obs": {},
       "sen": {},
       "positions": [],
-      "kills_log": [],
+      "kills_log": [
+        {
+          "time": 1070,
+          "victim": "npc_dota_hero_kunkka",
+          "attacker": "npc_dota_hero_tiny",
+          "inflictor": "tiny_toss_tree",
+          "is_first_blood": false
+        },
+        {
+          "time": 1370,
+          "victim": "npc_dota_hero_kunkka",
+          "attacker": "npc_dota_hero_tiny",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 1555,
+          "victim": "npc_dota_hero_kunkka",
+          "attacker": "npc_dota_hero_axe",
+          "inflictor": "axe_culling_blade",
+          "is_first_blood": false
+        },
+        {
+          "time": 1716,
+          "victim": "npc_dota_hero_kunkka",
+          "attacker": "npc_dota_hero_sven",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 1834,
+          "victim": "npc_dota_hero_kunkka",
+          "attacker": "npc_dota_hero_sven",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 2021,
+          "victim": "npc_dota_hero_kunkka",
+          "attacker": "npc_dota_hero_axe",
+          "inflictor": "axe_culling_blade",
+          "is_first_blood": false
+        },
+        {
+          "time": 2121,
+          "victim": "npc_dota_hero_kunkka",
+          "attacker": "npc_dota_hero_sven",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        }
+      ],
       "buyback_log": [],
-      "killed": {},
-      "damage": {},
-      "damage_taken_map": {},
+      "killed": {
+        "npc_dota_hero_axe": 1
+      },
+      "damage": {
+        "npc_dota_hero_warlock": 2903,
+        "npc_dota_hero_rubick": 130,
+        "npc_dota_hero_centaur": 35,
+        "npc_dota_hero_axe": 6326,
+        "npc_dota_hero_tiny": 4097,
+        "npc_dota_hero_kunkka": 12758,
+        "npc_dota_hero_furion": 821,
+        "npc_dota_hero_sven": 6529,
+        "npc_dota_hero_shadow_demon": 3783
+      },
+      "damage_taken_map": {
+        "npc_dota_hero_warlock": 922,
+        "npc_dota_hero_axe": 6271,
+        "npc_dota_hero_tiny": 3789,
+        "npc_dota_hero_kunkka": 12758,
+        "npc_dota_hero_furion": 477,
+        "npc_dota_hero_shadow_demon": 2728,
+        "npc_dota_hero_sven": 10553
+      },
       "damage_inflictor": {},
       "damage_inflictor_received": {},
-      "healing": {},
+      "healing": {
+        "npc_dota_hero_kunkka": 1990
+      },
+      "max_hero_hit": {
+        "time": 1361,
+        "type": "DOTA_COMBATLOG_DAMAGE",
+        "value": 1016,
+        "attackername": "npc_dota_hero_kunkka",
+        "targetname": "npc_dota_hero_sven",
+        "sourcename": "npc_dota_hero_kunkka",
+        "targetsourcename": "npc_dota_hero_shadow_demon",
+        "attackerhero": true,
+        "targethero": true,
+        "attackerillusion": false,
+        "targetillusion": true,
+        "inflictor": "kunkka_ghostship"
+      },
       "actions": {
         "33": 335,
         "11": 15,
@@ -93912,8 +95755,22 @@
         24308,
         24308
       ],
-      "gold_reasons": {},
-      "xp_reasons": {},
+      "gold_reasons": {
+        "gold_unknown_16": 150,
+        "gold_hero_kill": -2704,
+        "gold_earnings": 7684,
+        "gold_neutral_kill": 175,
+        "gold_unknown_17": 704,
+        "gold_cheat": 315,
+        "gold_unknown_19": 864,
+        "gold_creature_kill": 1710,
+        "gold_unknown_14": 5907
+      },
+      "xp_reasons": {
+        "xp_hero_kill": 0,
+        "xp_creep_kill": 3597,
+        "xp_roshan_kill": 20711
+      },
       "kill_streaks": {},
       "multi_kills": {},
       "life_state": {},
@@ -93924,6 +95781,7 @@
       "pred_vict": false
     },
     {
+      "hero_name": "npc_dota_hero_stormspirit",
       "kills": 4,
       "deaths": 4,
       "assists": 3,
@@ -94010,7 +95868,208 @@
       "runes_log": [],
       "neutral_items": [],
       "neutral_tokens_log": [],
-      "ability_upgrades": [],
+      "ability_upgrades": [
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "storm_spirit_static_remnant"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "storm_spirit_electric_vortex"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "storm_spirit_overload"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "generic_hidden"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "storm_spirit_ball_lightning"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "storm_spirit_galvanized"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_storm_spirit_overload_aspd"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_mp_regen_150"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_hp_250"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_storm_spirit_5"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_storm_spirit"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_storm_spirit_8"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_storm_spirit_7"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_storm_spirit_4"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_capture"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "abyssal_underlord_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "twin_gate_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_lamp_use"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_high_five"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_guild_banner"
+        },
+        {
+          "time": -86,
+          "level": 1,
+          "ability_name": "storm_spirit_static_remnant"
+        },
+        {
+          "time": 60,
+          "level": 1,
+          "ability_name": "storm_spirit_overload"
+        },
+        {
+          "time": 99,
+          "level": 2,
+          "ability_name": "storm_spirit_static_remnant"
+        },
+        {
+          "time": 190,
+          "level": 2,
+          "ability_name": "storm_spirit_overload"
+        },
+        {
+          "time": 250,
+          "level": 3,
+          "ability_name": "storm_spirit_static_remnant"
+        },
+        {
+          "time": 333,
+          "level": 1,
+          "ability_name": "storm_spirit_ball_lightning"
+        },
+        {
+          "time": 449,
+          "level": 4,
+          "ability_name": "storm_spirit_static_remnant"
+        },
+        {
+          "time": 588,
+          "level": 1,
+          "ability_name": "storm_spirit_electric_vortex"
+        },
+        {
+          "time": 718,
+          "level": 3,
+          "ability_name": "storm_spirit_overload"
+        },
+        {
+          "time": 788,
+          "level": 4,
+          "ability_name": "storm_spirit_overload"
+        },
+        {
+          "time": 845,
+          "level": 1,
+          "ability_name": "special_bonus_mp_regen_150"
+        },
+        {
+          "time": 939,
+          "level": 2,
+          "ability_name": "storm_spirit_ball_lightning"
+        },
+        {
+          "time": 1104,
+          "level": 2,
+          "ability_name": "storm_spirit_electric_vortex"
+        },
+        {
+          "time": 1194,
+          "level": 3,
+          "ability_name": "storm_spirit_electric_vortex"
+        },
+        {
+          "time": 1336,
+          "level": 1,
+          "ability_name": "special_bonus_hp_250"
+        },
+        {
+          "time": 1438,
+          "level": 4,
+          "ability_name": "storm_spirit_electric_vortex"
+        },
+        {
+          "time": 1569,
+          "level": 1,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 1707,
+          "level": 3,
+          "ability_name": "storm_spirit_ball_lightning"
+        },
+        {
+          "time": 1887,
+          "level": 2,
+          "ability_name": "special_bonus_attributes"
+        }
+      ],
       "ability_uses": {},
       "ability_targets": {},
       "purchase_log": [],
@@ -109474,6 +111533,7 @@
       "pred_vict": false
     },
     {
+      "hero_name": "npc_dota_hero_centaur",
       "kills": 2,
       "deaths": 7,
       "assists": 4,
@@ -109483,6 +111543,9 @@
       "gold_per_min": 390,
       "xp_per_min": 516,
       "level": 18,
+      "hero_damage": 180678,
+      "hero_healing": 2028,
+      "damage_taken": 46949,
       "total_xp": 18361,
       "roshan_kills": 0,
       "towers_killed": 1,
@@ -109496,7 +111559,213 @@
       "runes_log": [],
       "neutral_items": [],
       "neutral_tokens_log": [],
-      "ability_upgrades": [],
+      "ability_upgrades": [
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "centaur_hoof_stomp"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "centaur_double_edge"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "centaur_return"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "centaur_work_horse"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "centaur_mount"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "centaur_stampede"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "centaur_rawhide"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_hp_regen_4"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_movement_speed_15"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_strength_12"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_centaur_4"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_centaur_3"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_centaur_5"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_centaur_1"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_centaur_2"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_capture"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "abyssal_underlord_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "twin_gate_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_lamp_use"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_high_five"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_guild_banner"
+        },
+        {
+          "time": -89,
+          "level": 2,
+          "ability_name": "centaur_horsepower"
+        },
+        {
+          "time": -62,
+          "level": 1,
+          "ability_name": "centaur_hoof_stomp"
+        },
+        {
+          "time": 84,
+          "level": 1,
+          "ability_name": "centaur_double_edge"
+        },
+        {
+          "time": 141,
+          "level": 1,
+          "ability_name": "centaur_return"
+        },
+        {
+          "time": 267,
+          "level": 2,
+          "ability_name": "centaur_return"
+        },
+        {
+          "time": 370,
+          "level": 3,
+          "ability_name": "centaur_return"
+        },
+        {
+          "time": 468,
+          "level": 1,
+          "ability_name": "centaur_stampede"
+        },
+        {
+          "time": 538,
+          "level": 4,
+          "ability_name": "centaur_return"
+        },
+        {
+          "time": 612,
+          "level": 2,
+          "ability_name": "centaur_hoof_stomp"
+        },
+        {
+          "time": 687,
+          "level": 3,
+          "ability_name": "centaur_hoof_stomp"
+        },
+        {
+          "time": 766,
+          "level": 4,
+          "ability_name": "centaur_hoof_stomp"
+        },
+        {
+          "time": 931,
+          "level": 1,
+          "ability_name": "special_bonus_movement_speed_15"
+        },
+        {
+          "time": 1005,
+          "level": 2,
+          "ability_name": "centaur_stampede"
+        },
+        {
+          "time": 1109,
+          "level": 2,
+          "ability_name": "centaur_double_edge"
+        },
+        {
+          "time": 1213,
+          "level": 3,
+          "ability_name": "centaur_double_edge"
+        },
+        {
+          "time": 1313,
+          "level": 1,
+          "ability_name": "special_bonus_strength_12"
+        },
+        {
+          "time": 1625,
+          "level": 4,
+          "ability_name": "centaur_double_edge"
+        },
+        {
+          "time": 1717,
+          "level": 1,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 1797,
+          "level": 3,
+          "ability_name": "centaur_stampede"
+        }
+      ],
       "ability_uses": {},
       "ability_targets": {},
       "purchase_log": [],
@@ -109506,14 +111775,98 @@
       "obs": {},
       "sen": {},
       "positions": [],
-      "kills_log": [],
+      "kills_log": [
+        {
+          "time": 799,
+          "victim": "npc_dota_hero_centaur",
+          "attacker": "npc_dota_hero_warlock",
+          "inflictor": "warlock_shadow_word",
+          "is_first_blood": false
+        },
+        {
+          "time": 1123,
+          "victim": "npc_dota_hero_centaur",
+          "attacker": "npc_dota_hero_tiny",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 1355,
+          "victim": "npc_dota_hero_centaur",
+          "attacker": "npc_dota_hero_tiny",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 1547,
+          "victim": "npc_dota_hero_centaur",
+          "attacker": "npc_dota_warlock_golem",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 1857,
+          "victim": "npc_dota_hero_centaur",
+          "attacker": "npc_dota_hero_shadow_demon",
+          "inflictor": "shadow_demon_disseminate",
+          "is_first_blood": false
+        },
+        {
+          "time": 2026,
+          "victim": "npc_dota_hero_centaur",
+          "attacker": "npc_dota_hero_axe",
+          "inflictor": "axe_culling_blade",
+          "is_first_blood": false
+        },
+        {
+          "time": 2116,
+          "victim": "npc_dota_hero_centaur",
+          "attacker": "npc_dota_hero_sven",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        }
+      ],
       "buyback_log": [],
-      "killed": {},
-      "damage": {},
-      "damage_taken_map": {},
+      "killed": {
+        "npc_dota_hero_axe": 1,
+        "npc_dota_hero_shadow_demon": 1
+      },
+      "damage": {
+        "npc_dota_hero_warlock": 1757,
+        "npc_dota_hero_centaur": 12221,
+        "npc_dota_hero_axe": 3851,
+        "npc_dota_hero_tiny": 4015,
+        "npc_dota_hero_shadow_demon": 4506,
+        "npc_dota_hero_sven": 4954
+      },
+      "damage_taken_map": {
+        "npc_dota_hero_warlock": 5487,
+        "npc_dota_hero_centaur": 12221,
+        "npc_dota_hero_axe": 6134,
+        "npc_dota_hero_tiny": 5462,
+        "npc_dota_hero_kunkka": 35,
+        "npc_dota_hero_shadow_demon": 3190,
+        "npc_dota_hero_sven": 6962
+      },
       "damage_inflictor": {},
       "damage_inflictor_received": {},
-      "healing": {},
+      "healing": {
+        "npc_dota_hero_centaur": 2028
+      },
+      "max_hero_hit": {
+        "time": 2113,
+        "type": "DOTA_COMBATLOG_DAMAGE",
+        "value": 1118,
+        "attackername": "npc_dota_hero_centaur",
+        "targetname": "npc_dota_hero_shadow_demon",
+        "sourcename": "npc_dota_hero_centaur",
+        "targetsourcename": "npc_dota_hero_shadow_demon",
+        "attackerhero": true,
+        "targethero": true,
+        "attackerillusion": false,
+        "targetillusion": true,
+        "inflictor": "centaur_double_edge"
+      },
       "actions": {
         "11": 15,
         "33": 188,
@@ -124947,8 +127300,22 @@
         18361,
         18361
       ],
-      "gold_reasons": {},
-      "xp_reasons": {},
+      "gold_reasons": {
+        "gold_unknown_16": 150,
+        "gold_hero_kill": -2002,
+        "gold_earnings": 6881,
+        "gold_neutral_kill": 210,
+        "gold_unknown_17": 704,
+        "gold_cheat": 433,
+        "gold_unknown_19": 831,
+        "gold_creature_kill": 1684,
+        "gold_unknown_14": 2674
+      },
+      "xp_reasons": {
+        "xp_hero_kill": 0,
+        "xp_creep_kill": 1767,
+        "xp_roshan_kill": 16594
+      },
       "kill_streaks": {},
       "multi_kills": {},
       "life_state": {},
@@ -124959,6 +127326,7 @@
       "pred_vict": false
     },
     {
+      "hero_name": "npc_dota_hero_rubick",
       "kills": 1,
       "deaths": 11,
       "assists": 2,
@@ -124968,6 +127336,9 @@
       "gold_per_min": 145,
       "xp_per_min": 301,
       "level": 13,
+      "hero_damage": 46560,
+      "hero_healing": 2144,
+      "damage_taken": 22046,
       "total_xp": 10710,
       "roshan_kills": 0,
       "towers_killed": 0,
@@ -125505,7 +127876,253 @@
       "runes_log": [],
       "neutral_items": [],
       "neutral_tokens_log": [],
-      "ability_upgrades": [],
+      "ability_upgrades": [
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "rubick_telekinesis"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "rubick_fade_bolt"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "rubick_arcane_supremacy"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "rubick_empty1"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "rubick_empty2"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "rubick_spell_steal"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "rubick_telekinesis_land"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "rubick_hidden1"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "rubick_hidden2"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "rubick_might_and_magus"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "rubick_telekinesis_land_self"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_rubick_8"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_rubick_2"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_rubick_6"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_rubick_7"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_rubick_3"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_rubick_4"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_rubick"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_rubick_5"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "rubick_hidden3"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "rubick_hidden4"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_capture"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "abyssal_underlord_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "twin_gate_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_lamp_use"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_high_five"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_guild_banner"
+        },
+        {
+          "time": -52,
+          "level": 1,
+          "ability_name": "rubick_fade_bolt"
+        },
+        {
+          "time": 186,
+          "level": 1,
+          "ability_name": "rubick_telekinesis"
+        },
+        {
+          "time": 186,
+          "level": 1,
+          "ability_name": "rubick_telekinesis_land"
+        },
+        {
+          "time": 186,
+          "level": 1,
+          "ability_name": "rubick_telekinesis_land_self"
+        },
+        {
+          "time": 300,
+          "level": 2,
+          "ability_name": "rubick_fade_bolt"
+        },
+        {
+          "time": 432,
+          "level": 1,
+          "ability_name": "rubick_arcane_supremacy"
+        },
+        {
+          "time": 558,
+          "level": 3,
+          "ability_name": "rubick_fade_bolt"
+        },
+        {
+          "time": 662,
+          "level": 1,
+          "ability_name": "rubick_spell_steal"
+        },
+        {
+          "time": 663,
+          "level": 3,
+          "ability_name": "shadow_demon_shadow_poison"
+        },
+        {
+          "time": 663,
+          "level": 1,
+          "ability_name": "shadow_demon_shadow_poison_release"
+        },
+        {
+          "time": 717,
+          "level": 4,
+          "ability_name": "tiny_toss"
+        },
+        {
+          "time": 845,
+          "level": 4,
+          "ability_name": "rubick_fade_bolt"
+        },
+        {
+          "time": 961,
+          "level": 1,
+          "ability_name": "shadow_demon_disseminate"
+        },
+        {
+          "time": 1016,
+          "level": 2,
+          "ability_name": "rubick_arcane_supremacy"
+        },
+        {
+          "time": 1104,
+          "level": 4,
+          "ability_name": "sven_storm_bolt"
+        },
+        {
+          "time": 1181,
+          "level": 3,
+          "ability_name": "rubick_arcane_supremacy"
+        },
+        {
+          "time": 1267,
+          "level": 4,
+          "ability_name": "rubick_arcane_supremacy"
+        },
+        {
+          "time": 1456,
+          "level": 2,
+          "ability_name": "rubick_telekinesis"
+        },
+        {
+          "time": 1614,
+          "level": 2,
+          "ability_name": "rubick_spell_steal"
+        },
+        {
+          "time": 1637,
+          "level": 4,
+          "ability_name": "tiny_avalanche"
+        },
+        {
+          "time": 1742,
+          "level": 3,
+          "ability_name": "rubick_telekinesis"
+        }
+      ],
       "ability_uses": {},
       "ability_targets": {},
       "purchase_log": [],
@@ -125515,14 +128132,125 @@
       "obs": {},
       "sen": {},
       "positions": [],
-      "kills_log": [],
+      "kills_log": [
+        {
+          "time": 804,
+          "victim": "npc_dota_hero_rubick",
+          "attacker": "npc_dota_hero_sven",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 897,
+          "victim": "npc_dota_hero_rubick",
+          "attacker": "npc_dota_hero_tiny",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 962,
+          "victim": "npc_dota_hero_rubick",
+          "attacker": "npc_dota_hero_sven",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 1017,
+          "victim": "npc_dota_hero_rubick",
+          "attacker": "npc_dota_hero_axe",
+          "inflictor": "axe_culling_blade",
+          "is_first_blood": false
+        },
+        {
+          "time": 1118,
+          "victim": "npc_dota_hero_rubick",
+          "attacker": "npc_dota_hero_tiny",
+          "inflictor": "tiny_avalanche",
+          "is_first_blood": false
+        },
+        {
+          "time": 1363,
+          "victim": "npc_dota_hero_rubick",
+          "attacker": "npc_dota_hero_tiny",
+          "inflictor": "tiny_toss",
+          "is_first_blood": false
+        },
+        {
+          "time": 1534,
+          "victim": "npc_dota_hero_rubick",
+          "attacker": "npc_dota_hero_sven",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 1862,
+          "victim": "npc_dota_hero_rubick",
+          "attacker": "npc_dota_hero_axe",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 2007,
+          "victim": "npc_dota_hero_rubick",
+          "attacker": "npc_dota_hero_tiny",
+          "inflictor": "tiny_toss_tree",
+          "is_first_blood": false
+        },
+        {
+          "time": 2032,
+          "victim": "npc_dota_hero_rubick",
+          "attacker": "npc_dota_hero_sven",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 2117,
+          "victim": "npc_dota_hero_rubick",
+          "attacker": "npc_dota_hero_tiny",
+          "inflictor": "tiny_toss",
+          "is_first_blood": false
+        }
+      ],
       "buyback_log": [],
-      "killed": {},
-      "damage": {},
-      "damage_taken_map": {},
+      "killed": {
+        "npc_dota_hero_tiny": 1
+      },
+      "damage": {
+        "npc_dota_hero_warlock": 1074,
+        "npc_dota_hero_rubick": 1273,
+        "npc_dota_hero_axe": 870,
+        "npc_dota_hero_tiny": 4087,
+        "npc_dota_hero_sven": 4940,
+        "npc_dota_hero_shadow_demon": 395
+      },
+      "damage_taken_map": {
+        "npc_dota_hero_warlock": 3877,
+        "npc_dota_hero_rubick": 1273,
+        "npc_dota_hero_axe": 2918,
+        "npc_dota_hero_tiny": 4907,
+        "npc_dota_hero_kunkka": 130,
+        "npc_dota_hero_shadow_demon": 1026,
+        "npc_dota_hero_sven": 6291
+      },
       "damage_inflictor": {},
       "damage_inflictor_received": {},
-      "healing": {},
+      "healing": {
+        "npc_dota_hero_rubick": 2144
+      },
+      "max_hero_hit": {
+        "time": 1361,
+        "type": "DOTA_COMBATLOG_DAMAGE",
+        "value": 862,
+        "attackername": "npc_dota_hero_rubick",
+        "targetname": "npc_dota_hero_sven",
+        "sourcename": "npc_dota_hero_rubick",
+        "targetsourcename": "npc_dota_hero_shadow_demon",
+        "attackerhero": true,
+        "targethero": true,
+        "attackerillusion": false,
+        "targetillusion": true,
+        "inflictor": "sven_storm_bolt"
+      },
       "actions": {
         "11": 13,
         "23": 1,
@@ -140956,8 +143684,24 @@
         10710,
         10710
       ],
-      "gold_reasons": {},
-      "xp_reasons": {},
+      "gold_reasons": {
+        "gold_unknown_16": 150,
+        "gold_hero_kill": -1034,
+        "gold_earnings": 1656,
+        "gold_neutral_kill": 150,
+        "gold_unknown_17": 704,
+        "gold_cheat": 315,
+        "gold_unknown_19": 392,
+        "gold_creature_kill": 580,
+        "gold_unknown_20": 419,
+        "gold_unknown_14": 408
+      },
+      "xp_reasons": {
+        "xp_hero_kill": 285,
+        "xp_creep_kill": 848,
+        "xp_roshan_kill": 6777,
+        "xp_time": 2800
+      },
       "kill_streaks": {},
       "multi_kills": {},
       "life_state": {},
@@ -140968,6 +143712,7 @@
       "pred_vict": false
     },
     {
+      "hero_name": "npc_dota_hero_furion",
       "kills": 2,
       "deaths": 4,
       "assists": 8,
@@ -140977,6 +143722,9 @@
       "gold_per_min": 361,
       "xp_per_min": 515,
       "level": 18,
+      "hero_damage": 191539,
+      "hero_healing": 4456,
+      "damage_taken": 15059,
       "total_xp": 18314,
       "roshan_kills": 0,
       "towers_killed": 1,
@@ -141334,7 +144082,223 @@
       "runes_log": [],
       "neutral_items": [],
       "neutral_tokens_log": [],
-      "ability_upgrades": [],
+      "ability_upgrades": [
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "furion_sprout"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "furion_teleportation"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "furion_force_of_nature"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "furion_curse_of_the_forest"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "furion_spirit_of_the_forest"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "furion_wrath_of_nature"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_furion_6"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_furion_5"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_furion_2"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_furion_8"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_furion_7"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_furion_4"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_furion_3"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_unique_furion"
+        },
+        {
+          "time": -89,
+          "level": 0,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_capture"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "abyssal_underlord_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "twin_gate_portal_warp"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "ability_lamp_use"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_high_five"
+        },
+        {
+          "time": -89,
+          "level": 1,
+          "ability_name": "plus_guild_banner"
+        },
+        {
+          "time": -51,
+          "level": 1,
+          "ability_name": "furion_sprout"
+        },
+        {
+          "time": 114,
+          "level": 1,
+          "ability_name": "furion_teleportation"
+        },
+        {
+          "time": 266,
+          "level": 2,
+          "ability_name": "furion_sprout"
+        },
+        {
+          "time": 427,
+          "level": 2,
+          "ability_name": "furion_teleportation"
+        },
+        {
+          "time": 588,
+          "level": 3,
+          "ability_name": "furion_sprout"
+        },
+        {
+          "time": 655,
+          "level": 2,
+          "ability_name": "furion_spirit_of_the_forest"
+        },
+        {
+          "time": 655,
+          "level": 1,
+          "ability_name": "furion_wrath_of_nature"
+        },
+        {
+          "time": 798,
+          "level": 4,
+          "ability_name": "furion_sprout"
+        },
+        {
+          "time": 929,
+          "level": 1,
+          "ability_name": "furion_curse_of_the_forest"
+        },
+        {
+          "time": 955,
+          "level": 3,
+          "ability_name": "furion_teleportation"
+        },
+        {
+          "time": 1084,
+          "level": 4,
+          "ability_name": "furion_teleportation"
+        },
+        {
+          "time": 1197,
+          "level": 1,
+          "ability_name": "special_bonus_unique_furion_5"
+        },
+        {
+          "time": 1267,
+          "level": 1,
+          "ability_name": "furion_force_of_nature"
+        },
+        {
+          "time": 1410,
+          "level": 3,
+          "ability_name": "furion_spirit_of_the_forest"
+        },
+        {
+          "time": 1410,
+          "level": 2,
+          "ability_name": "furion_wrath_of_nature"
+        },
+        {
+          "time": 1525,
+          "level": 2,
+          "ability_name": "furion_force_of_nature"
+        },
+        {
+          "time": 1647,
+          "level": 3,
+          "ability_name": "furion_force_of_nature"
+        },
+        {
+          "time": 1738,
+          "level": 1,
+          "ability_name": "special_bonus_unique_furion_8"
+        },
+        {
+          "time": 1810,
+          "level": 4,
+          "ability_name": "furion_force_of_nature"
+        },
+        {
+          "time": 2118,
+          "level": 1,
+          "ability_name": "special_bonus_attributes"
+        },
+        {
+          "time": 2120,
+          "level": 4,
+          "ability_name": "furion_spirit_of_the_forest"
+        },
+        {
+          "time": 2120,
+          "level": 3,
+          "ability_name": "furion_wrath_of_nature"
+        }
+      ],
       "ability_uses": {},
       "ability_targets": {},
       "purchase_log": [],
@@ -141344,14 +144308,80 @@
       "obs": {},
       "sen": {},
       "positions": [],
-      "kills_log": [],
+      "kills_log": [
+        {
+          "time": -40,
+          "victim": "npc_dota_hero_furion",
+          "attacker": "npc_dota_hero_sven",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 153,
+          "victim": "npc_dota_hero_furion",
+          "attacker": "npc_dota_hero_shadow_demon",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        },
+        {
+          "time": 1193,
+          "victim": "npc_dota_hero_furion",
+          "attacker": "npc_dota_hero_axe",
+          "inflictor": "axe_culling_blade",
+          "is_first_blood": false
+        },
+        {
+          "time": 2008,
+          "victim": "npc_dota_hero_furion",
+          "attacker": "npc_dota_hero_sven",
+          "inflictor": "dota_unknown",
+          "is_first_blood": false
+        }
+      ],
       "buyback_log": [],
-      "killed": {},
-      "damage": {},
-      "damage_taken_map": {},
+      "killed": {
+        "npc_dota_hero_shadow_demon": 2
+      },
+      "damage": {
+        "npc_dota_hero_warlock": 2123,
+        "npc_dota_hero_axe": 6260,
+        "npc_dota_hero_tiny": 3429,
+        "npc_dota_hero_kunkka": 477,
+        "npc_dota_hero_furion": 507,
+        "npc_dota_hero_sven": 4344,
+        "npc_dota_hero_shadow_demon": 5524
+      },
+      "damage_taken_map": {
+        "npc_dota_hero_warlock": 295,
+        "npc_dota_hero_axe": 3710,
+        "npc_dota_hero_tiny": 2892,
+        "npc_dota_hero_kunkka": 821,
+        "npc_dota_hero_furion": 507,
+        "npc_dota_hero_shadow_demon": 1023,
+        "npc_dota_hero_sven": 748
+      },
       "damage_inflictor": {},
       "damage_inflictor_received": {},
-      "healing": {},
+      "healing": {
+        "npc_dota_hero_centaur": 45,
+        "npc_dota_hero_rubick": 97,
+        "npc_dota_hero_kunkka": 648,
+        "npc_dota_hero_furion": 3404
+      },
+      "max_hero_hit": {
+        "time": 1786,
+        "type": "DOTA_COMBATLOG_DAMAGE",
+        "value": 783,
+        "attackername": "npc_dota_hero_furion",
+        "targetname": "npc_dota_creep_goodguys_melee",
+        "sourcename": "npc_dota_hero_furion",
+        "targetsourcename": "npc_dota_creep_goodguys_melee",
+        "attackerhero": true,
+        "targethero": false,
+        "attackerillusion": false,
+        "targetillusion": false,
+        "inflictor": "furion_wrath_of_nature"
+      },
       "actions": {
         "11": 15,
         "12": 2,
@@ -156784,8 +159814,23 @@
         18314,
         18314
       ],
-      "gold_reasons": {},
-      "xp_reasons": {},
+      "gold_reasons": {
+        "gold_unknown_16": 100,
+        "gold_hero_kill": -458,
+        "gold_earnings": 4261,
+        "gold_unknown_17": 704,
+        "gold_cheat": 315,
+        "gold_unknown_19": 140,
+        "gold_unknown_21": 50,
+        "gold_creature_kill": 1909,
+        "gold_unknown_14": 3116
+      },
+      "xp_reasons": {
+        "xp_hero_kill": 0,
+        "xp_creep_kill": 4784,
+        "xp_roshan_kill": 11290,
+        "xp_time": 2240
+      },
       "kill_streaks": {},
       "multi_kills": {},
       "life_state": {},

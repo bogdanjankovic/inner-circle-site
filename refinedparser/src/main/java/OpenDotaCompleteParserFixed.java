@@ -71,10 +71,11 @@ public class OpenDotaCompleteParserFixed {
     public static class CompletePlayer {
         // Basic info
         public Integer account_id;
-        public Integer player_slot;
         public Integer hero_id;
         public String hero_name;
         public Integer team;
+        public Integer player_slot;
+        public Integer facet_hero_id;
         
         // Final stats
         public Integer kills;
@@ -522,6 +523,11 @@ public class OpenDotaCompleteParserFixed {
             player.team = entry.team;
             player.player_slot = entry.player_slot;
             
+            // Add facet selection if available
+            if (entry.facet_hero_id != null) {
+                player.facet_hero_id = entry.facet_hero_id;
+            }
+            
             if (entry.key != null) {
                 heroToSlot.put(entry.key, entry.player_slot);
             }
@@ -529,16 +535,43 @@ public class OpenDotaCompleteParserFixed {
     }
     
     private static void processAbilityLevel(Entry entry, CompleteMatchData matchData, Map<String, Integer> heroToSlot) {
-        if (entry.player_slot != null && entry.player_slot >= 0 && entry.player_slot < 10) {
-            CompletePlayer player = matchData.players.get(entry.player_slot);
+        // DOTA_ABILITY_LEVEL entries use targetname for hero and valuename for ability
+        if (entry.targetname != null && entry.valuename != null) {
+            // Find player slot by matching hero name
+            Integer heroSlot = null;
+            for (int i = 0; i < matchData.players.size(); i++) {
+                CompletePlayer player = matchData.players.get(i);
+                if (entry.targetname.equals(player.hero_name)) {
+                    heroSlot = i;
+                    break;
+                }
+            }
             
-            AbilityUpgrade upgrade = new AbilityUpgrade();
-            upgrade.ability = entry.value;
-            upgrade.time = entry.time;
-            upgrade.level = entry.abilitylevel;
-            upgrade.ability_name = entry.key;
+            // If not found, we need to establish the mapping
+            if (heroSlot == null) {
+                // Try to find an empty slot and assign this hero to it
+                for (int i = 0; i < matchData.players.size(); i++) {
+                    CompletePlayer player = matchData.players.get(i);
+                    if (player.hero_name == null || player.hero_name.isEmpty()) {
+                        player.hero_name = entry.targetname;
+                        heroToSlot.put(entry.targetname, i);
+                        heroSlot = i;
+                        break;
+                    }
+                }
+            }
             
-            player.ability_upgrades.add(upgrade);
+            if (heroSlot != null && heroSlot >= 0 && heroSlot < 10) {
+                CompletePlayer player = matchData.players.get(heroSlot);
+                
+                AbilityUpgrade upgrade = new AbilityUpgrade();
+                upgrade.ability = entry.value;  // ability ID (might be null)
+                upgrade.time = entry.time;
+                upgrade.level = entry.abilitylevel;  // ability level
+                upgrade.ability_name = entry.valuename;  // ability name from valuename
+                
+                player.ability_upgrades.add(upgrade);
+            }
         }
     }
     
