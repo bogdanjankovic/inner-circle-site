@@ -441,6 +441,7 @@ const Teams = () => {
             ) : (
                 <div className="team-card-grid">
                     {teams
+                        .filter(t => t.stats?.type !== 'shuffle')
                         .map(t => {
                             // Calculate Strength for Sorting
                             let total = 0, count = 0;

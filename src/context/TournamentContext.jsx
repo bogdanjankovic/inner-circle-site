@@ -347,11 +347,12 @@ export const TournamentProvider = ({ children }) => {
         return newBracket;
     };
 
-    const saveTournament = async (name, bracketData) => {
+    const saveTournament = async (name, bracketData, isShuffle = false) => {
         const { data, error } = await supabase.from('tournaments').insert([{
             name,
             status: 'draft',
-            bracket_data: bracketData
+            bracket_data: bracketData,
+            is_shuffle: isShuffle
         }]).select();
 
         if (error) {
@@ -490,6 +491,38 @@ export const TournamentProvider = ({ children }) => {
             console.error("Error archiving tournament:", error);
             alert("Error finishing tournament.");
         } else {
+            // Award individual trophies if it's a shuffle tournament
+            const tournament = tournaments.find(t => t.id === tournamentId);
+            if (tournament && tournament.is_shuffle) {
+                const winningTeam = teams.find(t => t.id.toString() === winnerTeamId.toString());
+                if (winningTeam && winningTeam.players) {
+                    for (const player of winningTeam.players) {
+                        const sid = (player.steam_id || player.steamId)?.toString();
+                        if (sid) {
+                            // Find and update player's trophies in shuffle_players
+                            const { data: sPlayer } = await supabase
+                                .from('shuffle_players')
+                                .select('trophies')
+                                .eq('steam_id', sid)
+                                .maybeSingle();
+
+                            if (sPlayer) {
+                                const newTrophies = [...(sPlayer.trophies || []), {
+                                    tournamentId: tournament.id,
+                                    tournamentName: tournament.name,
+                                    date: new Date().toISOString()
+                                }];
+
+                                await supabase
+                                    .from('shuffle_players')
+                                    .update({ trophies: newTrophies })
+                                    .eq('steam_id', sid);
+                            }
+                        }
+                    }
+                }
+            }
+
             // Optimistic update
             setTournaments(prev => prev.map(t =>
                 t.id === tournamentId ? { ...t, status: 'archived', winner: winnerTeamId } : t

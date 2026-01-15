@@ -13,6 +13,7 @@ const Navbar = () => {
         { name: 'Igrači', path: '/players' },
         { name: 'Mečevi', path: '/matches' },
         { name: 'Rezultati', path: '/results' },
+        { name: '🎲 Shuffle', path: '/shuffle', isOrange: true },
         { name: 'Prijava', path: '/register', isHighlight: true },
     ];
 
@@ -36,7 +37,10 @@ const Navbar = () => {
                             key={link.path}
                             to={link.path}
                             className={link.isHighlight ? 'btn' : 'nav-link'}
-                            style={!link.isHighlight ? isActive(link.path) : {}}
+                            style={{
+                                ...(!link.isHighlight && !link.isOrange ? isActive(link.path) : {}),
+                                ...(link.isOrange ? { color: '#ffa500', fontWeight: 'bold' } : {})
+                            }}
                         >
                             {link.name}
                         </Link>

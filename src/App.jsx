@@ -14,6 +14,7 @@ import Results from './pages/Results';
 import Admin from './pages/Admin';
 import AdminUpload from './pages/AdminUpload';
 import Login from './pages/Login';
+import ShuffleRegistration from './pages/ShuffleRegistration';
 import MatchDetails from './components/matches/MatchDetails';
 
 import SEOHead from './components/seo/SEOHead';
@@ -45,6 +46,7 @@ function App() {
           <Route path="/results" element={<Results />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/upload" element={<AdminUpload />} />
+          <Route path="/shuffle" element={<ShuffleRegistration />} />
           <Route path="/login" element={<Login />} />
         </Routes>
       </main>

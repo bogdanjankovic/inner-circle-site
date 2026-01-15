@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { fetchPlayerData, forceRefreshTeamPlayers } from '../services/dotaApi';
 import { sendDiscordWebhook, formatMatchResultEmbed, formatTournamentWinEmbed } from '../services/discordService';
+import { getApprovedShufflePlayers, getPendingShufflePlayers, approveShufflePlayer, rejectShufflePlayer, generateBalancedTeams, confirmShuffleTeams, getConfirmedShuffleTeams, registerShuffleTeam, resetShuffleState } from '../services/shuffleService';
 
 const DISCORD_WEBHOOK_URL = import.meta.env.VITE_DISCORD_WEBHOOK_URL;
 const DISCORD_WEBHOOK_TOURNAMENTS = import.meta.env.VITE_DISCORD_WEBHOOK_TOURNAMENTS || DISCORD_WEBHOOK_URL;
@@ -35,6 +36,7 @@ const EditTeamModal = ({ team, onClose, onSave }) => {
         const newPlayers = [...players];
         if (field === 'personaName') newPlayers[idx].personaName = value;
         if (field === 'position') newPlayers[idx].position = parseInt(value);
+        if (field === 'discord_id') newPlayers[idx].discord_id = value;
         setPlayers(newPlayers);
 
         // If position changed and player has steamId, refetch heroes
@@ -91,6 +93,12 @@ const EditTeamModal = ({ team, onClose, onSave }) => {
                                 value={p.personaName}
                                 onChange={(e) => handlePlayerChange(i, 'personaName', e.target.value)}
                                 style={{ flex: 1, padding: '0.2rem' }}
+                            />
+                            <input
+                                placeholder="Discord ID"
+                                value={p.discord_id || ''}
+                                onChange={(e) => handlePlayerChange(i, 'discord_id', e.target.value)}
+                                style={{ width: '150px', padding: '0.2rem' }}
                             />
                             <select
                                 value={p.position || ''}
@@ -655,12 +663,43 @@ const Admin = () => {
     const [matchFormat, setMatchFormat] = useState('bo1'); // 'bo1' | 'bo2' | 'bo3' | 'bo5'
     const [selectedTeamIds, setSelectedTeamIds] = useState([]);
 
+    // Shuffle Tournament Integration
+    const [teamSource, setTeamSource] = useState('regular'); // 'regular' | 'shuffle'
+    const [shuffleTeams, setShuffleTeams] = useState([]);
+    const [loadingShuffleTeams, setLoadingShuffleTeams] = useState(false);
+
     // Initialize selected teams when teams load
     useEffect(() => {
-        if (teams.length > 0 && selectedTeamIds.length === 0) {
+        if (teamSource === 'regular') {
             setSelectedTeamIds(teams.map(t => t.id));
         }
-    }, [teams]);
+    }, [teams, teamSource]);
+
+    // Fetch shuffle teams when source changes
+    useEffect(() => {
+        if (teamSource === 'shuffle') {
+            loadShuffleTeams();
+        }
+    }, [teamSource]);
+
+    const loadShuffleTeams = async () => {
+        setLoadingShuffleTeams(true);
+        try {
+            const confirmedTeams = await getConfirmedShuffleTeams();
+            if (confirmedTeams) {
+                setShuffleTeams(confirmedTeams);
+                // Auto-select all shuffle teams by default (they are identified by their index/ID in the shuffle result)
+                setSelectedTeamIds(confirmedTeams.map(t => t.id));
+            } else {
+                setShuffleTeams([]);
+                setSelectedTeamIds([]);
+            }
+        } catch (error) {
+            console.error('Error loading shuffle teams:', error);
+        } finally {
+            setLoadingShuffleTeams(false);
+        }
+    };
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -828,6 +867,20 @@ const Admin = () => {
                     }}
                 >
                     Analitika
+                </button>
+                <button
+                    onClick={() => setActiveTab('shuffle')}
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        borderBottom: activeTab === 'shuffle' ? '2px solid #ffa500' : 'none',
+                        color: activeTab === 'shuffle' ? '#ffa500' : '#888',
+                        padding: '1rem',
+                        fontSize: '1.2rem',
+                        cursor: 'pointer'
+                    }}
+                >
+                    🎲 Shuffle
                 </button>
             </div>
 
@@ -1110,6 +1163,17 @@ const Admin = () => {
                                             <option value="bo5">Best of 5</option>
                                         </select>
                                     </div>
+                                    <div>
+                                        <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '0.3rem' }}>Izvor Timova</label>
+                                        <select
+                                            value={teamSource}
+                                            onChange={(e) => setTeamSource(e.target.value)}
+                                            style={{ width: '100%', padding: '0.8rem', background: '#222', border: '1px solid #333', color: 'white' }}
+                                        >
+                                            <option value="regular">Regularni (Prijavljeni timovi)</option>
+                                            <option value="shuffle">Shuffle (Formirani timovi)</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 {/* Team Selection */}
@@ -1118,7 +1182,10 @@ const Admin = () => {
                                         <label style={{ color: '#888', fontSize: '0.8rem' }}>Učesnici ({selectedTeamIds.length})</label>
                                         <div>
                                             <button
-                                                onClick={() => setSelectedTeamIds(teams.map(t => t.id))}
+                                                onClick={() => {
+                                                    const allIds = teamSource === 'regular' ? teams.map(t => t.id) : shuffleTeams.map(t => t.id);
+                                                    setSelectedTeamIds(allIds);
+                                                }}
                                                 style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '0.7rem', cursor: 'pointer', marginRight: '0.5rem' }}
                                             >
                                                 Select All
@@ -1132,91 +1199,153 @@ const Admin = () => {
                                         </div>
                                     </div>
                                     <div style={{ maxHeight: '400px', overflowY: 'auto', background: '#1a1a1a', border: '1px solid #333', borderRadius: '4px', padding: '0.5rem' }}>
-                                        {teams.map(t => {
-                                            // Calculate strength for all teams first to sort
-                                            let total = 0, count = 0;
-                                            if (t.players) t.players.forEach(p => { if (p.rankTier) { total += p.rankTier; count++; } });
-                                            t.strengthScore = count > 0 ? total / count : 0;
-                                            return t;
-                                        })
-                                            .sort((a, b) => b.strengthScore - a.strengthScore)
-                                            .map((team, index) => {
-                                                const isSelected = selectedTeamIds.includes(team.id);
+                                        {teamSource === 'regular' ? (
+                                            teams.map(t => {
+                                                // Calculate strength for all teams first to sort
+                                                let total = 0, count = 0;
+                                                if (t.players) t.players.forEach(p => { if (p.rankTier) { total += p.rankTier; count++; } });
+                                                t.strengthScore = count > 0 ? total / count : 0;
+                                                return t;
+                                            })
+                                                .sort((a, b) => b.strengthScore - a.strengthScore)
+                                                .map((team, index) => {
+                                                    const isSelected = selectedTeamIds.includes(team.id);
 
-                                                // Color code top 3
-                                                let rankColor = '#666';
-                                                if (index === 0) rankColor = '#ffd700'; // Gold
-                                                if (index === 1) rankColor = '#c0c0c0'; // Silver
-                                                if (index === 2) rankColor = '#cd7f32'; // Bronze
+                                                    // Color code top 3
+                                                    let rankColor = '#666';
+                                                    if (index === 0) rankColor = '#ffd700'; // Gold
+                                                    if (index === 1) rankColor = '#c0c0c0'; // Silver
+                                                    if (index === 2) rankColor = '#cd7f32'; // Bronze
 
-                                                return (
-                                                    <div
-                                                        key={team.id}
-                                                        onClick={() => {
-                                                            if (isSelected) setSelectedTeamIds(selectedTeamIds.filter(id => id !== team.id));
-                                                            else setSelectedTeamIds([...selectedTeamIds, team.id]);
-                                                        }}
-                                                        style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            padding: '0.8rem 0.5rem',
-                                                            borderBottom: '1px solid #2a2a2a',
-                                                            cursor: 'pointer',
-                                                            background: isSelected ? 'rgba(33, 150, 243, 0.1)' : 'transparent',
-                                                            transition: 'background 0.2s',
-                                                        }}
-                                                        onMouseOver={(e) => e.currentTarget.style.background = isSelected ? 'rgba(33, 150, 243, 0.2)' : 'rgba(255,255,255,0.05)'}
-                                                        onMouseOut={(e) => e.currentTarget.style.background = isSelected ? 'rgba(33, 150, 243, 0.1)' : 'transparent'}
-                                                    >
-                                                        {/* Checkbox Column - Fixed Width */}
-                                                        <div style={{ width: '50px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={isSelected}
-                                                                onChange={() => { }}
-                                                                style={{ transform: 'scale(1.5)', cursor: 'pointer' }}
-                                                            />
-                                                        </div>
+                                                    return (
+                                                        <div
+                                                            key={team.id}
+                                                            onClick={() => {
+                                                                if (isSelected) setSelectedTeamIds(selectedTeamIds.filter(id => id !== team.id));
+                                                                else setSelectedTeamIds([...selectedTeamIds, team.id]);
+                                                            }}
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                padding: '0.8rem 0.5rem',
+                                                                borderBottom: '1px solid #2a2a2a',
+                                                                cursor: 'pointer',
+                                                                background: isSelected ? 'rgba(33, 150, 243, 0.1)' : 'transparent',
+                                                                transition: 'background 0.2s',
+                                                            }}
+                                                            onMouseOver={(e) => e.currentTarget.style.background = isSelected ? 'rgba(33, 150, 243, 0.2)' : 'rgba(255,255,255,0.05)'}
+                                                            onMouseOut={(e) => e.currentTarget.style.background = isSelected ? 'rgba(33, 150, 243, 0.1)' : 'transparent'}
+                                                        >
+                                                            {/* Checkbox Column */}
+                                                            <div style={{ width: '50px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isSelected}
+                                                                    readOnly
+                                                                    style={{ transform: 'scale(1.5)', cursor: 'pointer' }}
+                                                                />
+                                                            </div>
 
-                                                        {/* Logo Column - Fixed Width */}
-                                                        <div style={{ width: '70px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
-                                                            <img
-                                                                src={team.logo}
-                                                                style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #333' }}
-                                                                alt={team.name}
-                                                            />
-                                                        </div>
+                                                            <div style={{ width: '70px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                                                                <img
+                                                                    src={team.logo}
+                                                                    style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #333' }}
+                                                                    alt={team.name}
+                                                                />
+                                                            </div>
 
-                                                        {/* Name & Info Column - Flexible */}
-                                                        <div style={{ flex: 1, paddingLeft: '1rem' }}>
-                                                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white', lineHeight: '1.2' }}>{team.name}</div>
-                                                            <div style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.2rem' }}>
-                                                                {team.players.length} igrača
+                                                            <div style={{ flex: 1, paddingLeft: '1rem' }}>
+                                                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white', lineHeight: '1.2' }}>{team.name}</div>
+                                                                <div style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.2rem' }}>
+                                                                    {team.players?.length || 0} igrača
+                                                                </div>
+                                                            </div>
+
+                                                            <div style={{ width: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                                                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: rankColor }}>#{index + 1}</div>
+                                                                <span style={{ fontSize: '0.7rem', color: '#666', marginTop: '4px' }}>Power Rank</span>
                                                             </div>
                                                         </div>
-
-                                                        {/* Power Rank Column - Fixed Width */}
-                                                        <div style={{ width: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-                                                            <div style={{
-                                                                fontSize: '1.5rem',
-                                                                fontWeight: 'bold',
-                                                                color: rankColor,
-                                                                textShadow: index < 3 ? '0 0 10px rgba(255,255,255,0.1)' : 'none'
-                                                            }}>
-                                                                #{index + 1}
+                                                    );
+                                                })
+                                        ) : (
+                                            shuffleTeams.length === 0 ? (
+                                                <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
+                                                    {loadingShuffleTeams ? '⏳ Učitavam shuffle timove...' : '❌ Nema potvrđenih shuffle timova. Prvo ih formirajte u Shuffle tabu.'}
+                                                </div>
+                                            ) : (
+                                                shuffleTeams.map((team, index) => {
+                                                    const isSelected = selectedTeamIds.includes(team.id);
+                                                    return (
+                                                        <div
+                                                            key={team.id}
+                                                            onClick={() => {
+                                                                if (isSelected) setSelectedTeamIds(selectedTeamIds.filter(id => id !== team.id));
+                                                                else setSelectedTeamIds([...selectedTeamIds, team.id]);
+                                                            }}
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                padding: '0.8rem 0.5rem',
+                                                                borderBottom: '1px solid #2a2a2a',
+                                                                cursor: 'pointer',
+                                                                background: isSelected ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
+                                                                transition: 'background 0.2s',
+                                                            }}
+                                                        >
+                                                            <div style={{ width: '50px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isSelected}
+                                                                    readOnly
+                                                                    style={{ transform: 'scale(1.5)', cursor: 'pointer' }}
+                                                                />
                                                             </div>
-                                                            <span style={{ fontSize: '0.7rem', color: '#666', marginTop: '4px' }}>Power Rank</span>
+
+                                                            <div style={{ width: '70px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                                                                <img
+                                                                    src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/meepo.png"
+                                                                    style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #4caf50' }}
+                                                                    alt={team.name}
+                                                                />
+                                                            </div>
+
+                                                            <div style={{ flex: 1, paddingLeft: '1rem' }}>
+                                                                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'white' }}>{team.name}</div>
+                                                                <div style={{ fontSize: '0.8rem', color: '#888' }}>
+                                                                    Shuffle tim • {Object.values(team.positions).filter(Boolean).length} igrača
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                );
-                                            })}
+                                                    );
+                                                })
+                                            )
+                                        )}
                                     </div>
                                 </div>
 
-                                <button className="btn btn-primary" onClick={() => {
+                                <button className="btn btn-primary" onClick={async () => {
                                     if (!newTourneyName) return alert("Morate uneti ime turnira!");
 
-                                    const participatingTeams = teams.filter(t => selectedTeamIds.includes(t.id));
+                                    let participatingTeams = [];
+
+                                    if (teamSource === 'regular') {
+                                        participatingTeams = teams.filter(t => selectedTeamIds.includes(t.id));
+                                    } else {
+                                        // Handle Shuffle Teams conversion
+                                        const selectedShuffleTeams = shuffleTeams.filter(t => selectedTeamIds.includes(t.id));
+                                        if (selectedShuffleTeams.length === 0) return alert("Izaberite bar 2 shuffle tima!");
+
+                                        if (!window.confirm(`Sistem će automatski registrovati ${selectedShuffleTeams.length} shuffle tima kao regularne timove. Nastavi?`)) return;
+
+                                        try {
+                                            const registeredResults = await Promise.all(selectedShuffleTeams.map(t => registerShuffleTeam(t)));
+                                            participatingTeams = registeredResults;
+                                            // We don't need to refresh the whole state here because createTournament will use these objects
+                                        } catch (error) {
+                                            return alert("Greška pri registraciji shuffle timova: " + error.message);
+                                        }
+                                    }
 
                                     if (participatingTeams.length < 2) return alert("Potrebno je bar 2 tima za turnir!");
 
@@ -1232,32 +1361,20 @@ const Admin = () => {
                                     const sortedTeams = [...participatingTeams].sort((a, b) => getTeamMMR(b) - getTeamMMR(a));
                                     const matches = [];
 
-                                    // 2. Generate Draw based on Type
                                     if (tourneyType === 'single_elimination') {
                                         // A. Generate Round 1 (Seeded)
-                                        const pairs = [];
                                         const pool = [...sortedTeams];
-
-                                        // Logic: balanced seeding? 
-                                        // For 4 teams: 1v4, 2v3.
-                                        // For 8 teams: 1v8, 2v7, 3v6, 4v5.
-                                        // Ideally we order them: (1v8) next to (4v5).
-
                                         const initialPairs = [];
+
                                         while (pool.length >= 2) {
                                             const strong = pool.shift();
                                             const weak = pool.pop();
                                             initialPairs.push({ strong, weak });
                                         }
 
-                                        // Simple reordering for 4 or 8 teams to ensure top seeds don't meet too early
-                                        let orderedPairs = [];
+                                        let orderedPairs = initialPairs;
                                         if (initialPairs.length === 4) {
-                                            // 1v8(0), 4v5(3), 2v7(1), 3v6(2)
                                             orderedPairs = [initialPairs[0], initialPairs[3], initialPairs[1], initialPairs[2]];
-                                        } else {
-                                            // Default (works for 2 or 4 pairs mostly ok)
-                                            orderedPairs = initialPairs;
                                         }
 
                                         // Creating Match Objects for Round 1
@@ -1272,7 +1389,7 @@ const Admin = () => {
 
                                         matches.push(...currentRoundMatches);
 
-                                        // B. Generate Subsequent Rounds (TBD)
+                                        // B. Generate Subsequent Rounds
                                         let roundNum = 2;
                                         while (currentRoundMatches.length > 1) {
                                             const nextRoundMatches = [];
@@ -1280,23 +1397,18 @@ const Admin = () => {
                                                 const m1 = currentRoundMatches[i];
                                                 const m2 = currentRoundMatches[i + 1];
 
-                                                if (!m2) {
-                                                    // Odd number advance? Or just bye.
-                                                    // Ideally shouldn't happen if power of 2.
-                                                    continue;
-                                                }
+                                                if (!m2) continue;
 
                                                 const nextMatch = {
                                                     matchId: Date.now() + Math.random(),
-                                                    team1: null, // TBD
-                                                    team2: null, // TBD
+                                                    team1: null,
+                                                    team2: null,
                                                     winner: null,
                                                     round: roundNum,
-                                                    format: matchFormat, // Could increase for semis/finals?
+                                                    format: matchFormat,
                                                     placeholder: true
                                                 };
 
-                                                // Link previous matches to this one
                                                 m1.nextMatchId = nextMatch.matchId;
                                                 m2.nextMatchId = nextMatch.matchId;
 
@@ -1306,11 +1418,6 @@ const Admin = () => {
                                             currentRoundMatches = nextRoundMatches;
                                             roundNum++;
                                         }
-
-                                        if (pool.length > 0) {
-                                            alert(`Napomena: ${pool[0].name} nije raspoređen (neparan broj).`);
-                                        }
-
                                     } else if (tourneyType === 'round_robin') {
                                         // All vs All
                                         for (let i = 0; i < sortedTeams.length; i++) {
@@ -1327,10 +1434,17 @@ const Admin = () => {
                                         }
                                     }
 
-                                    createTournament(newTourneyName, matches, { type: tourneyType, format: matchFormat });
-                                    setNewTourneyName('');
-                                    alert("Turnir uspešno napravljen!");
-                                }}>Generiši Žreb</button>
+                                    try {
+                                        await createTournament(newTourneyName, matches, teamSource === 'shuffle');
+                                        setNewTourneyName('');
+                                        alert("✅ Turnir uspešno kreiran!");
+                                        if (teamSource === 'shuffle') window.location.reload();
+                                    } catch (err) {
+                                        alert("Greška: " + err.message);
+                                    }
+                                }}>
+                                    🚀 Kreiraj Turnir
+                                </button>
                             </div>
                         </div>
 
@@ -1389,6 +1503,334 @@ const Admin = () => {
             {activeTab === 'analytics' && (
                 <AnalyticsDashboard />
             )}
+
+            {activeTab === 'shuffle' && (
+                <ShuffleAdminSection teams={teams} />
+            )}
+        </div>
+    );
+};
+
+// Shuffle Admin Section Component
+const ShuffleAdminSection = ({ teams }) => {
+    const [pendingPlayers, setPendingPlayers] = useState([]);
+    const [approvedPlayers, setApprovedPlayers] = useState([]);
+    const [generatedTeams, setGeneratedTeams] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [generating, setGenerating] = useState(false);
+    const [confirming, setConfirming] = useState(false);
+    const [confirmed, setConfirmed] = useState(false);
+
+    // Position names mapping
+    const positionNames = { 1: 'Carry', 2: 'Mid', 3: 'Offlane', 4: 'Soft Sup', 5: 'Hard Sup' };
+
+    useEffect(() => {
+        loadPlayers();
+    }, []);
+
+    const loadPlayers = async () => {
+        setLoading(true);
+        const [pending, approved] = await Promise.all([
+            getPendingShufflePlayers(),
+            getApprovedShufflePlayers()
+        ]);
+        setPendingPlayers(pending);
+        setApprovedPlayers(approved);
+        setLoading(false);
+    };
+
+    const handleApprove = async (playerId) => {
+        try {
+            await approveShufflePlayer(playerId);
+            await loadPlayers();
+        } catch (error) {
+            alert('Greška: ' + error.message);
+        }
+    };
+
+    const handleReject = async (playerId) => {
+        if (confirm('Odbiti ovog igrača?')) {
+            try {
+                await rejectShufflePlayer(playerId);
+                await loadPlayers();
+            } catch (error) {
+                alert('Greška: ' + error.message);
+            }
+        }
+    };
+
+    const handleGenerateTeams = () => {
+        if (approvedPlayers.length < 10) {
+            alert('Potrebno je minimum 10 odobrenih igrača za generisanje timova.');
+            return;
+        }
+        setGenerating(true);
+        setConfirmed(false);
+        const result = generateBalancedTeams(approvedPlayers, 2);
+        setGeneratedTeams(result);
+        setGenerating(false);
+    };
+
+    const handleConfirmTeams = async () => {
+        if (!generatedTeams?.teams?.length) return;
+
+        if (!confirm('⚠️ Da li ste sigurni da želite potvrditi ove timove? Ovo će poslati obaveštenje na Discord.')) return;
+
+        setConfirming(true);
+        try {
+            await confirmShuffleTeams(generatedTeams.teams);
+            setConfirmed(true);
+            alert('✅ Timovi su potvrđeni i Discord obaveštenje je poslano!');
+            await loadPlayers();
+        } catch (error) {
+            alert('Greška: ' + error.message);
+        } finally {
+            setConfirming(false);
+        }
+    };
+
+    const handleResetShuffle = async () => {
+        if (!confirm('⚠️ Da li ste sigurni da želite resetovati shuffle status? Ovo će raspustiti sve timove i vratiti igrače u pool za sledeći turnir. Trofeji će biti sačuvani.')) return;
+
+        setLoading(true);
+        try {
+            await resetShuffleState();
+            setGeneratedTeams(null);
+            setConfirmed(false);
+            alert('✅ Shuffle sistem je resetovan!');
+            await loadPlayers();
+        } catch (error) {
+            alert('Greška: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>⏳ Učitavanje...</div>;
+    }
+
+    return (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+            {/* LEFT: Players */}
+            <div>
+                {/* Pending Players */}
+                <div className="card" style={{ marginBottom: '1.5rem' }}>
+                    <h3 style={{ color: '#ffa500', marginBottom: '1rem' }}>
+                        ⏳ Čekaju Odobrenje ({pendingPlayers.length})
+                    </h3>
+                    {pendingPlayers.length === 0 ? (
+                        <p style={{ color: '#666' }}>Nema igrača na čekanju.</p>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {pendingPlayers.map(p => (
+                                <div key={p.id} style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.8rem',
+                                    padding: '0.8rem',
+                                    background: '#1a1a1a',
+                                    borderRadius: '8px'
+                                }}>
+                                    <img src={p.avatar} style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 'bold' }}>{p.persona_name}</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#888' }}>
+                                            Pozicije: {p.preferred_positions.map(pos => positionNames[pos]).join(', ')}
+                                        </div>
+                                    </div>
+                                    <input
+                                        placeholder="Discord ID"
+                                        value={p.discord_id || ''}
+                                        onChange={async (e) => {
+                                            const val = e.target.value;
+                                            const { error } = await supabase.from('shuffle_players').update({ discord_id: val }).eq('id', p.id);
+                                            if (!error) loadPlayers();
+                                        }}
+                                        style={{ width: '140px', background: '#333', border: '1px solid #444', color: 'white', padding: '0.2rem', fontSize: '0.8rem' }}
+                                    />
+                                    <span style={{ color: '#888', fontSize: '0.9rem' }}>Tier {p.rank_tier || '?'}</span>
+                                    <button onClick={() => handleApprove(p.id)} className="btn" style={{ background: '#4caf50', padding: '0.3rem 0.8rem' }}>✓</button>
+                                    <button onClick={() => handleReject(p.id)} className="btn" style={{ background: '#f44336', padding: '0.3rem 0.8rem' }}>X</button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Approved Players */}
+                <div className="card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3 style={{ color: '#4caf50', margin: 0 }}>✅ Odobreni ({approvedPlayers.length})</h3>
+                        <button
+                            onClick={handleGenerateTeams}
+                            disabled={approvedPlayers.length < 10 || generating}
+                            className="btn"
+                            style={{
+                                background: approvedPlayers.length < 10 ? '#444' : 'linear-gradient(135deg, #ffa500, #ff6600)',
+                                padding: '0.5rem 1rem'
+                            }}
+                        >
+                            {generating ? '⏳...' : '🎲 Generiši Timove'}
+                        </button>
+                        <button
+                            onClick={handleResetShuffle}
+                            className="btn"
+                            style={{
+                                background: '#333',
+                                border: '1px solid #f44336',
+                                color: '#f44336',
+                                padding: '0.5rem 1rem'
+                            }}
+                        >
+                            🔄 Reset Shuffle
+                        </button>
+                    </div>
+                    {approvedPlayers.length === 0 ? (
+                        <p style={{ color: '#666' }}>Nema odobrenih igrača.</p>
+                    ) : (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            {approvedPlayers.map(p => (
+                                <div key={p.id} style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.5rem 0.8rem',
+                                    background: '#222',
+                                    borderRadius: '20px',
+                                    fontSize: '0.9rem'
+                                }}>
+                                    <img src={p.avatar} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                                    <span>{p.persona_name}</span>
+                                    <input
+                                        title="Izmeni Discord ID"
+                                        value={p.discord_id || ''}
+                                        onChange={async (e) => {
+                                            const val = e.target.value;
+                                            await supabase.from('shuffle_players').update({ discord_id: val }).eq('id', p.id);
+                                            // No reload here to avoid flickering in the small badges list, but maybe it's better to update state locally?
+                                            // For now just background update.
+                                        }}
+                                        style={{ width: '120px', background: 'transparent', border: 'none', borderBottom: '1px solid #444', color: '#888', padding: '0', fontSize: '0.7rem' }}
+                                    />
+                                    <span style={{ color: '#888', fontSize: '0.75rem' }}>
+                                        [{p.preferred_positions.join(',')}]
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {approvedPlayers.length > 0 && approvedPlayers.length < 10 && (
+                        <p style={{ color: '#ffa500', marginTop: '1rem', fontSize: '0.9rem' }}>
+                            ⚠️ Potrebno još {10 - approvedPlayers.length} igrača za minimum 2 tima.
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            {/* RIGHT: Generated Teams */}
+            <div className="card">
+                <h3 style={{ color: '#ffa500', marginBottom: '1rem' }}>🎲 Generisani Timovi</h3>
+                {!generatedTeams ? (
+                    <div style={{ textAlign: 'center', color: '#666', padding: '3rem' }}>
+                        <p>Kliknite "Generiši Timove" kada imate dovoljno igrača.</p>
+                    </div>
+                ) : generatedTeams.error ? (
+                    <div style={{ color: '#f44336', padding: '1rem', background: 'rgba(244,67,54,0.1)', borderRadius: '8px' }}>
+                        {generatedTeams.error}
+                    </div>
+                ) : (
+                    <div>
+                        <div style={{ marginBottom: '1rem', padding: '0.5rem 1rem', background: '#222', borderRadius: '4px', fontSize: '0.9rem' }}>
+                            Kompletni timovi: {generatedTeams.stats.completeTeams} |
+                            Avg Rank: {generatedTeams.stats.avgTeamRank} |
+                            Nerasporedi: {generatedTeams.unassigned.length}
+                        </div>
+                        {generatedTeams.teams.map(team => (
+                            <div key={team.id} style={{
+                                marginBottom: '1.5rem',
+                                padding: '1rem',
+                                background: '#1a1a1a',
+                                borderRadius: '8px',
+                                border: '1px solid #333'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
+                                    <strong style={{ color: 'var(--accent)' }}>{team.name}</strong>
+                                    <span style={{ color: '#888' }}>Total Rank: {team.totalRank}</span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                    {[1, 2, 3, 4, 5].map(pos => (
+                                        <div key={pos} style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                            padding: '0.3rem 0.5rem',
+                                            background: team.positions[pos] ? '#222' : 'rgba(244,67,54,0.1)',
+                                            borderRadius: '4px'
+                                        }}>
+                                            <span style={{ width: '80px', fontSize: '0.8rem', color: '#888' }}>
+                                                {positionNames[pos]}
+                                            </span>
+                                            {team.positions[pos] ? (
+                                                <>
+                                                    <img src={team.positions[pos].avatar} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                                                    <span>{team.positions[pos].persona_name}</span>
+                                                    <span style={{ color: '#888', marginLeft: 'auto' }}>T{team.positions[pos].rank_tier || '?'}</span>
+                                                </>
+                                            ) : (
+                                                <span style={{ color: '#f44336' }}>Nije popunjeno</span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                        {generatedTeams.unassigned.length > 0 && (
+                            <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255,165,0,0.1)', borderRadius: '8px' }}>
+                                <strong style={{ color: '#ffa500' }}>Nerasporedeni igrači:</strong>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                    {generatedTeams.unassigned.map(p => (
+                                        <span key={p.id} style={{ background: '#333', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.85rem' }}>
+                                            {p.persona_name}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Confirm Teams Button */}
+                        {generatedTeams.teams.length > 0 && !confirmed && (
+                            <button
+                                onClick={handleConfirmTeams}
+                                disabled={confirming}
+                                className="btn"
+                                style={{
+                                    width: '100%',
+                                    marginTop: '1.5rem',
+                                    padding: '1rem',
+                                    background: 'linear-gradient(135deg, #4caf50, #2e7d32)',
+                                    fontSize: '1.1rem'
+                                }}
+                            >
+                                {confirming ? '⏳ Potvrđujem...' : '✅ Potvrdi Timove i Pošalji na Discord'}
+                            </button>
+                        )}
+
+                        {confirmed && (
+                            <div style={{
+                                marginTop: '1.5rem',
+                                padding: '1rem',
+                                background: 'rgba(76,175,80,0.2)',
+                                borderRadius: '8px',
+                                textAlign: 'center',
+                                color: '#4caf50'
+                            }}>
+                                ✅ Timovi su potvrđeni! Discord obaveštenje je poslano.
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

@@ -3,7 +3,8 @@ export const DISCORD_AVATARS = {
     NEW_TEAM: "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/arc_warden.png",
     NEW_TOURNAMENT: "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/pudge.png",
     SCHEDULE: "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/abaddon.png",
-    WINNER: "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/kez.png"
+    WINNER: "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/kez.png",
+    LFG: "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/meepo.png"
 };
 
 export const sendDiscordWebhook = async (webhookUrl, content, embed = null, avatarUrl = null) => {
@@ -182,6 +183,118 @@ export const formatMatchScheduledEmbed = (team1Name, team2Name, startTime, match
         embed.fields.push({
             name: "Link",
             value: `[Idi na stranicu meča](${matchUrl})`,
+            inline: false
+        });
+    }
+
+    return embed;
+};
+
+/**
+ * Format LFG (Looking For Group) player embed for shuffle tournaments
+ */
+export const formatLfgPlayerEmbed = (player, playerUrl = null) => {
+    // Position names mapping
+    const positionNames = {
+        1: 'Carry',
+        2: 'Mid',
+        3: 'Offlane',
+        4: 'Soft Support',
+        5: 'Hard Support'
+    };
+
+    const preferredPositionsText = player.preferred_positions
+        .map(p => positionNames[p] || `Pos ${p}`)
+        .join(', ');
+
+    const embed = {
+        title: `🎯 Igrač Traži Ekipu: ${player.persona_name}`,
+        description: `**${player.persona_name}** se pridružio listi igrača koji traže tim za shuffle turnir!`,
+        color: 16753920, // Orange
+        thumbnail: {
+            url: player.avatar || "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/icons/discord.svg"
+        },
+        fields: [
+            {
+                name: "Preferirane Pozicije",
+                value: preferredPositionsText,
+                inline: true
+            },
+            {
+                name: "Rank",
+                value: player.rank_tier ? `Tier ${player.rank_tier}` : 'Nepoznat',
+                inline: true
+            },
+            {
+                name: "Winrate",
+                value: player.winrate ? `${player.winrate}%` : 'N/A',
+                inline: true
+            }
+        ],
+        footer: {
+            text: "DotaSrbija"
+        },
+        timestamp: new Date().toISOString()
+    };
+
+    if (playerUrl) {
+        embed.url = playerUrl;
+        embed.fields.push({
+            name: "Profil",
+            value: `[Pogledaj na sajtu](${playerUrl})`,
+            inline: false
+        });
+    }
+
+    return embed;
+};
+
+/**
+ * Format Shuffle Teams embed for Discord notification when teams are formed
+ */
+export const formatShuffleTeamsEmbed = (teams, shuffleUrl = null) => {
+    const positionEmojis = {
+        1: '🗡️',
+        2: '⚡',
+        3: '🛡️',
+        4: '💚',
+        5: '💙'
+    };
+
+    const teamFields = teams.map(team => {
+        const roster = [1, 2, 3, 4, 5].map(pos => {
+            const player = team.positions[pos];
+            if (player) {
+                return `${positionEmojis[pos]} **Pos ${pos}:** ${player.persona_name}`;
+            }
+            return `${positionEmojis[pos]} **Pos ${pos}:** ❌ Prazno`;
+        }).join('\n');
+
+        const avgRank = Math.round(team.totalRank / 5);
+
+        return {
+            name: `🎮 ${team.name}`,
+            value: `${roster}\n\n📊 *Prosečan rank: ${avgRank}*`,
+            inline: true
+        };
+    });
+
+    const embed = {
+        title: `🎲 SHUFFLE TIMOVI SU FORMIRANI!`,
+        description: `**${teams.length} tim${teams.length > 1 ? 'a' : ''}** je uspešno formirano za shuffle turnir!`,
+        color: 5763719, // Green
+        fields: teamFields,
+        footer: {
+            text: "DotaSrbija Shuffle Tournament"
+        },
+        timestamp: new Date().toISOString()
+    };
+
+    if (shuffleUrl) {
+        embed.url = shuffleUrl;
+        embed.fields.push({
+            name: "🔗 Link",
+            value: `[Pogledaj sve timove](${shuffleUrl})`,
             inline: false
         });
     }

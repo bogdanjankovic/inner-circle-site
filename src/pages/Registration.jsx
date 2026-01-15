@@ -30,11 +30,11 @@ const Registration = () => {
 
     // 5 Players slots
     const [players, setPlayers] = useState([
-        { id: 1, steamId: '', data: null, loading: false, error: null, isCaptain: true, position: 1 },
-        { id: 2, steamId: '', data: null, loading: false, error: null, isCaptain: false, position: 2 },
-        { id: 3, steamId: '', data: null, loading: false, error: null, isCaptain: false, position: 3 },
-        { id: 4, steamId: '', data: null, loading: false, error: null, isCaptain: false, position: 4 },
-        { id: 5, steamId: '', data: null, loading: false, error: null, isCaptain: false, position: 5 },
+        { id: 1, steamId: '', discordId: '', data: null, loading: false, error: null, isCaptain: true, position: 1 },
+        { id: 2, steamId: '', discordId: '', data: null, loading: false, error: null, isCaptain: false, position: 2 },
+        { id: 3, steamId: '', discordId: '', data: null, loading: false, error: null, isCaptain: false, position: 3 },
+        { id: 4, steamId: '', discordId: '', data: null, loading: false, error: null, isCaptain: false, position: 4 },
+        { id: 5, steamId: '', discordId: '', data: null, loading: false, error: null, isCaptain: false, position: 5 },
     ]);
 
     const handleCheckPlayer = async (index) => {
@@ -86,6 +86,12 @@ const Registration = () => {
         setPlayers(newPlayers);
     };
 
+    const handleDiscordIdChange = (index, value) => {
+        const newPlayers = [...players];
+        newPlayers[index].discordId = value;
+        setPlayers(newPlayers);
+    };
+
     const handlePositionChange = async (index, positionId) => {
         const newPlayers = [...players];
         newPlayers[index].position = parseInt(positionId);
@@ -131,6 +137,7 @@ const Registration = () => {
             captainId: players.find(p => p.isCaptain)?.data?.accountId,
             players: players.map(p => ({
                 steamId: p.steamId,
+                discord_id: p.discordId,
                 ...p.data,
                 isCaptain: p.isCaptain,
                 position: p.position
@@ -214,6 +221,14 @@ const Registration = () => {
                                     value={player.steamId}
                                     onChange={(e) => handleSteamIdChange(index, e.target.value)}
                                     style={{ flex: 1 }}
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Discord ID (opciono)"
+                                    value={player.discordId}
+                                    onChange={(e) => handleDiscordIdChange(index, e.target.value)}
+                                    style={{ width: '180px' }}
+                                    title="Pronađite vaš 18-cifreni Discord ID u User Settings > Advanced > Developer Mode (desni klik na ime > Copy User ID)"
                                 />
                                 <button
                                     className="btn"
