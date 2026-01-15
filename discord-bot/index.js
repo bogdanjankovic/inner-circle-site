@@ -62,13 +62,22 @@ function setupRealtimeSubscription() {
                 const newData = payload.new;
                 const oldData = payload.old;
 
-                // Detect if bracket_data changed (meaning matches were scheduled/updated)
-                if (JSON.stringify(newData.bracket_data) !== JSON.stringify(oldData.bracket_data)) {
+                console.log(`🔔 Detektovana promena u tabeli tournaments (ID: ${newData.id})`);
+
+                const newBracket = JSON.stringify(newData.bracket_data);
+                const oldBracket = JSON.stringify(oldData.bracket_data);
+
+                if (newBracket !== oldBracket) {
+                    console.log('📦 Primećena promena u bracket_data, pokrećem obradu...');
                     processBracketUpdate(newData);
+                } else {
+                    console.log('ℹ️ Promena nije u bracket_data polju, preskačem.');
                 }
             }
         )
-        .subscribe();
+        .subscribe((status) => {
+            console.log(`📡 Realtime status: ${status}`);
+        });
 }
 
 async function processBracketUpdate(tournament) {
