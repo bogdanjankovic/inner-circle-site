@@ -11,20 +11,30 @@ const client = new Client({
     ]
 });
 
+console.log('🚀 Pokrećem bota...');
+
+// Provera varijabli pre startovanja
+const requiredEnv = [
+    'DISCORD_TOKEN',
+    'GUILD_ID',
+    'SUPABASE_URL',
+    'SUPABASE_SERVICE_ROLE_KEY'
+];
+
+const missing = requiredEnv.filter(k => !process.env[k]);
+if (missing.length > 0) {
+    console.error(`❌ Greška: Nedostaju sledeće varijable: ${missing.join(', ')}`);
+    console.log('💡 Proverite Railway > Variables sekciju.');
+    process.exit(1);
+}
+
 const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY // Needs service role to bypass RLS if needed
+    process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 const GUILD_ID = process.env.GUILD_ID;
 const CATEGORY_ID = process.env.VOICE_CATEGORY_ID;
-
-console.log('🚀 Pokrećem bota...');
-
-if (!process.env.DISCORD_TOKEN) {
-    console.error('❌ Greška: DISCORD_TOKEN nedostaje u ekološkim varijablama!');
-    process.exit(1);
-}
 
 client.on('error', (error) => {
     console.error('❌ Discord client greška:', error);
