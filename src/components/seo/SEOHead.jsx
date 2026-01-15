@@ -2,9 +2,9 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
 const SEOHead = ({ title, description, image, url }) => {
-    const siteTitle = 'Inner Circle Dota 2';
+    const siteTitle = 'DotaSrbija';
     const finalTitle = title ? `${title} | ${siteTitle}` : siteTitle;
-    const finalDescription = description || 'Exkluzivni Dota 2 turniri, statistika i analitika za Inner Circle zajednicu.';
+    const finalDescription = description || 'Dota 2 turniri, statistika i analitika za DotaSrbija zajednicu.';
     const finalImage = image || 'https://i.imgur.com/your-default-image.png'; // Replace with actual default
     const finalUrl = url || window.location.href;
 

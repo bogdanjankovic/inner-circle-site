@@ -19,7 +19,7 @@ const Home = () => {
 
     return (
         <div>
-            <SEOHead title="Home" description="Dobrodošli na Inner Circle Dota 2 turnire. Prijavite svoj tim, pratite rezultate i statistiku." />
+            <SEOHead title="Home" description="Dobrodošli na DotaSrbija turnire. Prijavite svoj tim, pratite rezultate i statistiku." />
             {/* Hero Section */}
             {/* Hero Section with Parallax */}
             <section

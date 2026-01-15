@@ -14,7 +14,7 @@ export const sendDiscordWebhook = async (webhookUrl, content, embed = null, avat
 
     const payload = {
         content: content,
-        username: "Inner Circle Bot",
+        username: "DotaSrbija Bot",
         avatar_url: avatarUrl || DISCORD_AVATARS.DEFAULT
     };
 
@@ -57,7 +57,7 @@ export const formatMatchResultEmbed = (match, team1Name, team2Name, winnerName, 
             }
         ],
         footer: {
-            text: "Inner Circle Dota 2"
+            text: "DotaSrbija"
         },
         timestamp: new Date().toISOString()
     };
@@ -83,7 +83,7 @@ export const formatTournamentWinEmbed = (tournamentName, winnerName, tournamentU
             url: "https://cdn-icons-png.flaticon.com/512/864/864802.png" // Trophy icon
         },
         footer: {
-            text: "Inner Circle Dota 2"
+            text: "DotaSrbija"
         },
         timestamp: new Date().toISOString()
     };
@@ -125,7 +125,7 @@ export const formatNewTeamEmbed = (team, playerCount, avgRankTier) => {
             }
         ],
         footer: {
-            text: "Inner Circle Dota 2"
+            text: "DotaSrbija"
         },
         timestamp: new Date().toISOString()
     };
@@ -149,7 +149,7 @@ export const formatNewTournamentEmbed = (tournament) => {
             }
         ],
         footer: {
-            text: "Inner Circle Dota 2"
+            text: "DotaSrbija"
         },
         timestamp: new Date().toISOString()
     };
@@ -172,7 +172,7 @@ export const formatMatchScheduledEmbed = (team1Name, team2Name, startTime, match
             }
         ],
         footer: {
-            text: "Inner Circle Dota 2"
+            text: "DotaSrbija"
         },
         timestamp: new Date().toISOString()
     };
