@@ -1,4 +1,6 @@
 const API_URL = 'https://api.opendota.com/api';
+import { heroCache } from './heroCache.js';
+import { getTopHeroesByPositionStratz, steamIdToStratzAccountId, getTopDotaPlusHeroes } from './stratzApi.js';
 
 // Lane to position mapping based on Dota 2 lane system
 // OpenDota tracks by lane, not by position/role
@@ -13,7 +15,7 @@ const LANE_TO_POSITION = {
 // Position names for display
 const POSITION_NAMES = {
     1: 'Carry',
-    2: 'Midlane', 
+    2: 'Midlane',
     3: 'Offlaner',
     4: 'Soft Support',
     5: 'Hard Support'
@@ -35,7 +37,7 @@ const calculateStatsFromRecentMatches = (recentMatches) => {
     }
 
     const validMatches = recentMatches.filter(match => match && match.kda);
-    
+
     if (validMatches.length === 0) {
         return {
             avgKDA: 0,
@@ -85,17 +87,16 @@ export const getTopHeroesByPosition = async (accountId, position, steamId64) => 
     console.log('accountId:', accountId);
     console.log('position:', position);
     console.log('steamId64:', steamId64);
-    
+
     // Only try STRATZ for position-specific heroes (not all-time)
     if (position && position !== 0) {
         try {
             console.log('Attempting STRATZ API for position:', position, 'accountId:', accountId);
-            const { getTopHeroesByPositionStratz, steamIdToStratzAccountId } = await import('./stratzApi.js');
             const stratzAccountId = steamIdToStratzAccountId(steamId64 || accountId);
             console.log('STRATZ Account ID:', stratzAccountId);
             const stratzHeroes = await getTopHeroesByPositionStratz(stratzAccountId, position);
             console.log('STRATZ heroes found:', stratzHeroes.length);
-            
+
             if (stratzHeroes.length > 0) {
                 console.log('Using STRATZ data - precise position statistics');
                 return stratzHeroes;
@@ -119,20 +120,20 @@ export const getTopHeroesByPosition = async (accountId, position, steamId64) => 
             console.log('OPENDOTA Response status:', response.status);
             const heroes = await response.json();
             console.log('OPENDOTA Heroes count:', heroes.length);
-            
+
             // Prvo pokušaj sa minimum 10 igara
             let filteredHeroes = heroes.filter(h => h.games >= 10);
-            
+
             if (filteredHeroes.length < 3) {
                 // Ako nema dovoljno heroja sa 10+ igara, spusti na 5 igara
                 filteredHeroes = heroes.filter(h => h.games >= 5);
             }
-            
+
             if (filteredHeroes.length < 3) {
                 // Ako i dalje nema dovoljno, uzmi sve sa najmanje 1 igrom
                 filteredHeroes = heroes.filter(h => h.games >= 1);
             }
-            
+
             return filteredHeroes
                 .sort((a, b) => b.games - a.games)
                 .slice(0, 10) // Uzmi top 10 po igrama
@@ -152,25 +153,25 @@ export const getTopHeroesByPosition = async (accountId, position, steamId64) => 
     }
 
     const lane = LANE_TO_POSITION[position];
-    
+
     try {
         // Fetch heroes by specific lane (this is the correct endpoint)
         const response = await fetch(`${API_URL}/players/${accountId}/heroes?lane=${lane}`);
         const heroes = await response.json();
-        
+
         // Prvo pokušaj sa minimum 10 igara
         let filteredHeroes = heroes.filter(h => h.games >= 10);
-        
+
         if (filteredHeroes.length < 3) {
             // Ako nema dovoljno heroja sa 10+ igara, spusti na 5 igara
             filteredHeroes = heroes.filter(h => h.games >= 5);
         }
-        
+
         if (filteredHeroes.length < 3) {
             // Ako i dalje nema dovoljno, uzmi sve sa najmanje 1 igrom
             filteredHeroes = heroes.filter(h => h.games >= 1);
         }
-        
+
         return filteredHeroes
             .sort((a, b) => b.games - a.games)
             .slice(0, 10) // Uzmi top 10 po igrama
@@ -212,10 +213,7 @@ export const fetchPlayerData = async (steamId, position = null, forceRefresh = f
     console.log('steamId:', steamId);
     console.log('position:', position);
     console.log('forceRefresh:', forceRefresh);
-    
-    // Import cache
-    const { heroCache } = await import('./heroCache.js');
-    
+
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
         const cachedData = heroCache.getOpenDota(steamId);
@@ -227,13 +225,13 @@ export const fetchPlayerData = async (steamId, position = null, forceRefresh = f
         console.log('Force refresh - clearing OpenDota cache');
         heroCache.clearOpenDota(steamId);
     }
-    
+
     // Basic heuristic: if length > 12 likely SteamID64
     const accountId = steamId.length > 12 ? steamIdToAccountId(steamId) : steamId;
 
     try {
         console.log('Fetching fresh OpenDota data');
-        
+
         // 1. Fetch Profile & Rank
         const profileReq = fetch(`${API_URL}/players/${accountId}`);
 
@@ -260,73 +258,61 @@ export const fetchPlayerData = async (steamId, position = null, forceRefresh = f
 
         // Calculate additional stats from recent matches
         const stats = calculateStatsFromRecentMatches(recentMatches);
-        
-        // Process heroes directly (no recursion)
-        let topHeroes = [];
-        if (position && position !== 0) {
-            // Use STRATZ for position-specific heroes
-            try {
-                const { getTopHeroesByPositionStratz, steamIdToStratzAccountId } = await import('./stratzApi.js');
-                const stratzAccountId = steamIdToStratzAccountId(steamId);
-                topHeroes = await getTopHeroesByPositionStratz(stratzAccountId, position);
-            } catch (error) {
-                console.error('STRATZ API failed for position heroes:', error);
-                // Fallback to OpenDota all heroes
-                topHeroes = heroes
-                    .filter(h => h.games >= 10)
-                    .sort((a, b) => b.games - a.games)
-                    .slice(0, 10)
-                    .sort((a, b) => (b.win / b.games) - (a.win / a.games))
-                    .slice(0, 3)
-                    .map(h => ({
-                        heroId: h.hero_id,
-                        games: h.games,
-                        win: h.win,
-                        winrate: ((h.win / h.games) * 100).toFixed(1)
-                    }));
-            }
-        } else {
-            // Use OpenDota for all-time heroes
-            topHeroes = heroes
-                .filter(h => h.games >= 10)
-                .sort((a, b) => b.games - a.games)
-                .slice(0, 10)
-                .sort((a, b) => (b.win / b.games) - (a.win / a.games))
-                .slice(0, 3)
-                .map(h => ({
-                    heroId: h.hero_id,
-                    games: h.games,
-                    win: h.win,
-                    winrate: ((h.win / h.games) * 100).toFixed(1)
-                }));
-        }
 
-        // Fetch Dota Plus heroes
+        // Process heroes directly (no recursion) - ALWAYS USE OPENDOTA FOR REGISTRATION
+        let topHeroes = [];
+
+        // Use OpenDota for all heroes (simplified for stability)
+        topHeroes = heroes
+            .filter(h => h.games >= 10)
+            .sort((a, b) => b.games - a.games)
+            .slice(0, 10)
+            .sort((a, b) => (b.win / b.games) - (a.win / a.games))
+            .slice(0, 3)
+            .map(h => ({
+                heroId: h.hero_id,
+                games: h.games,
+                win: h.win,
+                winrate: ((h.win / h.games) * 100).toFixed(1)
+            }));
+
+        // Fetch Dota Plus heroes - REMOVED FOR REGISTRATION STABILITY
         let dotaPlusHeroes = [];
-        try {
-            const { getTopDotaPlusHeroes, steamIdToStratzAccountId } = await import('./stratzApi.js');
-            const stratzAccountId = steamIdToStratzAccountId(steamId);
-            dotaPlusHeroes = await getTopDotaPlusHeroes(stratzAccountId);
-        } catch (error) {
-            console.error('Error fetching Dota Plus heroes:', error);
-        }
-        
+        // We will fetch this later when team is approved
+
+        // Calculate winrate from total wins/losses
+        const totalGames = (wl.win || 0) + (wl.lose || 0);
+        const calculatedWinrate = totalGames > 0 ? (((wl.win || 0) / totalGames) * 100).toFixed(1) : 0;
+
         const result = {
             valid: true,
+            // Flatten profile properties for Registration.jsx compatibility
+            avatar: profile.profile?.avatarfull || profile.profile?.avatar || '',
+            personaName: profile.profile?.personaname || 'Unknown',
+            accountId: profile.profile?.account_id?.toString() || steamId,
+            rankTier: profile.rank_tier || 0,
+            leaderboardRank: profile.leaderboard_rank || null,
+            winrate: calculatedWinrate,
+            // Keep profile for backwards compatibility
             profile: {
                 ...profile,
                 winCount: wl.win || 0,
                 lossCount: wl.lose || 0,
                 ...stats
             },
+            stats: {
+                gpm: stats.avgGPM || 0,
+                xpm: stats.avgXPM || 0,
+                ...stats,
+            },
             topHeroes: topHeroes,
             dotaPlusHeroes: dotaPlusHeroes
         };
-        
+
         // Cache the result
         console.log('Caching OpenDota data for future use');
         heroCache.setOpenDota(steamId, result);
-        
+
         return result;
 
     } catch (error) {
@@ -349,15 +335,12 @@ export const getPositionHeroesFromStratz = async (accountId, position, steamId64
     console.log('position:', position);
     console.log('steamId64:', steamId64);
     console.log('forceRefresh:', forceRefresh);
-    
+
     if (!position || position === 0) {
         console.log('No position specified, returning empty array');
         return [];
     }
 
-    // Import cache
-    const { heroCache } = await import('./heroCache.js');
-    
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
         const cachedHeroes = heroCache.getStratz(accountId, position);
@@ -372,12 +355,11 @@ export const getPositionHeroesFromStratz = async (accountId, position, steamId64
 
     try {
         console.log('Fetching fresh STRATZ API data for position:', position, 'accountId:', accountId);
-        const { getTopHeroesByPositionStratz, steamIdToStratzAccountId } = await import('./stratzApi.js');
         const stratzAccountId = steamIdToStratzAccountId(steamId64 || accountId);
         console.log('STRATZ Account ID:', stratzAccountId);
         const stratzHeroes = await getTopHeroesByPositionStratz(stratzAccountId, position);
         console.log('STRATZ heroes found:', stratzHeroes.length);
-        
+
         if (stratzHeroes.length > 0) {
             console.log('Caching STRATZ data for future use');
             heroCache.setStratz(accountId, position, stratzHeroes);
@@ -403,19 +385,17 @@ export const getPositionHeroesFromStratz = async (accountId, position, steamId64
 export const clearPlayerPositionCache = async (accountId, oldPosition, newPosition) => {
     console.log('=== CLEARING PLAYER POSITION CACHE ===');
     console.log('accountId:', accountId, 'oldPosition:', oldPosition, 'newPosition:', newPosition);
-    
-    const { heroCache } = await import('./heroCache.js');
-    
+
     // Clear old position cache
     if (oldPosition && oldPosition !== 0) {
         heroCache.clearStratz(accountId, oldPosition);
     }
-    
+
     // Clear new position cache (force refresh)
     if (newPosition && newPosition !== 0) {
         heroCache.clearStratz(accountId, newPosition);
     }
-    
+
     console.log('Position cache cleared successfully');
 };
 
@@ -426,9 +406,7 @@ export const clearPlayerPositionCache = async (accountId, oldPosition, newPositi
 export const preloadTeamHeroes = async (players) => {
     console.log('=== PRELOADING TEAM HEROES ===');
     console.log('Players count:', players.length);
-    
-    const { heroCache } = await import('./heroCache.js');
-    
+
     // Load heroes for each player in parallel
     const promises = players.map(async (player) => {
         if (player.position && player.position !== 0) {
@@ -439,10 +417,10 @@ export const preloadTeamHeroes = async (players) => {
             }
         }
     });
-    
+
     await Promise.all(promises);
     console.log('Team heroes preloaded successfully');
-    
+
     // Show cache stats
     const stats = heroCache.getStats();
     console.log('Cache stats:', stats);

@@ -63,10 +63,7 @@ const Tournaments = () => {
                 ) : (
                     // Use List for Round Robin or Legacy
                     tournament.bracket_data?.map((match, i) => (
-                        <div key={match.matchId} className="card" style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr auto 1fr',
-                            alignItems: 'center',
+                        <div key={match.matchId} className="card series-card-grid" style={{
                             padding: '1rem',
                             position: 'relative',
                             opacity: match.winner ? 0.7 : 1,

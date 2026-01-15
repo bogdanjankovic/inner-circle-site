@@ -6,6 +6,15 @@ import HeroTooltip, { HeroImage } from '../components/ui/HeroTooltip';
 
 // --- Shared/Duplicated Components for Modals (Ideally move to /components/ui) ---
 
+// Position data definitions
+const POSITIONS = [
+    { id: 1, name: 'Carry', icon: 'https://i.imgur.com/rL1ZwZ4.png' },
+    { id: 2, name: 'Midlane', icon: 'https://i.imgur.com/7oAbbDo.png' },
+    { id: 3, name: 'Offlaner', icon: 'https://i.imgur.com/ThXJQ0n.png' },
+    { id: 4, name: 'Soft Support', icon: 'https://i.imgur.com/NkAmIjB.png' },
+    { id: 5, name: 'Hard Support', icon: 'https://i.imgur.com/TGv7onk.png' }
+];
+
 // Import the new PlayerModal from Players.jsx with all features
 const PlayerModal = ({ player, onClose, stats }) => {
     if (!player) return null;
@@ -14,15 +23,6 @@ const PlayerModal = ({ player, onClose, stats }) => {
     const [refreshedPlayer, setRefreshedPlayer] = useState(player);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [positionHeroes, setPositionHeroes] = useState([]);
-
-    // Position data
-    const positions = [
-        { id: 1, name: 'Carry', icon: 'https://i.imgur.com/rL1ZwZ4.png' },
-        { id: 2, name: 'Midlane', icon: 'https://i.imgur.com/7oAbbDo.png' },
-        { id: 3, name: 'Offlaner', icon: 'https://i.imgur.com/ThXJQ0n.png' },
-        { id: 4, name: 'Soft Support', icon: 'https://i.imgur.com/NkAmIjB.png' },
-        { id: 5, name: 'Hard Support', icon: 'https://i.imgur.com/TGv7onk.png' }
-    ];
 
     // Refresh heroes with STRATZ API when modal opens (with caching)
     useEffect(() => {
@@ -125,7 +125,7 @@ const PlayerModal = ({ player, onClose, stats }) => {
                                 fontSize: '0.8rem',
                                 fontWeight: 'bold'
                             }}>
-                                {player.position ? positions.find(p => p.id === player.position)?.name : 'Nema pozicije'}
+                                {player.position ? POSITIONS.find(p => p.id === player.position)?.name : 'Nema pozicije'}
                             </span>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -383,6 +383,9 @@ const TeamModal = ({ team, onClose, onPlayerClick }) => {
                                 <HeroTooltip heroes={player.topHeroes} />
                             </div>
                             <h4 style={{ margin: '0.5rem 0' }}>{player.personaName}</h4>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--accent)', marginBottom: '0.2rem', fontWeight: 'bold' }}>
+                                {player.position ? POSITIONS.find(p => p.id === player.position)?.name : ''}
+                            </div>
                             <div style={{ fontSize: '0.9rem', color: '#888' }}>{player.rankTier ? <RankDisplay rankTier={player.rankTier} width="30px" /> : 'Unranked'}</div>
                         </div>
                     ))}
@@ -436,7 +439,7 @@ const Teams = () => {
                     <Link to="/register" className="btn" style={{ marginTop: '1rem' }}>Prijavi Tim</Link>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '2rem' }}>
+                <div className="team-card-grid">
                     {teams
                         .map(t => {
                             // Calculate Strength for Sorting
@@ -525,6 +528,14 @@ const Teams = () => {
                                                 <div key={p.steamId} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.25rem 0.5rem', backgroundColor: 'var(--bg-main)', borderRadius: '4px', border: p.isCaptain ? '1px solid var(--accent)' : 'none', fontSize: '0.85rem' }}>
                                                     <img src={p.avatar} alt="" style={{ width: '20px', height: '20px', borderRadius: '50%' }} />
                                                     <span>{p.personaName}</span>
+                                                    {p.position && (
+                                                        <img
+                                                            src={POSITIONS.find(pos => pos.id === p.position)?.icon}
+                                                            alt=""
+                                                            style={{ width: '16px', height: '16px', marginLeft: '4px', opacity: 0.8 }}
+                                                            title={POSITIONS.find(pos => pos.id === p.position)?.name}
+                                                        />
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>

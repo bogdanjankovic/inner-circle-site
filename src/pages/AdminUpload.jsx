@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTournament } from '../context/TournamentContext';
 import { getMatchDetails, getHeroConstants } from '../services/dotaApi';
+import { sendDiscordWebhook, formatMatchResultEmbed } from '../services/discordService';
+
+const DISCORD_WEBHOOK_URL = import.meta.env.VITE_DISCORD_WEBHOOK_RESULTS || import.meta.env.VITE_DISCORD_WEBHOOK_URL;
 
 const AdminUpload = () => {
     const [stage, setStage] = useState('json'); // 'json' | 'mapping'
@@ -140,6 +143,8 @@ const AdminUpload = () => {
             };
         });
 
+        let linkResult = null;
+
         const finalMatch = {
             ...parsedData,
             timestamp: parsedData.timestamp || parsedData.start_time || Math.floor(Date.now() / 1000), // Normalize timestamp
@@ -156,12 +161,66 @@ const AdminUpload = () => {
             await processMatchStats(finalMatch, true);
 
             // 2. Link Explicitly
-            await linkMatchToTournament(activeTournament.id, bracketMatchId, finalMatch);
+            linkResult = await linkMatchToTournament(activeTournament.id, bracketMatchId, finalMatch);
             alert("Match linked to Tournament Bracket!");
         } else {
             // Just add match. If it happens to match a bracket node by teams, 
             // processMatchStats (default false) will auto-link it.
             await processMatchStats(finalMatch, false);
+        }
+
+
+
+        // DISCORD NOTIFICATION
+        if (DISCORD_WEBHOOK_URL) {
+            const team1 = teams.find(t => t.id === radiantTeamId);
+            const team2 = teams.find(t => t.id === direTeamId);
+            const team1Name = team1 ? team1.name : 'Radiant';
+            const team2Name = team2 ? team2.name : 'Dire';
+
+            const winnerName = finalMatch.winner === 'Radiant' ? team1Name : team2Name; // Basic assumption if string
+
+            // Calculate Stats for Discord
+            let discordStats = {
+                team1Score: finalMatch.radiantScore || 0, // Kills in game default
+                team2Score: finalMatch.direScore || 0,    // Kills in game default
+                format: 'BO1',
+                matchId: finalMatch.matchId
+            };
+
+            // If linked to bracket, use Series Score!
+            if (bracketMatchId && activeTournament) {
+                if (linkResult && linkResult.success) {
+                    if (linkResult.team1Score !== undefined) discordStats.team1Score = linkResult.team1Score;
+                    if (linkResult.team2Score !== undefined) discordStats.team2Score = linkResult.team2Score;
+                    if (linkResult.format) discordStats.format = linkResult.format;
+                }
+                /* Old Logic Ignored
+                const bracketMatch = activeTournament.bracket_data.find(m => m.matchId.toString() === bracketMatchId.toString());
+                if (bracketMatch) {
+                    const currentT1Score = bracketMatch.team1Score || 0;
+                    const currentT2Score = bracketMatch.team2Score || 0;
+
+                    // Identify which bracket team acts as Radiant/Dire in this specific match upload
+                    const isTeam1InBracketRadiant = (bracketMatch.team1 && bracketMatch.team1.id == radiantTeamId);
+
+                    // Determine which bracket team won this specific game based on upload winner
+                    const didBracketTeam1Win = finalMatch.winner === 'Radiant' ? isTeam1InBracketRadiant : !isTeam1InBracketRadiant;
+
+                    // Update score for display (add the win from this game)
+                    discordStats.team1Score = currentT1Score + (didBracketTeam1Win ? 1 : 0);
+                    discordStats.team2Score = currentT2Score + (!didBracketTeam1Win ? 1 : 0);
+                    discordStats.format = bracketMatch.format || 'BO1';
+                }
+                */
+            }
+
+            const embed = formatMatchResultEmbed({
+                ...finalMatch,
+                ...discordStats
+            }, team1Name, team2Name, winnerName, `${window.location.origin}/matches/${finalMatch.matchId}`);
+
+            sendDiscordWebhook(DISCORD_WEBHOOK_URL, `🆕 **NOVI MEČ DODAT (UPLOAD)**`, embed);
         }
 
         navigate('/results'); // Go to results to see it

@@ -281,55 +281,57 @@ const TeamTable = ({ teamName, players, winner }) => {
                 <span>{teamName} - Overview</span>
                 {winner === teamName && <span style={{ opacity: 0.6 }}>WINNER</span>}
             </div>
-            <table className="stats-table">
-                <thead>
-                    <tr>
-                        <th className="left-align sortable-header" style={{ width: '25%' }} onClick={() => handleSort('playerName')}>
-                            Player <SortIcon columnKey="playerName" />
-                        </th>
-                        <th className="sortable-header" style={{ width: '5%' }} onClick={() => handleSort('level')}>
-                            LVL <SortIcon columnKey="level" />
-                        </th>
-                        <th className="sortable-header" style={{ width: '10%' }} onClick={() => handleSort('kills')}>
-                            K D A <SortIcon columnKey="kills" />
-                        </th>
-                        <th className="sortable-header" style={{ width: '10%' }} onClick={() => handleSort('lastHits')}>
-                            LH / DN <SortIcon columnKey="lastHits" />
-                        </th>
-                        <th className="sortable-header" style={{ width: '8%' }} onClick={() => handleSort('netWorth')}>
-                            NET <SortIcon columnKey="netWorth" />
-                        </th>
-                        <th className="sortable-header" style={{ width: '10%' }} onClick={() => handleSort('gpm')}>
-                            GPM / XPM <SortIcon columnKey="gpm" />
-                        </th>
-                        <th className="sortable-header" style={{ width: '8%' }} onClick={() => handleSort('heroDamage')}>
-                            HD <SortIcon columnKey="heroDamage" />
-                        </th>
-                        <th className="sortable-header" style={{ width: '6%' }} onClick={() => handleSort('towerDamage')}>
-                            TD <SortIcon columnKey="towerDamage" />
-                        </th>
-                        <th className="sortable-header" style={{ width: '6%' }} onClick={() => handleSort('heroHealing')}>
-                            HH <SortIcon columnKey="heroHealing" />
-                        </th>
-                        <th style={{ width: '20%' }}>ITEMS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {sortedPlayers.map(p => <PlayerRow key={p.steamId} p={p} />)}
-                    {/* Totals Row */}
-                    <tr style={{ background: '#11151b', fontWeight: 'bold' }}>
-                        <td colSpan={2} style={{ textAlign: 'right', paddingRight: '20px' }}>Totals</td>
-                        <td className="kda-cell">
-                            <span>{totalKills}</span>
-                            <span className="kda-deaths">{totalDeaths}</span>
-                            <span>{totalAssists}</span>
-                        </td>
-                        <td></td>
-                        <td className="networth">{formatNumber(totalGold)}</td>
-                        <td colSpan={5}></td>
-                    </tr>
-                </tbody>
-            </table>
+            <div className="table-responsive">
+                <table className="stats-table">
+                    <thead>
+                        <tr>
+                            <th className="left-align sortable-header" style={{ width: '25%' }} onClick={() => handleSort('playerName')}>
+                                Player <SortIcon columnKey="playerName" />
+                            </th>
+                            <th className="sortable-header" style={{ width: '5%' }} onClick={() => handleSort('level')}>
+                                LVL <SortIcon columnKey="level" />
+                            </th>
+                            <th className="sortable-header" style={{ width: '10%' }} onClick={() => handleSort('kills')}>
+                                K D A <SortIcon columnKey="kills" />
+                            </th>
+                            <th className="sortable-header" style={{ width: '10%' }} onClick={() => handleSort('lastHits')}>
+                                LH / DN <SortIcon columnKey="lastHits" />
+                            </th>
+                            <th className="sortable-header" style={{ width: '8%' }} onClick={() => handleSort('netWorth')}>
+                                NET <SortIcon columnKey="netWorth" />
+                            </th>
+                            <th className="sortable-header" style={{ width: '10%' }} onClick={() => handleSort('gpm')}>
+                                GPM / XPM <SortIcon columnKey="gpm" />
+                            </th>
+                            <th className="sortable-header" style={{ width: '8%' }} onClick={() => handleSort('heroDamage')}>
+                                HD <SortIcon columnKey="heroDamage" />
+                            </th>
+                            <th className="sortable-header" style={{ width: '6%' }} onClick={() => handleSort('towerDamage')}>
+                                TD <SortIcon columnKey="towerDamage" />
+                            </th>
+                            <th className="sortable-header" style={{ width: '6%' }} onClick={() => handleSort('heroHealing')}>
+                                HH <SortIcon columnKey="heroHealing" />
+                            </th>
+                            <th style={{ width: '20%' }}>ITEMS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {sortedPlayers.map(p => <PlayerRow key={p.steamId} p={p} />)}
+                        {/* Totals Row */}
+                        <tr style={{ background: '#11151b', fontWeight: 'bold' }}>
+                            <td colSpan={2} style={{ textAlign: 'right', paddingRight: '20px' }}>Totals</td>
+                            <td className="kda-cell">
+                                <span>{totalKills}</span>
+                                <span className="kda-deaths">{totalDeaths}</span>
+                                <span>{totalAssists}</span>
+                            </td>
+                            <td></td>
+                            <td className="networth">{formatNumber(totalGold)}</td>
+                            <td colSpan={5}></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 };
@@ -396,7 +398,7 @@ const DraftTimeline = ({ picksBans }) => {
 
     // Helper to get hero image
     const getHeroImg = (id) => {
-        // We need a mapping or fetch mechanism for ID -> Name if not provided. 
+        // We need a mapping or fetch mechanism for ID -> Name if not provided.
         // For now, assuming we might need to rely on the ID being sufficient if we had a map, 
         // OR we just use the ID if we can't map. 
         // Ideally the parser should provide hero names in picks_bans too to avoid huge client-side maps.

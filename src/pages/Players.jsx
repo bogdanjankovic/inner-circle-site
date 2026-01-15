@@ -20,18 +20,18 @@ const PlayerModal = ({ player, onClose, stats }) => {
                 setIsRefreshing(true);
                 try {
                     console.log('=== REFRESHING PLAYER HEROES (WITH CACHE) ===');
-                    
+
                     // Use existing topHeroes from player object (from hover card)
                     const existingTopHeroes = player.topHeroes || [];
                     console.log('DEBUG: Using existing topHeroes:', existingTopHeroes);
-                    
+
                     // Get position-specific heroes from STRATZ (if position exists) - will use cache
                     let posHeroes = [];
                     if (player.position && player.position !== 0) {
                         console.log('=== GETTING POSITION HEROES FROM STRATZ (CACHED) ===');
                         posHeroes = await getPositionHeroesFromStratz(player.accountId, player.position, player.steamId, false);
                     }
-                    
+
                     // Get Dota Plus heroes from STRATZ (with caching)
                     let dotaPlusHeroes = [];
                     try {
@@ -42,7 +42,7 @@ const PlayerModal = ({ player, onClose, stats }) => {
                     } catch (error) {
                         console.error('Error fetching Dota Plus heroes:', error);
                     }
-                    
+
                     setRefreshedPlayer({
                         ...player,
                         topHeroes: existingTopHeroes,
@@ -117,7 +117,7 @@ const PlayerModal = ({ player, onClose, stats }) => {
             <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '90vh', overflowY: 'auto' }}>
                 <button className="close-modal" onClick={onClose}>&times;</button>
 
-                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div className="modal-stack-mobile" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <img
                         src={player.avatar || 'https://via.placeholder.com/150'}
                         alt={player.personaName}
@@ -127,38 +127,38 @@ const PlayerModal = ({ player, onClose, stats }) => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                             <h2 style={{ fontSize: '1.8rem', margin: 0 }}>{player.personaName}</h2>
                             {player.isCaptain && (
-                                <span style={{ 
-                                    padding: '0.2rem 0.5rem', 
-                                    background: '#ffd700', 
+                                <span style={{
+                                    padding: '0.2rem 0.5rem',
+                                    background: '#ffd700',
                                     color: '#000',
-                                    borderRadius: '4px', 
+                                    borderRadius: '4px',
                                     fontSize: '0.8rem',
                                     fontWeight: 'bold'
                                 }}>
                                     ♔ Kapiten
                                 </span>
                             )}
-                            <span style={{ 
-                                padding: '0.2rem 0.5rem', 
-                                background: 'var(--accent)', 
-                                borderRadius: '4px', 
+                            <span style={{
+                                padding: '0.2rem 0.5rem',
+                                background: 'var(--accent)',
+                                borderRadius: '4px',
                                 fontSize: '0.8rem',
                                 fontWeight: 'bold'
                             }}>
                                 {player.position ? positions.find(p => p.id === player.position)?.name : 'Nema pozicije'}
                             </span>
                         </div>
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <div className="rank-row" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                             <RankDisplay rankTier={player.rankTier} leaderboardRank={player.leaderboardRank} width="40px" />
                             {player.teamName ? (
                                 <button
                                     onClick={() => {
                                         // Navigate to teams page and trigger team modal
-                                        navigate('/teams', { 
-                                            state: { 
-                                                openTeamModal: true, 
-                                                teamName: player.teamName 
-                                            } 
+                                        navigate('/teams', {
+                                            state: {
+                                                openTeamModal: true,
+                                                teamName: player.teamName
+                                            }
                                         });
                                     }}
                                     style={{
@@ -184,8 +184,8 @@ const PlayerModal = ({ player, onClose, stats }) => {
                                     }}
                                 >
                                     {player.teamLogo && (
-                                        <img 
-                                            src={player.teamLogo} 
+                                        <img
+                                            src={player.teamLogo}
                                             alt={player.teamName}
                                             style={{ width: '20px', height: '20px', borderRadius: '2px' }}
                                         />
@@ -199,7 +199,7 @@ const PlayerModal = ({ player, onClose, stats }) => {
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="grid-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div className="card" style={{ padding: '1rem' }}>
                         <h3 style={{ fontSize: '1.1rem', marginBottom: '0.8rem' }}>Pub Statistika</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
@@ -225,7 +225,7 @@ const PlayerModal = ({ player, onClose, stats }) => {
                                         const kills = Number(player.stats?.kills) || 0;
                                         const deaths = Number(player.stats?.deaths) || 0;
                                         const assists = Number(player.stats?.assists) || 0;
-                                        
+
                                         if (kills > 0 || assists > 0) {
                                             const kda = (kills + assists) / Math.max(deaths, 1);
                                             return isNaN(kda) ? 'N/A' : kda.toFixed(2);
@@ -273,7 +273,7 @@ const PlayerModal = ({ player, onClose, stats }) => {
                             </div>
                         </div>
                     ) : (
-                        <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem' }}>
+                        <div className="flex-wrap-mobile" style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem' }}>
                             {(refreshedPlayer.topHeroes && Array.isArray(refreshedPlayer.topHeroes) ? refreshedPlayer.topHeroes : []).map((h, i) => (
                                 <div key={i} className="card" style={{ padding: '0.8rem', flex: 1, textAlign: 'center' }}>
                                     <div style={{ marginBottom: '0.4rem' }}>
@@ -296,11 +296,11 @@ const PlayerModal = ({ player, onClose, stats }) => {
                             Top {positions.find(p => p.id === refreshedPlayer.position)?.name} Heroji u poslednje vreme
                         </h3>
                         {positionHeroes.length > 0 ? (
-                            <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem' }}>
+                            <div className="flex-wrap-mobile" style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem' }}>
                                 {positionHeroes.map((h, i) => (
-                                    <div key={i} className="card" style={{ 
-                                        padding: '0.8rem', 
-                                        flex: 1, 
+                                    <div key={i} className="card" style={{
+                                        padding: '0.8rem',
+                                        flex: 1,
                                         textAlign: 'center',
                                         border: '2px solid #2196f3',
                                         background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(33, 150, 243, 0.05))'
@@ -329,11 +329,11 @@ const PlayerModal = ({ player, onClose, stats }) => {
                         <h3 style={{ color: '#e63946', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             ⭐ Dota Plus Heroji
                         </h3>
-                        <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem' }}>
+                        <div className="flex-wrap-mobile" style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem' }}>
                             {refreshedPlayer.dotaPlusHeroes.map((h, i) => (
-                                <div key={i} className="card" style={{ 
-                                    padding: '0.8rem', 
-                                    flex: 1, 
+                                <div key={i} className="card" style={{
+                                    padding: '0.8rem',
+                                    flex: 1,
                                     textAlign: 'center',
                                     border: '2px solid #e63946',
                                     background: 'linear-gradient(135deg, rgba(230, 57, 70, 0.1), rgba(230, 57, 70, 0.05))'
@@ -410,17 +410,17 @@ const Players = () => {
     // Filter players by selected teams and positions
     const filteredPlayers = useMemo(() => {
         let filtered = allPlayers;
-        
+
         // Filter by teams
         if (selectedTeams.size > 0) {
             filtered = filtered.filter(player => selectedTeams.has(player.teamName));
         }
-        
+
         // Filter by positions
         if (selectedPositions.size > 0) {
             filtered = filtered.filter(player => selectedPositions.has(player.position));
         }
-        
+
         return filtered;
     }, [allPlayers, selectedTeams, selectedPositions]);
 
@@ -429,12 +429,12 @@ const Players = () => {
         switch (key) {
             case 'personaName':
                 return player.personaName || '';
-            
+
             case 'rankTier':
                 // Rank sorting logic based on actual rankTier values (OpenDota format)
                 const rankTier = player.rankTier || 0;
                 const leaderboardRank = player.leaderboardRank;
-                
+
                 if (rankTier === 80 && leaderboardRank) {
                     return 20000 - leaderboardRank;
                 } else if (rankTier === 80) {
@@ -442,7 +442,7 @@ const Players = () => {
                 } else {
                     return rankTier;
                 }
-            
+
             case 'winrate':
                 if (viewMode === 'registration') {
                     return player.winrate || 0;
@@ -450,7 +450,7 @@ const Players = () => {
                     const stats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
                     return stats.matches ? (stats.wins / stats.matches) * 100 : 0;
                 }
-            
+
             case 'gpm':
                 if (viewMode === 'registration') {
                     return player.stats?.gpm || 0;
@@ -458,7 +458,7 @@ const Players = () => {
                     const stats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
                     return stats.avgGpm || 0;
                 }
-            
+
             case 'xpm':
                 if (viewMode === 'registration') {
                     return player.stats?.xpm || 0;
@@ -466,23 +466,23 @@ const Players = () => {
                     const stats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
                     return stats.avgXpm || 0;
                 }
-            
+
             case 'matches':
                 const matchStats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
                 return matchStats.matches || 0;
-            
+
             case 'kills':
                 const killStats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
                 return killStats.kills || 0;
-            
+
             case 'deaths':
                 const deathStats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
                 return deathStats.deaths || 0;
-            
+
             case 'assists':
                 const assistStats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
                 return assistStats.assists || 0;
-            
+
             default:
                 return 0;
         }
@@ -495,9 +495,9 @@ const Players = () => {
             sortablePlayers.sort((a, b) => {
                 const aValue = getSortValue(a, sortConfig.key);
                 const bValue = getSortValue(b, sortConfig.key);
-                
+
                 let comparison = 0;
-                
+
                 // Handle string comparison
                 if (typeof aValue === 'string' && typeof bValue === 'string') {
                     comparison = aValue.localeCompare(bValue);
@@ -505,7 +505,7 @@ const Players = () => {
                     // Handle numeric comparison
                     comparison = aValue - bValue;
                 }
-                
+
                 return sortConfig.direction === 'asc' ? comparison : -comparison;
             });
         }
@@ -563,9 +563,9 @@ const Players = () => {
         setSortConfig({ key, direction });
     };
 
-    
+
     return (
-        <div className="container" style={{ padding: '4rem 0' }}>
+        <div className="container" style={{ padding: '6rem 0 4rem 0' }}>
             {selectedPlayer && (
                 <PlayerModal
                     player={selectedPlayer}
@@ -574,7 +574,7 @@ const Players = () => {
                 />
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div className="header-stack-mobile" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h1>Registrovani Igrači</h1>
                 <div style={{ display: 'flex', gap: '1rem' }}>
                     <button
@@ -594,11 +594,11 @@ const Players = () => {
                 </div>
             </div>
 
-            <div className="card" style={{ padding: 0, overflow: 'hidden', position: 'relative' }}>
+            <div className="card" style={{ padding: 0, overflowX: 'auto', position: 'relative' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
                     <thead>
                         <tr style={{ backgroundColor: 'var(--bg-secondary)', textAlign: 'left' }}>
-                            <th 
+                            <th
                                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', position: 'relative', minWidth: '120px' }}
                                 onClick={(e) => { e.stopPropagation(); setShowPositionFilter(!showPositionFilter); }}
                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
@@ -606,22 +606,22 @@ const Players = () => {
                             >
                                 Pozicija <span style={{ opacity: 0.5, fontSize: '0.8rem' }}>▼</span>
                                 {selectedPositions.size > 0 && (
-                                    <span style={{ 
-                                        background: 'var(--accent)', 
-                                        color: 'white', 
-                                        borderRadius: '50%', 
-                                        width: '16px', 
-                                        height: '16px', 
-                                        display: 'inline-flex', 
-                                        alignItems: 'center', 
-                                        justifyContent: 'center', 
-                                        fontSize: '0.7rem', 
-                                        marginLeft: '4px' 
+                                    <span style={{
+                                        background: 'var(--accent)',
+                                        color: 'white',
+                                        borderRadius: '50%',
+                                        width: '16px',
+                                        height: '16px',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.7rem',
+                                        marginLeft: '4px'
                                     }}>
                                         {selectedPositions.size}
                                     </span>
                                 )}
-                                
+
                                 {/* Position Filter Dropdown */}
                                 {showPositionFilter && (
                                     <div style={{
@@ -639,10 +639,10 @@ const Players = () => {
                                         overflowY: 'auto',
                                         boxShadow: '0 6px 20px rgba(0,0,0,0.4)'
                                     }}>
-                                        <div style={{ 
-                                            display: 'flex', 
-                                            justifyContent: 'space-between', 
-                                            alignItems: 'center', 
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
                                             marginBottom: '1rem',
                                             paddingBottom: '0.75rem',
                                             borderBottom: '1px solid var(--border)'
@@ -709,26 +709,26 @@ const Players = () => {
                                                         e.currentTarget.style.backgroundColor = 'transparent';
                                                         e.currentTarget.style.borderColor = 'transparent';
                                                     }}
-                                                    onClick={(e) => { 
-                                                        e.stopPropagation(); 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         e.preventDefault();
-                                                        handlePositionToggle(position.id); 
+                                                        handlePositionToggle(position.id);
                                                     }}
                                                 >
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedPositions.has(position.id)}
-                                                        onChange={(e) => { 
-                                                            e.stopPropagation(); 
+                                                        onChange={(e) => {
+                                                            e.stopPropagation();
                                                             e.preventDefault();
-                                                            handlePositionToggle(position.id); 
+                                                            handlePositionToggle(position.id);
                                                         }}
-                                                        onClick={(e) => { 
-                                                            e.stopPropagation(); 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
                                                             e.preventDefault();
-                                                            handlePositionToggle(position.id); 
+                                                            handlePositionToggle(position.id);
                                                         }}
-                                                        style={{ 
+                                                        style={{
                                                             cursor: 'pointer',
                                                             width: '16px',
                                                             height: '16px',
@@ -736,8 +736,8 @@ const Players = () => {
                                                             pointerEvents: 'none'
                                                         }}
                                                     />
-                                                    <span style={{ 
-                                                        fontSize: '0.95rem', 
+                                                    <span style={{
+                                                        fontSize: '0.95rem',
                                                         fontWeight: '500',
                                                         color: selectedPositions.has(position.id) ? 'var(--accent)' : '#fff',
                                                         transition: 'color 0.2s',
@@ -746,14 +746,14 @@ const Players = () => {
                                                         alignItems: 'center',
                                                         gap: '0.5rem'
                                                     }}>
-                                                        <img 
-                                                            src={position.icon} 
+                                                        <img
+                                                            src={position.icon}
                                                             alt={position.name}
-                                                            style={{ 
-                                                                width: '16px', 
+                                                            style={{
+                                                                width: '16px',
                                                                 height: '16px',
                                                                 objectFit: 'contain'
-                                                            }} 
+                                                            }}
                                                         />
                                                         {position.name} [{position.id}]
                                                     </span>
@@ -766,7 +766,7 @@ const Players = () => {
                             <th style={{ padding: '1rem' }}>
                                 Igrač
                             </th>
-                            <th 
+                            <th
                                 style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', position: 'relative', minWidth: '150px' }}
                                 onClick={(e) => { e.stopPropagation(); setShowTeamFilter(!showTeamFilter); }}
                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
@@ -774,22 +774,22 @@ const Players = () => {
                             >
                                 Tim <span style={{ opacity: 0.5, fontSize: '0.8rem' }}>▼</span>
                                 {selectedTeams.size > 0 && (
-                                    <span style={{ 
-                                        background: 'var(--accent)', 
-                                        color: 'white', 
-                                        borderRadius: '50%', 
-                                        width: '16px', 
-                                        height: '16px', 
-                                        display: 'inline-flex', 
-                                        alignItems: 'center', 
-                                        justifyContent: 'center', 
-                                        fontSize: '0.7rem', 
-                                        marginLeft: '4px' 
+                                    <span style={{
+                                        background: 'var(--accent)',
+                                        color: 'white',
+                                        borderRadius: '50%',
+                                        width: '16px',
+                                        height: '16px',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.7rem',
+                                        marginLeft: '4px'
                                     }}>
                                         {selectedTeams.size}
                                     </span>
                                 )}
-                                
+
                                 {/* Team Filter Dropdown */}
                                 {showTeamFilter && (
                                     <div style={{
@@ -808,10 +808,10 @@ const Players = () => {
                                         overflowY: 'auto',
                                         boxShadow: '0 6px 20px rgba(0,0,0,0.4)'
                                     }}>
-                                        <div style={{ 
-                                            display: 'flex', 
-                                            justifyContent: 'space-between', 
-                                            alignItems: 'center', 
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
                                             marginBottom: '1rem',
                                             paddingBottom: '0.75rem',
                                             borderBottom: '1px solid var(--border)'
@@ -878,26 +878,26 @@ const Players = () => {
                                                         e.currentTarget.style.backgroundColor = 'transparent';
                                                         e.currentTarget.style.borderColor = 'transparent';
                                                     }}
-                                                    onClick={(e) => { 
-                                                        e.stopPropagation(); 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         e.preventDefault();
-                                                        handleTeamToggle(teamName); 
+                                                        handleTeamToggle(teamName);
                                                     }}
                                                 >
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedTeams.has(teamName)}
-                                                        onChange={(e) => { 
-                                                            e.stopPropagation(); 
+                                                        onChange={(e) => {
+                                                            e.stopPropagation();
                                                             e.preventDefault();
-                                                            handleTeamToggle(teamName); 
+                                                            handleTeamToggle(teamName);
                                                         }}
-                                                        onClick={(e) => { 
-                                                            e.stopPropagation(); 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
                                                             e.preventDefault();
-                                                            handleTeamToggle(teamName); 
+                                                            handleTeamToggle(teamName);
                                                         }}
-                                                        style={{ 
+                                                        style={{
                                                             cursor: 'pointer',
                                                             width: '16px',
                                                             height: '16px',
@@ -905,8 +905,8 @@ const Players = () => {
                                                             pointerEvents: 'none'
                                                         }}
                                                     />
-                                                    <span style={{ 
-                                                        fontSize: '0.95rem', 
+                                                    <span style={{
+                                                        fontSize: '0.95rem',
                                                         fontWeight: '500',
                                                         color: selectedTeams.has(teamName) ? 'var(--accent)' : '#fff',
                                                         transition: 'color 0.2s',
@@ -922,7 +922,7 @@ const Players = () => {
                             </th>
                             {viewMode === 'registration' ? (
                                 <>
-                                    <th 
+                                    <th
                                         style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
                                         onClick={() => handleSort('rankTier')}
                                         onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
@@ -930,7 +930,7 @@ const Players = () => {
                                     >
                                         Rank <SortIcon columnKey="rankTier" sortConfig={sortConfig} />
                                     </th>
-                                    <th 
+                                    <th
                                         style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
                                         onClick={() => handleSort('winrate')}
                                         onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
@@ -940,7 +940,7 @@ const Players = () => {
                                     </th>
                                     <th style={{ padding: '1rem' }}>
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <span 
+                                            <span
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
                                                 onClick={() => handleSort('gpm')}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
@@ -949,7 +949,7 @@ const Players = () => {
                                                 GPM <SortIcon columnKey="gpm" sortConfig={sortConfig} />
                                             </span>
                                             <span>/</span>
-                                            <span 
+                                            <span
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
                                                 onClick={() => handleSort('xpm')}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
@@ -962,7 +962,7 @@ const Players = () => {
                                 </>
                             ) : (
                                 <>
-                                    <th 
+                                    <th
                                         style={{ padding: '1rem', cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s' }}
                                         onClick={() => handleSort('matches')}
                                         onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
@@ -972,7 +972,7 @@ const Players = () => {
                                     </th>
                                     <th style={{ padding: '1rem', title: 'Kills/Deaths/Assists' }}>
                                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                                            <span 
+                                            <span
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
                                                 onClick={() => handleSort('kills')}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
@@ -981,7 +981,7 @@ const Players = () => {
                                                 K <SortIcon columnKey="kills" sortConfig={sortConfig} />
                                             </span>
                                             <span>/</span>
-                                            <span 
+                                            <span
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
                                                 onClick={() => handleSort('deaths')}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
@@ -990,7 +990,7 @@ const Players = () => {
                                                 D <SortIcon columnKey="deaths" sortConfig={sortConfig} />
                                             </span>
                                             <span>/</span>
-                                            <span 
+                                            <span
                                                 style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.2s', padding: '2px 4px', borderRadius: '2px' }}
                                                 onClick={() => handleSort('assists')}
                                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
@@ -1021,32 +1021,32 @@ const Players = () => {
                                     onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                 >
                                     <td style={{ padding: '1rem' }}>
-                                    {player.position ? (
-                                        <span style={{ 
-                                            display: 'inline-flex', 
-                                            alignItems: 'center', 
-                                            gap: '0.5rem',
-                                            padding: '0.25rem 0.5rem',
-                                            borderRadius: '4px',
-                                            background: 'rgba(255,255,255,0.1)',
-                                            fontSize: '0.9rem'
-                                        }}>
-                                            <img 
-                                                src={positions.find(p => p.id === player.position)?.icon} 
-                                                alt={positions.find(p => p.id === player.position)?.name}
-                                                style={{ 
-                                                    width: '16px', 
-                                                    height: '16px',
-                                                    objectFit: 'contain'
-                                                }} 
-                                            />
-                                            {positions.find(p => p.id === player.position)?.name}
-                                        </span>
-                                    ) : (
-                                        <span style={{ color: '#666', fontSize: '0.9rem' }}>N/A</span>
-                                    )}
-                                </td>
-                                <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        {player.position ? (
+                                            <span style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                padding: '0.25rem 0.5rem',
+                                                borderRadius: '4px',
+                                                background: 'rgba(255,255,255,0.1)',
+                                                fontSize: '0.9rem'
+                                            }}>
+                                                <img
+                                                    src={positions.find(p => p.id === player.position)?.icon}
+                                                    alt={positions.find(p => p.id === player.position)?.name}
+                                                    style={{
+                                                        width: '16px',
+                                                        height: '16px',
+                                                        objectFit: 'contain'
+                                                    }}
+                                                />
+                                                {positions.find(p => p.id === player.position)?.name}
+                                            </span>
+                                        ) : (
+                                            <span style={{ color: '#666', fontSize: '0.9rem' }}>N/A</span>
+                                        )}
+                                    </td>
+                                    <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                         {/* Avatar & Name */}
                                         <div className="hero-tooltip-container">
                                             {player.avatar ? (
@@ -1063,7 +1063,7 @@ const Players = () => {
                                             <HeroTooltip heroes={player.topHeroes} />
                                         </span>
                                     </td>
-                                <td style={{ padding: '1rem' }}>{player.teamName}</td>
+                                    <td style={{ padding: '1rem' }}>{player.teamName}</td>
 
                                     {viewMode === 'registration' ? (
                                         <>

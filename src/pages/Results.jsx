@@ -26,14 +26,11 @@ const SeriesCard = ({ series, teams, onExpand, expanded }) => {
         <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid #333', marginBottom: '1rem' }}>
             <div
                 onClick={onExpand}
+                className="series-card-grid"
                 style={{
                     padding: '1.5rem',
                     cursor: 'pointer',
-                    background: 'linear-gradient(90deg, #1a1a1a 0%, #222 50%, #1a1a1a 100%)',
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto 1fr',
-                    alignItems: 'center',
-                    gap: '1rem'
+                    background: 'linear-gradient(90deg, #1a1a1a 0%, #222 50%, #1a1a1a 100%)'
                 }}
             >
                 {/* Team 1 */}

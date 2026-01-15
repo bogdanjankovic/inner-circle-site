@@ -1,5 +1,6 @@
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
+import SEOHead from '../components/seo/SEOHead';
 
 
 const Home = () => {
@@ -18,6 +19,7 @@ const Home = () => {
 
     return (
         <div>
+            <SEOHead title="Home" description="Dobrodošli na Inner Circle Dota 2 turnire. Prijavite svoj tim, pratite rezultate i statistiku." />
             {/* Hero Section */}
             {/* Hero Section with Parallax */}
             <section
@@ -101,7 +103,7 @@ const Home = () => {
             {/* Features / Info Grid */}
             <section className="container" style={{ padding: '4rem 1rem' }}>
                 <h2 style={{ textAlign: 'center', marginBottom: '3rem', color: '#fff' }}>Aktuelno</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
                     <div className="card">
                         <h3 style={{ color: 'var(--accent)' }}>Sezona 1</h3>
                         <p>Prijave su otvorene za prvu sezonu naše lige. Fond nagrada 1000€.</p>

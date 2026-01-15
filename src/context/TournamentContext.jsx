@@ -414,6 +414,22 @@ export const TournamentProvider = ({ children }) => {
             // For now, let's assume if it matches team1 ID ok, else team2.
         }
 
+        // Link the Replay ID
+        // push to 'games' array for history of the series
+        if (!currentMatch.games) currentMatch.games = [];
+
+        // Avoid duplicates: If match already linked, DO NOT increment score again
+        if (currentMatch.games.find(g => g.matchId === realMatchData.matchId)) {
+            console.warn("Match already linked to this bracket node. Skipping score update.");
+            return {
+                success: false,
+                reason: 'duplicate',
+                team1Score: currentMatch.team1Score || 0,
+                team2Score: currentMatch.team2Score || 0,
+                format: currentMatch.format || 'bo1'
+            };
+        }
+
         // Increment Score
         if (winnerTeam === 'team1') {
             currentMatch.team1Score = (currentMatch.team1Score || 0) + 1;
@@ -421,20 +437,14 @@ export const TournamentProvider = ({ children }) => {
             currentMatch.team2Score = (currentMatch.team2Score || 0) + 1;
         }
 
-        // Link the Replay ID
-        // push to 'games' array for history of the series
-        if (!currentMatch.games) currentMatch.games = [];
-        // Avoid duplicates in games array
-        if (!currentMatch.games.find(g => g.matchId === realMatchData.matchId)) {
-            currentMatch.games.push({
-                matchId: realMatchData.matchId,
-                winner: realMatchData.winner,
-                timestamp: realMatchData.timestamp,
-                duration: realMatchData.duration,
-                radiantTeamId: realMatchData.radiantTeamId,
-                direTeamId: realMatchData.direTeamId
-            });
-        }
+        currentMatch.games.push({
+            matchId: realMatchData.matchId,
+            winner: realMatchData.winner,
+            timestamp: realMatchData.timestamp,
+            duration: realMatchData.duration,
+            radiantTeamId: realMatchData.radiantTeamId,
+            direTeamId: realMatchData.direTeamId
+        });
 
         // Backward compatibility: realMatchId points to the *latest* match
         currentMatch.realMatchId = realMatchData.matchId;
@@ -461,6 +471,14 @@ export const TournamentProvider = ({ children }) => {
         }
 
         await updateTournament(tournamentId, { bracket_data: updatedBracket });
+
+        return {
+            success: true,
+            team1Score: currentMatch.team1Score || 0,
+            team2Score: currentMatch.team2Score || 0,
+            winner: seriesWinnerId,
+            format: format
+        };
     };
 
     const finishTournament = async (tournamentId, winnerTeamId) => {

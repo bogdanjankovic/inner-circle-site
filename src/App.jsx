@@ -16,10 +16,13 @@ import AdminUpload from './pages/AdminUpload';
 import Login from './pages/Login';
 import MatchDetails from './components/matches/MatchDetails';
 
+import SEOHead from './components/seo/SEOHead';
+
 function App() {
-  console.log("Current App Version: 1.3 (Supabase + Auth)");
+  console.log("Current App Version: 1.4 (Analytics + SEO)");
   return (
     <div className="app-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <SEOHead />
       <Navbar />
       <main style={{ flex: 1, position: 'relative' }}>
         {/* Background Fog/Glow Effect Overlay */}

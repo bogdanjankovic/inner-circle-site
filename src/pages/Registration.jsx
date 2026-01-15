@@ -13,7 +13,7 @@ const Registration = () => {
     // ... (rest of code)
 
     const navigate = useNavigate();
-    const { registerTeam } = useTournament();
+    const { registerTeam, teams } = useTournament();
 
     const [step, setStep] = useState(1);
     const [teamName, setTeamName] = useState('');
@@ -41,22 +41,39 @@ const Registration = () => {
         const player = players[index];
         if (!player.steamId) return;
 
-        const newPlayers = [...players];
-        newPlayers[index].loading = true;
-        newPlayers[index].error = null;
-        setPlayers(newPlayers);
+        // Set loading state
+        setPlayers(prev => {
+            const newPlayers = [...prev];
+            newPlayers[index] = { ...newPlayers[index], loading: true, error: null };
+            return newPlayers;
+        });
 
-        const result = await fetchPlayerData(player.steamId, player.position);
+        try {
+            const result = await fetchPlayerData(player.steamId, player.position);
 
-        const updatedPlayers = [...players];
-        updatedPlayers[index].loading = false;
+            setPlayers(prev => {
+                const updatedPlayers = [...prev];
+                updatedPlayers[index] = { ...updatedPlayers[index], loading: false };
 
-        if (result.valid) {
-            updatedPlayers[index].data = result;
-        } else {
-            updatedPlayers[index].error = "Igrač nije pronađen ili je profil privatan.";
+                if (result.valid) {
+                    updatedPlayers[index].data = result;
+                } else {
+                    updatedPlayers[index].error = "Igrač nije pronađen ili je profil privatan.";
+                }
+                return updatedPlayers;
+            });
+        } catch (error) {
+            console.error("Critical error in handleCheckPlayer:", error);
+            setPlayers(prev => {
+                const updatedPlayers = [...prev];
+                updatedPlayers[index] = {
+                    ...updatedPlayers[index],
+                    loading: false,
+                    error: "Došlo je do greшке prilikom provere."
+                };
+                return updatedPlayers;
+            });
         }
-        setPlayers(updatedPlayers);
     };
 
     const handleSteamIdChange = (index, value) => {
@@ -84,7 +101,7 @@ const Registration = () => {
                 const result = await fetchPlayerData(player.steamId, parseInt(positionId));
                 const updatedPlayers = [...newPlayers];
                 updatedPlayers[index].loading = false;
-                
+
                 if (result.valid) {
                     updatedPlayers[index].data = result;
                 }
@@ -142,6 +159,8 @@ const Registration = () => {
                 console.error('Email notification failed:', error);
             }
         );
+
+        // Note: Discord webhook notification moved to Admin approval
 
         alert('Tim je uspešno registrovan! Vaš tim čeka odobrenje administratora pre nego što postane vidljiv.');
         navigate('/teams');
@@ -276,43 +295,24 @@ const Registration = () => {
                                         <div>GPM: {player.data.stats.gpm}</div>
                                         <div>XPM: {player.data.stats.xpm}</div>
                                     </div>
-                                    {/* Top Heroes by Position */}
+                                    {/* Top Heroes - Always All Time */}
                                     <div style={{ marginLeft: '1rem', fontSize: '0.7rem', color: '#888' }}>
-                                        {player.position ? (
-                                            <div>
-                                                <div style={{ marginBottom: '0.25rem', fontWeight: 'bold' }}>
-                                                    Top {positions.find(p => p.id === player.position)?.name} Heroes:
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    {player.data.topHeroes?.map((h, i) => (
-                                                        <div key={i} style={{ textAlign: 'center' }}>
-                                                            <HeroImage heroId={h.heroId} style={{ width: '24px', height: '24px' }} />
-                                                            <div style={{ fontSize: '0.6rem' }}>{h.games}g</div>
-                                                            <div style={{ fontSize: '0.6rem', color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336' }}>
-                                                                {h.winrate}%
-                                                            </div>
-                                                        </div>
-                                                    )) || <span>None</span>}
-                                                </div>
+                                        <div>
+                                            <div style={{ marginBottom: '0.25rem', fontWeight: 'bold' }}>
+                                                Top Heroes (All Time):
                                             </div>
-                                        ) : (
-                                            <div>
-                                                <div style={{ marginBottom: '0.25rem', fontWeight: 'bold' }}>
-                                                    Top Heroes (All Time):
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    {player.data.topHeroes?.map((h, i) => (
-                                                        <div key={i} style={{ textAlign: 'center' }}>
-                                                            <HeroImage heroId={h.heroId} style={{ width: '24px', height: '24px' }} />
-                                                            <div style={{ fontSize: '0.6rem' }}>{h.games}g</div>
-                                                            <div style={{ fontSize: '0.6rem', color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336' }}>
-                                                                {h.winrate}%
-                                                            </div>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                {player.data.topHeroes?.map((h, i) => (
+                                                    <div key={i} style={{ textAlign: 'center' }}>
+                                                        <HeroImage heroId={h.heroId} style={{ width: '24px', height: '24px' }} />
+                                                        <div style={{ fontSize: '0.6rem' }}>{h.games}g</div>
+                                                        <div style={{ fontSize: '0.6rem', color: h.winrate >= 55 ? '#4caf50' : h.winrate >= 50 ? '#ff9800' : '#f44336' }}>
+                                                            {h.winrate}%
                                                         </div>
-                                                    )) || <span>None</span>}
-                                                </div>
+                                                    </div>
+                                                )) || <span>None</span>}
                                             </div>
-                                        )}
+                                        </div>
                                     </div>
                                 </div>
                             )}

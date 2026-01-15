@@ -3,10 +3,19 @@ import { useState, useEffect } from 'react';
 import { useTournament } from '../context/TournamentContext';
 import { HeroImage } from '../components/ui/HeroTooltip';
 import RankDisplay from '../components/ui/RankDisplay';
+
 import ImageUpload from '../components/ui/ImageUpload';
+import AnalyticsDashboard from '../components/admin/AnalyticsDashboard';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+
 import { fetchPlayerData } from '../services/dotaApi';
+import { sendDiscordWebhook, formatMatchResultEmbed, formatTournamentWinEmbed } from '../services/discordService';
+
+const DISCORD_WEBHOOK_URL = import.meta.env.VITE_DISCORD_WEBHOOK_URL;
+const DISCORD_WEBHOOK_TOURNAMENTS = import.meta.env.VITE_DISCORD_WEBHOOK_TOURNAMENTS || DISCORD_WEBHOOK_URL;
+const DISCORD_WEBHOOK_SCHEDULE = import.meta.env.VITE_DISCORD_WEBHOOK_SCHEDULE || DISCORD_WEBHOOK_URL;
+const DISCORD_WEBHOOK_RESULTS = import.meta.env.VITE_DISCORD_WEBHOOK_RESULTS || DISCORD_WEBHOOK_URL;
 
 // Position data
 const positions = [
@@ -196,6 +205,7 @@ const EditMatchModal = ({ match, onClose, onSave, teams }) => {
 const ManageTournament = ({ tournament, teams, onMatchUpdate }) => {
     const { finishTournament, matchHistory, processMatchStats, linkMatchToTournament } = useTournament();
     const [winnerId, setWinnerId] = useState('');
+    const [sendToDiscord, setSendToDiscord] = useState(true);
 
     // Find unique teams in this tournament
     const participantIds = new Set();
@@ -230,6 +240,21 @@ const ManageTournament = ({ tournament, teams, onMatchUpdate }) => {
                 const teamName = m[teamKey].name;
                 if (confirm(`${teamName} has reached ${newScore} wins. End Series and advance info next round?`)) {
                     currentMatch.winner = m[teamKey].id;
+
+                    // DISCORD NOTIFICATION
+                    if (sendToDiscord && DISCORD_WEBHOOK_URL) {
+                        const winner = teams.find(t => t.id === currentMatch.winner)?.name || 'Unknown Team';
+                        const loser = teams.find(t => t.id === (currentMatch.winner === m.team1.id ? m.team2.id : m.team1.id))?.name || 'Unknown Team';
+
+                        const embed = formatMatchResultEmbed({
+                            ...currentMatch,
+                            team1Score: currentMatch.team1Score,
+                            team2Score: currentMatch.team2Score
+                        }, m.team1.name, m.team2.name, winner);
+
+                        sendDiscordWebhook(DISCORD_WEBHOOK_URL, `🏁 **REZULTAT MEČA**`, embed);
+                    }
+
                     // Advance helper
                     const nextMatchId = currentMatch.nextMatchId;
                     if (nextMatchId) {
@@ -246,11 +271,20 @@ const ManageTournament = ({ tournament, teams, onMatchUpdate }) => {
     };
 
     // Helper to handle completion
-    const handleFinishTournament = (winId) => {
+    const handleFinishTournament = async (winId) => {
         if (!winId && !winnerId) return alert("Izaberite pobednika!");
         const finalId = winId || winnerId;
-        if (confirm(`Da li ste sigurni da je ${participants.find(p => p.id == finalId)?.name} OSVOJIO turnir? Ovo ce arhivirati turnir.`)) {
+        const winnerName = participants.find(p => p.id == finalId)?.name;
+        if (confirm(`Da li ste sigurni da je ${winnerName} OSVOJIO turnir? Ovo ce arhivirati turnir.`)) {
             finishTournament(tournament.id, finalId);
+
+            // DISCORD NOTIFICATION
+            // DISCORD NOTIFICATION
+            if (sendToDiscord && DISCORD_WEBHOOK_TOURNAMENTS) {
+                const { sendDiscordWebhook, formatTournamentWinEmbed, DISCORD_AVATARS } = await import('../services/discordService');
+                const embed = formatTournamentWinEmbed(tournament.name, winnerName, `${window.location.origin}/tournaments`);
+                sendDiscordWebhook(DISCORD_WEBHOOK_TOURNAMENTS, "@everyone 🏆 **KRAJ TURNIRA**", embed, DISCORD_AVATARS.WINNER);
+            }
         }
     };
 
@@ -274,6 +308,16 @@ const ManageTournament = ({ tournament, teams, onMatchUpdate }) => {
                         <span style={{ fontSize: '0.9rem', color: '#888' }}>{tournament.format?.toUpperCase()} • {tournament.type === 'single_elimination' ? 'Single Elimination' : 'Round Robin'}</span>
                     </div>
                 </div>
+
+                {/* Discord Toggle */}
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', background: 'rgba(88, 101, 242, 0.1)', padding: '0.5rem 1rem', borderRadius: '4px', border: '1px solid #5865F2' }}>
+                    <input
+                        type="checkbox"
+                        checked={sendToDiscord}
+                        onChange={e => setSendToDiscord(e.target.checked)}
+                    />
+                    <span style={{ color: '#5865F2', fontSize: '0.9rem', fontWeight: 'bold' }}>📢 Send to Discord</span>
+                </label>
 
                 {/* Finish Controls */}
                 {tournament.status !== 'completed' ? (
@@ -329,7 +373,7 @@ const ManageTournament = ({ tournament, teams, onMatchUpdate }) => {
                                 {roundName}
                             </h3>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(450px, 1fr))', gap: '2rem' }}>
+                            <div className="match-card-grid">
                                 {roundMatches.map((m) => (
                                     <div key={m.matchId} style={{
                                         background: m.winner ? 'linear-gradient(145deg, rgba(76, 175, 80, 0.05) 0%, rgba(0,0,0,0) 100%)' : '#1e1e1e',
@@ -354,7 +398,7 @@ const ManageTournament = ({ tournament, teams, onMatchUpdate }) => {
                                             <span>{m.format ? `BO${m.format === 'bo3' ? 3 : m.format === 'bo5' ? 5 : 1}` : 'BO1'}</span>
                                         </div>
 
-                                        <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '1rem', alignItems: 'center' }}>
+                                        <div className="match-card-content">
                                             {/* Team 1 */}
                                             <div style={{ textAlign: 'center', opacity: m.winner && m.winner !== m.team1?.id ? 0.5 : 1 }}>
                                                 <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: m.winner === m.team1?.id ? '#4caf50' : 'white', marginBottom: '0.5rem', textShadow: m.winner === m.team1?.id ? '0 0 10px rgba(76,175,80,0.5)' : 'none' }}>
@@ -381,27 +425,52 @@ const ManageTournament = ({ tournament, teams, onMatchUpdate }) => {
                                                 <div style={{ color: '#444', fontSize: '1.5rem', fontWeight: '900', fontStyle: 'italic' }}>VS</div>
 
                                                 {/* Date Picker (Compact) */}
-                                                <input
-                                                    type="datetime-local"
-                                                    value={m.scheduledTime ? new Date(m.scheduledTime).toISOString().slice(0, 16) : ''}
-                                                    onChange={(e) => {
-                                                        const newTime = new Date(e.target.value).getTime();
-                                                        const newBracket = [...tournament.bracket_data];
-                                                        const idx = newBracket.findIndex(x => x.matchId === m.matchId);
-                                                        newBracket[idx].scheduledTime = newTime;
-                                                        onMatchUpdate(tournament.id, { bracket_data: newBracket });
-                                                    }}
-                                                    style={{
-                                                        background: 'transparent',
-                                                        border: 'none',
-                                                        color: '#888',
-                                                        fontSize: '0.7rem',
-                                                        textAlign: 'center',
-                                                        cursor: 'pointer',
-                                                        width: '120px',
-                                                        marginTop: '-0.5rem'
-                                                    }}
-                                                />
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                    <input
+                                                        type="datetime-local"
+                                                        value={m.scheduledTime ? new Date(m.scheduledTime).toISOString().slice(0, 16) : ''}
+                                                        onChange={(e) => {
+                                                            const newTime = new Date(e.target.value).getTime();
+                                                            const newBracket = [...tournament.bracket_data];
+                                                            const idx = newBracket.findIndex(x => x.matchId === m.matchId);
+                                                            newBracket[idx].scheduledTime = newTime;
+                                                            onMatchUpdate(tournament.id, { bracket_data: newBracket });
+                                                        }}
+                                                        style={{
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            color: '#888',
+                                                            fontSize: '0.7rem',
+                                                            textAlign: 'center',
+                                                            cursor: 'pointer',
+                                                            width: '110px'
+                                                        }}
+                                                    />
+                                                    {m.scheduledTime && (
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (confirm(`Objaviti termin meča (${new Date(m.scheduledTime).toLocaleString()}) na Discordu?`)) {
+                                                                    const { sendDiscordWebhook, formatMatchScheduledEmbed, DISCORD_AVATARS } = await import('../services/discordService');
+                                                                    // Determine names
+                                                                    const t1Name = m.team1 ? m.team1.name : 'TBD';
+                                                                    const t2Name = m.team2 ? m.team2.name : 'TBD';
+                                                                    const embed = formatMatchScheduledEmbed(t1Name, t2Name, m.scheduledTime, `${window.location.origin}/matches/${m.matchId || ''}`); // bracket matchId might not point to real match page yet? 
+                                                                    // Actually bracket matches often don't have a real match page until played? 
+                                                                    // If matchId exists in real matches, link it. If not, link to bracket.
+                                                                    // For now linking to /tournaments is safer if match not played.
+                                                                    // But user asked for "link na sajt".
+                                                                    // Let's use /tournaments as fallback.
+                                                                    sendDiscordWebhook(DISCORD_WEBHOOK_SCHEDULE, `📅 **NOVI TERMIN**`, embed, DISCORD_AVATARS.SCHEDULE);
+                                                                    alert("Objavljeno!");
+                                                                }
+                                                            }}
+                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}
+                                                            title="Announce on Discord"
+                                                        >
+                                                            🔔
+                                                        </button>
+                                                    )}
+                                                </div>
 
                                                 {/* JSON Upload Button (Icon style) */}
                                                 {!m.winner && (
@@ -496,6 +565,19 @@ const ManageTournament = ({ tournament, teams, onMatchUpdate }) => {
                                                         const matchIdx = newBracket.findIndex(x => x.matchId === m.matchId);
                                                         const currentMatch = newBracket[matchIdx];
                                                         currentMatch.winner = m.team1.id;
+
+                                                        // DISCORD NOTIFICATION (Force Win)
+                                                        if (sendToDiscord && DISCORD_WEBHOOK_RESULTS) {
+                                                            const winner = m.team1.name;
+                                                            const loser = m.team2 ? m.team2.name : 'Unknown';
+                                                            const embed = formatMatchResultEmbed({
+                                                                ...currentMatch,
+                                                                team1Score: currentMatch.team1Score || 0, // Override logic often lacks score, use 0 or current
+                                                                team2Score: currentMatch.team2Score || 0
+                                                            }, m.team1.name, m.team2 ? m.team2.name : 'TBD', winner, `${window.location.origin}/matches/${currentMatch.realMatchId || ''}`);
+                                                            sendDiscordWebhook(DISCORD_WEBHOOK_RESULTS, `👮 **ADMIN OVERRIDE: MEČ ZAVRŠEN**`, embed);
+                                                        }
+
                                                         if (currentMatch.nextMatchId) {
                                                             const nextIdx = newBracket.findIndex(x => x.matchId === currentMatch.nextMatchId);
                                                             if (nextIdx !== -1) {
@@ -517,6 +599,19 @@ const ManageTournament = ({ tournament, teams, onMatchUpdate }) => {
                                                         const matchIdx = newBracket.findIndex(x => x.matchId === m.matchId);
                                                         const currentMatch = newBracket[matchIdx];
                                                         currentMatch.winner = m.team2.id;
+
+                                                        // DISCORD NOTIFICATION (Force Win)
+                                                        if (sendToDiscord && DISCORD_WEBHOOK_RESULTS) {
+                                                            const winner = m.team2.name;
+                                                            const loser = m.team1 ? m.team1.name : 'Unknown';
+                                                            const embed = formatMatchResultEmbed({
+                                                                ...currentMatch,
+                                                                team1Score: currentMatch.team1Score || 0,
+                                                                team2Score: currentMatch.team2Score || 0
+                                                            }, m.team1 ? m.team1.name : 'TBD', m.team2.name, winner, `${window.location.origin}/matches/${currentMatch.realMatchId || ''}`);
+                                                            sendDiscordWebhook(DISCORD_WEBHOOK_RESULTS, `👮 **ADMIN OVERRIDE: MEČ ZAVRŠEN**`, embed);
+                                                        }
+
                                                         if (currentMatch.nextMatchId) {
                                                             const nextIdx = newBracket.findIndex(x => x.matchId === currentMatch.nextMatchId);
                                                             if (nextIdx !== -1) {
@@ -585,9 +680,63 @@ const Admin = () => {
 
     if (!session) return null;
 
-    const handleApprove = (id) => {
+    const handleApprove = async (id) => {
         if (window.confirm('Da li ste sigurni da želite da odobrite ovaj tim?')) {
+            // Find the team being approved for Discord notification
+            const teamToApprove = pendingTeams.find(t => t.id === id);
+
+            // Approve the team first
             approveTeam(id);
+
+            // Send Discord notification after approval
+            if (teamToApprove) {
+                const DISCORD_WEBHOOK_URL = import.meta.env.VITE_DISCORD_WEBHOOK_TEAMS || import.meta.env.VITE_DISCORD_WEBHOOK_URL;
+                if (DISCORD_WEBHOOK_URL) {
+                    // Calculate Team Strength
+                    let totalRank = 0;
+                    let rankCount = 0;
+                    teamToApprove.players.forEach(p => {
+                        if (p.rankTier) {
+                            totalRank += p.rankTier;
+                            rankCount++;
+                        }
+                    });
+                    const teamAvgRank = rankCount > 0 ? totalRank / rankCount : 0;
+
+                    // Calculate Relative Rank (including the newly approved team)
+                    const allTeamsStrengths = [...teams, teamToApprove].map(t => {
+                        let tTotal = 0;
+                        let tCount = 0;
+                        if (t.players) {
+                            t.players.forEach(p => {
+                                if (p.rankTier) {
+                                    tTotal += p.rankTier;
+                                    tCount++;
+                                }
+                            });
+                        }
+                        return tCount > 0 ? tTotal / tCount : 0;
+                    });
+
+                    allTeamsStrengths.sort((a, b) => b - a);
+                    const rankPosition = allTeamsStrengths.indexOf(teamAvgRank) + 1;
+                    const totalTeamsCount = allTeamsStrengths.length;
+
+                    try {
+                        const { sendDiscordWebhook, formatNewTeamEmbed, DISCORD_AVATARS } = await import('../services/discordService');
+                        const embed = formatNewTeamEmbed(teamToApprove, teamToApprove.players.length, teamAvgRank);
+                        // Enhance embed with Relative Rank info
+                        const powerRankField = embed.fields.find(f => f.name === "Power Rank");
+                        if (powerRankField) {
+                            powerRankField.value += `\n(Rank #${rankPosition} od ${totalTeamsCount})`;
+                        }
+
+                        sendDiscordWebhook(DISCORD_WEBHOOK_URL, `✅ **TIM ODOBREN**`, embed, DISCORD_AVATARS.NEW_TEAM);
+                    } catch (error) {
+                        console.error('Error sending Discord notification:', error);
+                    }
+                }
+            }
         }
     };
 
@@ -619,10 +768,10 @@ const Admin = () => {
     };
 
     return (
-        <div className="container" style={{ padding: '4rem 0' }}>
+        <div className="container" style={{ padding: '6rem 0 4rem 0' }}>
             <h1 style={{ marginBottom: '2rem' }}>Admin Panel</h1>
 
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #333' }}>
+            <div className="admin-tabs">
                 <button
                     onClick={() => setActiveTab('teams')}
                     style={{
@@ -664,6 +813,20 @@ const Admin = () => {
                     }}
                 >
                     Turniri (Manage)
+                </button>
+                <button
+                    onClick={() => setActiveTab('analytics')}
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        borderBottom: activeTab === 'analytics' ? '2px solid var(--accent)' : 'none',
+                        color: activeTab === 'analytics' ? 'var(--accent)' : '#888',
+                        padding: '1rem',
+                        fontSize: '1.2rem',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Analitika
                 </button>
             </div>
 
@@ -875,7 +1038,7 @@ const Admin = () => {
             )}
 
             {activeTab === 'tournaments' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 2fr', gap: '2rem', alignItems: 'start' }}>
+                <div className="admin-tournaments-grid">
 
                     {/* LEFT COLUMN: Create & Drafts */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -896,7 +1059,7 @@ const Admin = () => {
                                 </div>
 
                                 {/* Configuration */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="admin-config-grid">
                                     <div>
                                         <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '0.3rem' }}>Format Takmičenja</label>
                                         <select
@@ -1159,7 +1322,16 @@ const Admin = () => {
                                                 </span>
                                                 <div style={{ display: 'flex', gap: '5px' }}>
                                                     <button onClick={() => setViewingTournament(t)} className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}>Otvori</button>
-                                                    {t.status === 'draft' && <button onClick={() => publishTournament(t.id)} className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', background: '#4caf50' }}>Aktiviraj</button>}
+                                                    {t.status === 'draft' && <button onClick={async () => {
+                                                        await publishTournament(t.id);
+                                                        // Discord Notification
+                                                        if (DISCORD_WEBHOOK_TOURNAMENTS) {
+                                                            const { sendDiscordWebhook, formatNewTournamentEmbed, DISCORD_AVATARS } = await import('../services/discordService');
+                                                            const embed = formatNewTournamentEmbed(t);
+                                                            sendDiscordWebhook(DISCORD_WEBHOOK_TOURNAMENTS, "@everyone 🏆 **NOVI TURNIR JE POČEO!**", embed, DISCORD_AVATARS.NEW_TOURNAMENT);
+                                                        }
+                                                        alert("Turnir aktiviran i objavljen na Discordu!");
+                                                    }} className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', background: '#4caf50' }}>Aktiviraj</button>}
                                                     <button onClick={() => deleteTournament(t.id)} className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', background: '#f44336' }}>X</button>
                                                 </div>
                                             </div>
@@ -1186,6 +1358,10 @@ const Admin = () => {
                         )}
                     </div>
                 </div>
+            )}
+
+            {activeTab === 'analytics' && (
+                <AnalyticsDashboard />
             )}
         </div>
     );

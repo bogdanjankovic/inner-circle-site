@@ -164,6 +164,7 @@ export const getTopHeroesByPositionStratz = async (steamAccountId, position) => 
 
     } catch (error) {
         console.error('Error fetching STRATZ data:', error);
+        // Return empty array instead of throwing to prevent application crash
         return [];
     }
 };
@@ -223,8 +224,9 @@ export const getTopDotaPlusHeroes = async (steamAccountId, forceRefresh = false)
         });
 
         if (!response.ok) {
+            const errorText = await response.text().catch(() => 'No error details');
+            console.warn(`STRATZ API error: ${response.status} - ${errorText}`);
             throw new Error(`STRATZ API error: ${response.status}`);
-            throw new Error(`STRATZ API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
