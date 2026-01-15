@@ -200,14 +200,14 @@ export const getTopDotaPlusHeroes = async (steamAccountId, forceRefresh = false)
 
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
-        const cachedHeroes = heroCache.getDotaPlus(steamAccountId);
+        const cachedHeroes = await heroCache.getDotaPlus(steamAccountId);
         if (cachedHeroes) {
             console.log('Using cached Dota Plus heroes');
             return cachedHeroes;
         }
     } else {
         console.log('Force refresh - clearing Dota Plus cache');
-        heroCache.clearDotaPlus(steamAccountId);
+        await heroCache.clearDotaPlus(steamAccountId);
     }
 
     const query = getDotaPlusHeroesQuery(steamAccountId);

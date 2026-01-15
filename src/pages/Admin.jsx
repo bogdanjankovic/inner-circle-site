@@ -9,7 +9,7 @@ import AnalyticsDashboard from '../components/admin/AnalyticsDashboard';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
-import { fetchPlayerData } from '../services/dotaApi';
+import { fetchPlayerData, forceRefreshTeamPlayers } from '../services/dotaApi';
 import { sendDiscordWebhook, formatMatchResultEmbed, formatTournamentWinEmbed } from '../services/discordService';
 
 const DISCORD_WEBHOOK_URL = import.meta.env.VITE_DISCORD_WEBHOOK_URL;
@@ -647,6 +647,7 @@ const Admin = () => {
     const [viewingTournament, setViewingTournament] = useState(null);
     const [activeTab, setActiveTab] = useState('teams');
     const [session, setSession] = useState(null);
+    const [refreshingTeamId, setRefreshingTeamId] = useState(null);
 
     // Tournament Config State
     const [newTourneyName, setNewTourneyName] = useState('');
@@ -936,7 +937,32 @@ const Admin = () => {
                                             <img src={t.logo} style={{ width: '50px', height: '50px', borderRadius: '50%' }} />
                                             <span style={{ fontSize: '1.3rem', fontWeight: 'bold' }}>{t.name}</span>
                                         </div>
-                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button
+                                                onClick={async () => {
+                                                    if (refreshingTeamId === t.id) return;
+                                                    setRefreshingTeamId(t.id);
+                                                    try {
+                                                        const result = await forceRefreshTeamPlayers(t.players);
+                                                        alert(`Osveženo ${result.success} igrača. Greške: ${result.errors}`);
+                                                        window.location.reload();
+                                                    } catch (error) {
+                                                        alert('Greška pri osvežavanju: ' + error.message);
+                                                    } finally {
+                                                        setRefreshingTeamId(null);
+                                                    }
+                                                }}
+                                                className="btn"
+                                                style={{
+                                                    fontSize: '0.9rem',
+                                                    padding: '0.3rem 0.8rem',
+                                                    background: refreshingTeamId === t.id ? '#666' : '#2196F3',
+                                                    cursor: refreshingTeamId === t.id ? 'wait' : 'pointer'
+                                                }}
+                                                disabled={refreshingTeamId === t.id}
+                                            >
+                                                {refreshingTeamId === t.id ? '⏳ Osvežavam...' : '🔄 Refresh Igrača'}
+                                            </button>
                                             <button onClick={() => setEditingTeam(t)} className="btn" style={{ fontSize: '0.9rem', padding: '0.3rem 1rem' }}>Edit</button>
                                             <button onClick={() => handleDelete(t.id)} className="btn" style={{ fontSize: '0.9rem', padding: '0.3rem 1rem', background: '#f44336' }}>Delete</button>
                                         </div>

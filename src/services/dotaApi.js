@@ -216,14 +216,14 @@ export const fetchPlayerData = async (steamId, position = null, forceRefresh = f
 
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
-        const cachedData = heroCache.getOpenDota(steamId);
+        const cachedData = await heroCache.getOpenDota(steamId);
         if (cachedData) {
             console.log('Using cached OpenDota data');
             return cachedData;
         }
     } else {
         console.log('Force refresh - clearing OpenDota cache');
-        heroCache.clearOpenDota(steamId);
+        await heroCache.clearOpenDota(steamId);
     }
 
     // Basic heuristic: if length > 12 likely SteamID64
@@ -311,7 +311,7 @@ export const fetchPlayerData = async (steamId, position = null, forceRefresh = f
 
         // Cache the result
         console.log('Caching OpenDota data for future use');
-        heroCache.setOpenDota(steamId, result);
+        await heroCache.setOpenDota(steamId, result);
 
         return result;
 
@@ -343,14 +343,14 @@ export const getPositionHeroesFromStratz = async (accountId, position, steamId64
 
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
-        const cachedHeroes = heroCache.getStratz(accountId, position);
+        const cachedHeroes = await heroCache.getStratz(accountId, position);
         if (cachedHeroes) {
             console.log('Using cached STRATZ data for position:', position);
             return cachedHeroes;
         }
     } else {
         console.log('Force refresh - clearing cache for position:', position);
-        heroCache.clearStratz(accountId, position);
+        await heroCache.clearStratz(accountId, position);
     }
 
     try {
@@ -362,11 +362,11 @@ export const getPositionHeroesFromStratz = async (accountId, position, steamId64
 
         if (stratzHeroes.length > 0) {
             console.log('Caching STRATZ data for future use');
-            heroCache.setStratz(accountId, position, stratzHeroes);
+            await heroCache.setStratz(accountId, position, stratzHeroes);
             return stratzHeroes;
         } else {
             console.log('STRATZ returned 0 heroes - caching empty result');
-            heroCache.setStratz(accountId, position, stratzHeroes);
+            await heroCache.setStratz(accountId, position, stratzHeroes);
             return [];
         }
     } catch (error) {
@@ -388,12 +388,12 @@ export const clearPlayerPositionCache = async (accountId, oldPosition, newPositi
 
     // Clear old position cache
     if (oldPosition && oldPosition !== 0) {
-        heroCache.clearStratz(accountId, oldPosition);
+        await heroCache.clearStratz(accountId, oldPosition);
     }
 
     // Clear new position cache (force refresh)
     if (newPosition && newPosition !== 0) {
-        heroCache.clearStratz(accountId, newPosition);
+        await heroCache.clearStratz(accountId, newPosition);
     }
 
     console.log('Position cache cleared successfully');
@@ -424,6 +424,53 @@ export const preloadTeamHeroes = async (players) => {
     // Show cache stats
     const stats = heroCache.getStats();
     console.log('Cache stats:', stats);
+};
+
+/**
+ * Force refresh all player data for a team (clears DB cache and fetches fresh)
+ * @param {Array} players - Array of players with steamId, position, accountId
+ * @returns {Promise<Object>} Result with success/failure counts
+ */
+export const forceRefreshTeamPlayers = async (players) => {
+    console.log('=== FORCE REFRESHING TEAM PLAYERS ===');
+    console.log('Players count:', players.length);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const player of players) {
+        try {
+            const steamId = player.steamId || player.steamId64;
+            const accountId = player.accountId || (steamId && steamId.length > 12 ? steamIdToAccountId(steamId) : steamId);
+
+            if (!steamId && !accountId) {
+                console.warn('Player missing steamId/accountId, skipping');
+                continue;
+            }
+
+            console.log(`Force refreshing player: ${accountId}`);
+
+            // Clear all cache for this player (memory + DB)
+            await heroCache.clearAllForPlayer(accountId);
+
+            // Fetch fresh data
+            await fetchPlayerData(steamId, null, true);
+
+            // If player has a position, also fetch position-specific heroes
+            if (player.position && player.position !== 0) {
+                await getPositionHeroesFromStratz(accountId, player.position, steamId, true);
+            }
+
+            successCount++;
+            console.log(`Successfully refreshed player: ${accountId}`);
+        } catch (error) {
+            console.error(`Error refreshing player:`, error);
+            errorCount++;
+        }
+    }
+
+    console.log(`Force refresh complete: ${successCount} success, ${errorCount} errors`);
+    return { success: successCount, errors: errorCount };
 };
 
 // Singleton promise to prevent race conditions when multiple components mount simultaneously
