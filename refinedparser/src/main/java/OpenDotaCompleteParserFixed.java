@@ -975,9 +975,9 @@ public class OpenDotaCompleteParserFixed {
                 player.last_hits = entry.lh;
                 player.lh_t.add(entry.lh);
             }
-            if (entry.dn != null) {
-                player.denies = entry.dn;
-                player.dn_t.add(entry.dn);
+            if (entry.denies != null) {
+                player.denies = entry.denies;
+                player.dn_t.add(entry.denies);
             }
             if (entry.xp != null) {
                 player.total_xp = entry.xp;
@@ -1026,10 +1026,10 @@ public class OpenDotaCompleteParserFixed {
                 player.towers_killed = entry.towers_killed;
             }
             if (entry.roshans_killed != null) {
-                player.roshan_killed = entry.roshans_killed;
+                player.roshan_kills = entry.roshans_killed;
             }
             if (entry.obs_placed != null) {
-                player.observers_placed = entry.obs_placed;
+                player.obs_placed = entry.obs_placed;
             }
             if (entry.networth != null) {
                 player.net_worth = entry.networth;
