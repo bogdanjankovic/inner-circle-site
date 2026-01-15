@@ -173,6 +173,7 @@
   ],
   "players": [
     {
+      "hero_id": 27,
       "hero_name": "npc_dota_hero_warlock",
       "kills": 3,
       "deaths": 1,
@@ -16363,6 +16364,7 @@
       "pred_vict": false
     },
     {
+      "hero_id": 2,
       "hero_name": "npc_dota_hero_axe",
       "kills": 8,
       "deaths": 3,
@@ -32156,6 +32158,7 @@
       "pred_vict": false
     },
     {
+      "hero_id": 17,
       "hero_name": "npc_dota_hero_tiny",
       "kills": 9,
       "deaths": 1,
@@ -48027,6 +48030,7 @@
       "pred_vict": false
     },
     {
+      "hero_id": 18,
       "hero_name": "npc_dota_hero_sven",
       "kills": 11,
       "deaths": 1,
@@ -63817,6 +63821,7 @@
       "pred_vict": false
     },
     {
+      "hero_id": 53,
       "hero_name": "npc_dota_hero_shadow_demon",
       "kills": 2,
       "deaths": 5,
@@ -79959,6 +79964,7 @@
       "pred_vict": false
     },
     {
+      "hero_id": 86,
       "hero_name": "npc_dota_hero_kunkka",
       "kills": 1,
       "deaths": 7,
@@ -95781,6 +95787,7 @@
       "pred_vict": false
     },
     {
+      "hero_id": 0,
       "hero_name": "npc_dota_hero_stormspirit",
       "kills": 4,
       "deaths": 4,
@@ -111533,6 +111540,7 @@
       "pred_vict": false
     },
     {
+      "hero_id": 96,
       "hero_name": "npc_dota_hero_centaur",
       "kills": 2,
       "deaths": 7,
@@ -127326,6 +127334,7 @@
       "pred_vict": false
     },
     {
+      "hero_id": 70,
       "hero_name": "npc_dota_hero_rubick",
       "kills": 1,
       "deaths": 11,
@@ -143712,6 +143721,7 @@
       "pred_vict": false
     },
     {
+      "hero_id": 19,
       "hero_name": "npc_dota_hero_furion",
       "kills": 2,
       "deaths": 4,

@@ -77,6 +77,24 @@ public class OpenDotaCompleteParserFixed {
         public Integer player_slot;
         public Integer facet_hero_id;
         
+        // Hero ID mapping constants
+        private static final Map<String, Integer> HERO_ID_MAP = Map.ofEntries(
+            Map.entry("npc_dota_hero_warlock", 27),
+            Map.entry("npc_dota_hero_axe", 2),
+            Map.entry("npc_dota_hero_tiny", 17),
+            Map.entry("npc_dota_hero_sven", 18),
+            Map.entry("npc_dota_hero_shadow_demon", 53),
+            Map.entry("npc_dota_hero_kunkka", 86),
+            Map.entry("npc_dota_hero_storm_spirit", 37),
+            Map.entry("npc_dota_hero_centaur", 96),
+            Map.entry("npc_dota_hero_rubick", 70),
+            Map.entry("npc_dota_hero_furion", 19)
+        );
+        
+        public static Integer getHeroId(String heroName) {
+            return HERO_ID_MAP.getOrDefault(heroName, 0);
+        }
+        
         // Final stats
         public Integer kills;
         public Integer deaths;
@@ -520,12 +538,19 @@ public class OpenDotaCompleteParserFixed {
             player.account_id = entry.value;
             player.hero_id = entry.hero_id;
             player.hero_name = entry.key;
-            player.team = entry.team;
             player.player_slot = entry.player_slot;
+            
+            // Assign team based on slot (0-4=Radiant, 5-9=Dire)
+            player.team = entry.player_slot < 5 ? 2 : 3;
             
             // Add facet selection if available
             if (entry.facet_hero_id != null) {
                 player.facet_hero_id = entry.facet_hero_id;
+            }
+            
+            // Initialize team for all players to prevent null pointer
+            if (player.team == null) {
+                player.team = entry.player_slot < 5 ? 2 : 3;
             }
             
             if (entry.key != null) {
@@ -554,6 +579,7 @@ public class OpenDotaCompleteParserFixed {
                     CompletePlayer player = matchData.players.get(i);
                     if (player.hero_name == null || player.hero_name.isEmpty()) {
                         player.hero_name = entry.targetname;
+                        player.hero_id = CompletePlayer.getHeroId(entry.targetname);
                         heroToSlot.put(entry.targetname, i);
                         heroSlot = i;
                         break;

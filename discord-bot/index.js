@@ -106,16 +106,12 @@ async function processBracketUpdate(tournament) {
 
 async function createMatchChannels(match, tournamentName) {
     const guild = await client.guilds.fetch(GUILD_ID);
+    const adminIds = (getEnv('ADMIN_DISCORD_IDS') || '').split(',').map(id => id.trim()).filter(id => id);
 
     const teams = [match.team1, match.team2];
 
     for (const team of teams) {
         const channelName = `🔊 ${team.name}`;
-
-        // Find player Discord IDs
-        const discordIds = team.players
-            .map(p => p.discord_id)
-            .filter(id => id); // Only those with ID
 
         const overwrites = [
             {
@@ -124,16 +120,56 @@ async function createMatchChannels(match, tournamentName) {
             },
             {
                 id: client.user.id, // The Bot
-                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.Connect],
+                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.Connect, PermissionFlagsBits.MoveMembers],
             }
         ];
 
-        // Add specific players
-        discordIds.forEach(dId => {
+        // Add Website Admins (Full access to all channels)
+        adminIds.forEach(adminId => {
             overwrites.push({
-                id: dId,
-                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak],
+                id: adminId,
+                allow: [
+                    PermissionFlagsBits.ViewChannel,
+                    PermissionFlagsBits.Connect,
+                    PermissionFlagsBits.ManageChannels,
+                    PermissionFlagsBits.MoveMembers,
+                    PermissionFlagsBits.MuteMembers,
+                    PermissionFlagsBits.DeafenMembers
+                ],
             });
+        });
+
+        // Add Players and Team Captains
+        team.players.forEach(p => {
+            if (!p.discord_id) return;
+
+            const isCaptain = p.isCaptain || p.is_captain || p.role === 'captain';
+
+            if (isCaptain) {
+                // Captains get "Modify Channel" type permissions
+                overwrites.push({
+                    id: p.discord_id,
+                    allow: [
+                        PermissionFlagsBits.ViewChannel,
+                        PermissionFlagsBits.Connect,
+                        PermissionFlagsBits.Speak,
+                        PermissionFlagsBits.ManageChannels, // Modify channel (name, limit etc)
+                        PermissionFlagsBits.MoveMembers,   // Drag people
+                        PermissionFlagsBits.MuteMembers,
+                        PermissionFlagsBits.PrioritySpeaker
+                    ],
+                });
+            } else {
+                // Regular players
+                overwrites.push({
+                    id: p.discord_id,
+                    allow: [
+                        PermissionFlagsBits.ViewChannel,
+                        PermissionFlagsBits.Connect,
+                        PermissionFlagsBits.Speak
+                    ],
+                });
+            }
         });
 
         const channel = await guild.channels.create({
@@ -143,7 +179,7 @@ async function createMatchChannels(match, tournamentName) {
             permissionOverwrites: overwrites
         });
 
-        console.log(`✅ Kreiran kanal: ${channelName} (Dozvole postavljene za ${discordIds.length} igrača)`);
+        console.log(`✅ Kreiran kanal: ${channelName} (Admini: ${adminIds.length}, Igrači: ${team.players.length})`);
     }
 }
 
