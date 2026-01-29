@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTournament } from '../context/TournamentContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import ChannelingLoader from '../components/ui/ChannelingLoader';
 
 const SeriesCard = ({ series, teams, onExpand, expanded }) => {
     const navigate = useNavigate();
@@ -158,7 +159,8 @@ const SeriesCard = ({ series, teams, onExpand, expanded }) => {
 };
 
 const Results = () => {
-    const { tournaments, matchHistory, teams } = useTournament();
+    const navigate = useNavigate();
+    const { tournaments, matchHistory, teams, isLoading } = useTournament();
     const [expandedSeries, setExpandedSeries] = useState(null);
 
     // Filter matches that are NOT part of any tournament (Scrims)
@@ -184,7 +186,11 @@ const Results = () => {
             <h1 style={{ marginBottom: '3rem', textAlign: 'center', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '2px' }}>Rezultati & Arhiva</h1>
 
             {/* 1. Active Tournaments */}
-            {tournaments.filter(t => t.status === 'active').map(tournament => (
+            {isLoading ? (
+                <div style={{ marginBottom: '4rem' }}>
+                    <ChannelingLoader message="Učitavanje turnira..." />
+                </div>
+            ) : tournaments.filter(t => t.status === 'active').map(tournament => (
                 <div key={tournament.id} style={{ marginBottom: '4rem' }}>
                     <h2 style={{ borderBottom: '2px solid var(--accent)', paddingBottom: '0.5rem', marginBottom: '1.5rem' }}>
                         U Toku: {tournament.name}
@@ -208,7 +214,7 @@ const Results = () => {
             ))}
 
             {/* 2. Archived Tournaments */}
-            {tournaments.filter(t => t.status === 'archived').map(tournament => (
+            {!isLoading && tournaments.filter(t => t.status === 'archived').map(tournament => (
                 <div key={tournament.id} style={{ marginBottom: '4rem' }}>
                     <h2 style={{ borderBottom: '2px solid #666', paddingBottom: '0.5rem', marginBottom: '1.5rem', color: '#aaa' }}>
                         Arhiva: {tournament.name}
@@ -232,23 +238,49 @@ const Results = () => {
                 <h2 style={{ borderBottom: '1px solid #333', paddingBottom: '0.5rem', marginBottom: '1.5rem', color: '#888' }}>
                     Prijateljski Mečevi / Scrims
                 </h2>
-                {scrimMatches.length === 0 ? <p style={{ color: '#666' }}>Nema prijateljskih mečeva.</p> : (
+                {isLoading ? (
+                    <ChannelingLoader message="Učitavanje mečeva..." />
+                ) : scrimMatches.length === 0 ? <p style={{ color: '#666' }}>Nema prijateljskih mečeva.</p> : (
                     <div style={{ display: 'grid', gap: '1rem' }}>
                         {scrimMatches.map(match => {
                             const winnerName = match.winner === 'Radiant' ? (match.radiantTeamName || 'Radiant') : (match.direTeamName || 'Dire');
                             const dateStr = new Date(match.timestamp).toLocaleDateString();
 
                             return (
-                                <div key={match.matchId} style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Link
+                                    key={match.matchId}
+                                    to={`/matches/${match.matchId}`}
+                                    style={{
+                                        padding: '1rem',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        borderRadius: '4px',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        cursor: 'pointer',
+                                        border: '1px solid transparent',
+                                        transition: 'all 0.2s',
+                                        textDecoration: 'none',
+                                        color: 'inherit'
+                                    }}
+                                    onMouseEnter={e => {
+                                        e.currentTarget.style.borderColor = 'var(--accent)';
+                                        e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.borderColor = 'transparent';
+                                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                                    }}
+                                >
                                     <div>
                                         <div style={{ fontWeight: 'bold' }}>{match.radiantTeamName || 'Radiant'} vs {match.direTeamName || 'Dire'}</div>
-                                        <div style={{ fontSize: '0.8rem', color: '#aaa' }}>{dateStr}</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#aaa' }}>{new Date(match.timestamp * 1000).toLocaleDateString()}</div>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
                                         <div style={{ color: '#4caf50', fontWeight: 'bold' }}>Pobednik: {winnerName}</div>
                                         <div style={{ fontSize: '0.8rem', color: '#666' }}>ID: {match.matchId}</div>
                                     </div>
-                                </div>
+                                </Link>
                             )
                         })}
                     </div>

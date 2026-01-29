@@ -81,8 +81,66 @@ const AdminUpload = () => {
 
     const handleParse = () => {
         try {
-            const data = JSON.parse(jsonInput);
-            if (!data.matchId || !data.players) throw new Error("Invalid format");
+            let data = JSON.parse(jsonInput);
+
+            // --- Normalization for OpenDota / New Parser Format ---
+
+            // 1. Match ID and Timestamp
+            if (data.matchId === undefined && data.match_id !== undefined) data.matchId = data.match_id;
+            if (!data.timestamp && data.start_time) data.timestamp = data.start_time;
+
+            // Fix for local replays having matchId = 0
+            if (data.matchId === 0) {
+                // It's valid, but maybe generate a pseudo-ID to avoid collision if they upload multiple?
+                // For now, keep 0 or generate from timestamp if user prefers unique IDs. in database 0 might be bad.
+                // Let's generate a placeholder if 0
+                data.matchId = data.timestamp ? Number(data.timestamp) : Math.floor(Date.now() / 1000);
+            }
+
+            // Fallback if still missing
+            if (data.matchId === undefined) {
+                data.matchId = Math.floor(Date.now() / 1000);
+            }
+
+            if (!data.players) throw new Error("Invalid format: Missing 'players' array");
+
+            // 2. Scores from players if missing
+            if (data.radiantScore === undefined) {
+                // Calculate if missing
+                const rScore = data.players.filter(p => (p.player_slot !== undefined ? p.player_slot < 128 : p.team === 'Radiant')).reduce((a, b) => a + (b.kills || 0), 0);
+                const dScore = data.players.filter(p => (p.player_slot !== undefined ? p.player_slot >= 128 : p.team === 'Dire')).reduce((a, b) => a + (b.kills || 0), 0);
+                data.radiantScore = rScore;
+                data.direScore = dScore;
+            }
+
+            // 3. Normalize Players (Team, steamId, heroId)
+            data.players = data.players.map(p => {
+                // Determine team
+                let team = p.team;
+                if (!team && p.player_slot !== undefined) {
+                    team = p.player_slot < 128 ? 'Radiant' : 'Dire';
+                }
+
+                return {
+                    ...p,
+                    team: team,
+                    steamId: p.steamId || p.steamid || p.account_id?.toString(),
+                    heroId: p.heroId || p.hero_id,
+                    name: p.name || p.personaname
+                };
+            });
+
+            // 4. Draft normalization if needed
+            if ((!data.picks_bans || data.picks_bans.length === 0) && data.draft_timings) {
+                data.picks_bans = data.draft_timings.map(dt => ({
+                    is_pick: dt.pick,
+                    hero_id: dt.hero_id,
+                    team: dt.draft_active_team,
+                    order: dt.draft_order
+                }));
+            }
+            // ----------------------------------------
+
             setParsedData(data);
             setStage('mapping');
             setError(null);
@@ -135,11 +193,43 @@ const AdminUpload = () => {
             const registeredId = playerMapping[p.steamId || p.name];
             const facetInfo = getFacetInfo(p.heroId, p.facet || 0);
 
+            // Update name matches registered user if mapped
+            let finalName = p.name;
+            let finalTournamentId = registeredId || null;
+
+            if (registeredId) {
+                const teamPlayers = getTeamPlayers(p.team === 'Radiant' ? radiantTeamId : direTeamId);
+                const regPlayer = teamPlayers.find(tp => tp.steamId === registeredId);
+                if (regPlayer) {
+                    finalName = regPlayer.personaName || regPlayer.name || p.name;
+                }
+            }
+
+            // Normalize heatmap positions (lane_pos Map -> Array [[t,x,y]])
+            let normalizedPositions = [];
+            if (p.lane_pos && typeof p.lane_pos === 'object' && !Array.isArray(p.lane_pos)) {
+                // Convert Map<Time, Map<X, Y>> to [[t, x, y]]
+                Object.entries(p.lane_pos).forEach(([time, posMap]) => {
+                    // posMap is { "x": y }
+                    if (posMap && typeof posMap === 'object') {
+                        Object.entries(posMap).forEach(([x, y]) => {
+                            normalizedPositions.push([Number(time), Number(x), Number(y)]);
+                        });
+                    }
+                });
+            } else if (Array.isArray(p.lane_pos)) {
+                normalizedPositions = p.lane_pos;
+            } else if (Array.isArray(p.positions)) {
+                normalizedPositions = p.positions;
+            }
+
             return {
                 ...p,
-                tournamentPlayerId: registeredId || null,
+                name: finalName,
+                tournamentPlayerId: finalTournamentId,
                 facetTitle: facetInfo.title,
-                facetIcon: facetInfo.icon
+                facetIcon: facetInfo.icon,
+                positions: normalizedPositions
             };
         });
 
@@ -200,13 +290,13 @@ const AdminUpload = () => {
                 if (bracketMatch) {
                     const currentT1Score = bracketMatch.team1Score || 0;
                     const currentT2Score = bracketMatch.team2Score || 0;
-
+    
                     // Identify which bracket team acts as Radiant/Dire in this specific match upload
                     const isTeam1InBracketRadiant = (bracketMatch.team1 && bracketMatch.team1.id == radiantTeamId);
-
+    
                     // Determine which bracket team won this specific game based on upload winner
                     const didBracketTeam1Win = finalMatch.winner === 'Radiant' ? isTeam1InBracketRadiant : !isTeam1InBracketRadiant;
-
+    
                     // Update score for display (add the win from this game)
                     discordStats.team1Score = currentT1Score + (didBracketTeam1Win ? 1 : 0);
                     discordStats.team2Score = currentT2Score + (!didBracketTeam1Win ? 1 : 0);

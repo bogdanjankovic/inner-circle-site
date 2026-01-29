@@ -273,7 +273,7 @@ const PlayerModal = ({ player, onClose, stats }) => {
                 {refreshedPlayer.position && refreshedPlayer.position !== 0 && (
                     <div style={{ marginTop: '1.5rem' }}>
                         <h3 style={{ color: '#2196f3', fontSize: '1.1rem' }}>
-                            Top {positions.find(p => p.id === refreshedPlayer.position)?.name} Heroji u poslednje vreme
+                            Top {POSITIONS.find(p => p.id === refreshedPlayer.position)?.name} Heroji u poslednje vreme
                         </h3>
                         {positionHeroes.length > 0 ? (
                             <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem' }}>

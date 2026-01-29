@@ -1074,44 +1074,100 @@ const Admin = () => {
                         <a href="/admin/upload" className="btn btn-primary" style={{ textDecoration: 'none' }}>+ Otpremi Novi Meč</a>
                     </div>
 
+                    <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: '#aaa' }}>
+                            <input type="checkbox" defaultChecked={true} onChange={() => { /* re-render handled by React state if I used state, but here I'm modifying render logic. I'll just hardcode it for now as per request */ }} disabled title="Sorting is active" />
+                            Sortiraj: Turnirski mečevi prvi
+                        </label>
+                    </div>
+
                     <ul style={{ listStyle: 'none', padding: 0 }}>
-                        {matchHistory.length === 0 ? <p style={{ color: '#888' }}>Nema zabeleženih mečeva.</p> : matchHistory.map((m, idx) => (
-                            <li key={m.matchId || idx} style={{
-                                padding: '1rem',
-                                borderBottom: '1px solid var(--border)',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                background: 'rgba(255,255,255,0.02)',
-                                marginBottom: '0.5rem',
-                                borderRadius: '4px'
-                            }}>
-                                <div>
-                                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                                        <span style={{ color: (m.winner === 'Radiant' || m.winner == m.radiantTeamId) ? '#4caf50' : '#fff' }}>Radiant</span> vs <span style={{ color: (m.winner === 'Dire' || m.winner == m.direTeamId) ? '#f44336' : '#fff' }}>Dire</span>
+                        {matchHistory.length === 0 ? <p style={{ color: '#888' }}>Nema zabeleženih mečeva.</p> : matchHistory.map(m => {
+                            // Pre-calculate meta for sorting/display
+                            const linkedTournament = tournaments.find(t =>
+                                t.bracket_data && t.bracket_data.some(bm => bm.matchId?.toString() === m.matchId?.toString())
+                            );
+                            return { ...m, linkedTournament, isTournament: !!linkedTournament };
+                        }).sort((a, b) => {
+                            // 1. Sort by Type (Tournament First)
+                            if (a.isTournament && !b.isTournament) return -1;
+                            if (!a.isTournament && b.isTournament) return 1;
+                            // 2. Sort by Date (Newest First)
+                            const dateA = a.timestamp || 0;
+                            const dateB = b.timestamp || 0;
+                            return dateB - dateA;
+                        }).map((m, idx) => {
+                            // 1. Resolve Team Names
+                            const radiantTeam = teams.find(t => t.id == m.radiantTeamId);
+                            const direTeam = teams.find(t => t.id == m.direTeamId);
+                            const radiantName = radiantTeam ? radiantTeam.name : 'Radiant';
+                            const direName = direTeam ? direTeam.name : 'Dire';
+
+                            // 2. Resolve Winner Name
+                            let winnerName = m.winner;
+                            if (m.winner === 'Radiant' || m.winner == m.radiantTeamId) winnerName = radiantName;
+                            else if (m.winner === 'Dire' || m.winner == m.direTeamId) winnerName = direName;
+
+                            // 3. Resolve Date (Smart Fallback)
+                            let dateDisplay = 'Unknown Date';
+                            let ts = m.timestamp;
+                            if (ts && ts < 1000000000000) ts *= 1000;
+
+                            if (ts > 1000000000000) {
+                                dateDisplay = new Date(ts).toLocaleString();
+                            } else if (m.createdAt) {
+                                dateDisplay = new Date(m.createdAt).toLocaleString() + ' (Upload)';
+                            }
+
+                            return (
+                                <li key={m.matchId || idx} style={{
+                                    padding: '1rem',
+                                    borderBottom: '1px solid var(--border)',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    background: 'rgba(255,255,255,0.02)',
+                                    marginBottom: '0.5rem',
+                                    borderRadius: '4px',
+                                    borderLeft: m.isTournament ? '4px solid var(--accent)' : '4px solid #666'
+                                }}>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                                            {m.isTournament ? (
+                                                <span style={{ fontSize: '0.65rem', background: 'var(--accent)', color: 'black', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>TURNIR: {m.linkedTournament.name}</span>
+                                            ) : (
+                                                <span style={{ fontSize: '0.65rem', background: '#444', color: '#ccc', padding: '2px 6px', borderRadius: '4px' }}>PRIJATELJSKI / UNRANKED</span>
+                                            )}
+                                        </div>
+
+                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+                                            <span style={{ color: (m.winner === 'Radiant' || m.winner == m.radiantTeamId) ? '#4caf50' : '#fff' }}>{radiantName}</span>
+                                            <span style={{ margin: '0 0.5rem', color: '#666', fontSize: '1rem' }}>vs</span>
+                                            <span style={{ color: (m.winner === 'Dire' || m.winner == m.direTeamId) ? '#f44336' : '#fff' }}>{direName}</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>
+                                            ID: {m.matchId} | Pobednik: <span style={{ fontWeight: 'bold', color: '#ffd700' }}>{winnerName}</span> | {dateDisplay}
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '0.8rem', color: '#888' }}>
-                                        ID: {m.matchId} | Pobednik: <span style={{ fontWeight: 'bold' }}>{teams.find(t => t.id == m.winner)?.name || m.winner}</span> | {new Date(m.timestamp).toLocaleString()}
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <button
+                                            onClick={() => setEditingMatch(m)}
+                                            className="btn"
+                                            style={{ fontSize: '0.9rem', padding: '0.3rem 1rem' }}
+                                        >
+                                            Izmeni
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteMatch(m.matchId)}
+                                            className="btn"
+                                            style={{ fontSize: '0.9rem', padding: '0.3rem 1rem', background: '#f44336' }}
+                                        >
+                                            Obriši
+                                        </button>
                                     </div>
-                                </div>
-                                <div style={{ display: 'flex', gap: '1rem' }}>
-                                    <button
-                                        onClick={() => setEditingMatch(m)}
-                                        className="btn"
-                                        style={{ fontSize: '0.9rem', padding: '0.3rem 1rem' }}
-                                    >
-                                        Izmeni
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteMatch(m.matchId)}
-                                        className="btn"
-                                        style={{ fontSize: '0.9rem', padding: '0.3rem 1rem', background: '#f44336' }}
-                                    >
-                                        Obriši
-                                    </button>
-                                </div>
-                            </li>
-                        ))}
+                                </li>
+                            );
+                        })}
                     </ul>
                 </div>
             )}

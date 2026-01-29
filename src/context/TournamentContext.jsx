@@ -12,6 +12,7 @@ export const TournamentProvider = ({ children }) => {
     // In-memory (not DB) for now, as tournaments are transient in this logic
     const [tournaments, setTournaments] = useState([]);
     const [activeTournament, setActiveTournament] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     // Initial Fetch
     useEffect(() => {
@@ -43,13 +44,16 @@ export const TournamentProvider = ({ children }) => {
                     matchId: m.match_id, // Ensure ID consistency
                     winner: m.winner, // Use top-level column which is editable
                     radiantTeamId: m.radiant_team_id, // Use top-level column
-                    direTeamId: m.dire_team_id // Use top-level column
+                    direTeamId: m.dire_team_id, // Use top-level column
+                    createdAt: m.created_at // Use creation date as fallback
                 }));
                 setMatchHistory(flatMatches);
                 recalculateStats(flatMatches, teamsData, fetchedTournaments);
             }
         } catch (error) {
             console.error("Error fetching data:", error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -555,6 +559,7 @@ export const TournamentProvider = ({ children }) => {
             tournamentStats, processMatchStats,
             matchHistory,
             deleteMatch,
+            isLoading,
             dispatch
         }}>
             {children}

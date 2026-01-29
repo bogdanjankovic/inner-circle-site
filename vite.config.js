@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/stratz': {
+        target: 'https://api.stratz.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/stratz/, '/graphql'),

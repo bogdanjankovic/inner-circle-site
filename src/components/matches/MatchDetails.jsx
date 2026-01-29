@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useTournament } from '../../context/TournamentContext';
 import './MatchDetails.css';
 import { HeroImage } from '../ui/HeroTooltip';
+import ChannelingLoader from '../ui/ChannelingLoader';
 
 const HERO_IMG_BASE = '/assets/images/dota/heroes/';
 const ITEM_IMG_BASE = '/assets/images/dota/items/';
@@ -46,9 +47,9 @@ const HERO_NAME_OVERRIDES = {
 };
 
 const ITEM_NAME_OVERRIDES = {
-    'branches': 'branches', // Explicitly keep as branches (match branches.png)
-    'ward_sentry': 'ward_sentry',
-    'ward_observer': 'ward_observer',
+    'branches': 'ironwood_branch',
+    'ward_observer': 'observer_ward',
+    'ward_sentry': 'sentry_ward',
     'travel_boots': 'travel_boots',
     'travel_boots_2': 'travel_boots_2',
     'blink': 'blink',
@@ -688,7 +689,7 @@ const HeroRenderStack = ({ players, team }) => {
 
 const MatchDetails = ({ match: propMatch }) => {
     const { id } = useParams();
-    const { teams, matchHistory } = useTournament();
+    const { teams, matchHistory, isLoading } = useTournament();
     const [activeTab, setActiveTab] = React.useState('overview');
 
     // 1. Resolve Match Source
@@ -696,6 +697,14 @@ const MatchDetails = ({ match: propMatch }) => {
 
     // 2. Process Data (Memoized)
     const match = useMemo(() => processMatchData(rawMatch), [rawMatch]);
+
+    if (isLoading) {
+        return (
+            <div className="match-details-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+                <ChannelingLoader message="Učitavanje podataka o meču..." />
+            </div>
+        );
+    }
 
     if (!match) return <div className="loading-state">Match not found (ID: {id})</div>;
 

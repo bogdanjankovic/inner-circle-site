@@ -16,6 +16,8 @@ import AdminUpload from './pages/AdminUpload';
 import Login from './pages/Login';
 import ShuffleRegistration from './pages/ShuffleRegistration';
 import MatchDetails from './components/matches/MatchDetails';
+import TestMatchDetails from './components/matches/TestMatchDetails';
+import TestAdminUpload from './pages/TestAdminUpload';
 
 import SEOHead from './components/seo/SEOHead';
 
@@ -46,6 +48,8 @@ function App() {
           <Route path="/results" element={<Results />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/upload" element={<AdminUpload />} />
+          <Route path="/admin/test-upload" element={<TestAdminUpload />} />
+          <Route path="/test-match/:id" element={<TestMatchDetails />} />
           <Route path="/shuffle" element={<ShuffleRegistration />} />
           <Route path="/login" element={<Login />} />
         </Routes>

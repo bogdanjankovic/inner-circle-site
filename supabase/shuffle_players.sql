@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS shuffle_players (
     assigned_position INTEGER, -- Set when team is formed
     assigned_team_id UUID, -- Set when team is formed  
     status TEXT DEFAULT 'pending', -- pending, approved, assigned, rejected
+    discord_id TEXT, -- Discord User ID for notifications/voice
+    trophies JSONB DEFAULT '[]'::JSONB, -- Historical wins
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
