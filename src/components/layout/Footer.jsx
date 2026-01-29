@@ -13,7 +13,7 @@ const Footer = () => {
                     <Link to="/about" style={{ color: 'var(--text-muted)' }}>O nama</Link>
                     <Link to="/rules" style={{ color: 'var(--text-muted)' }}>Pravila</Link>
                     <Link to="/organization" style={{ color: 'var(--text-muted)' }}>Organizacija</Link>
-                    <a href="https://discord.gg/h9WpJHGG" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)' }}>Discord</a>
+                    <a href="https://discord.gg/NkGtPQK6E9" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)' }}>Discord</a>
                 </div>
 
                 <p style={{ fontSize: '0.8rem', color: '#555' }}>

@@ -142,7 +142,7 @@ const Home = () => {
 
             {/* Floating Discord Button */}
             <a
-                href="https://discord.gg/h9WpJHGG"
+                href="https://discord.gg/NkGtPQK6E9"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
