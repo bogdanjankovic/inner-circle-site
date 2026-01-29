@@ -7,6 +7,7 @@ import { HeroImage } from '../ui/HeroTooltip';
 const HERO_IMG_BASE = '/assets/images/dota/heroes/';
 const ITEM_IMG_BASE = '/assets/images/dota/items/';
 const ABILITY_IMG_BASE = '/assets/images/dota/abilities/';
+const VALVE_RENDER_BASE = 'https://cdn.steamstatic.com/apps/dota2/videos/dota_react/heroes/renders/';
 
 // Asset Manifest Cache
 let ASSET_MANIFEST = null;
@@ -16,63 +17,93 @@ fetch('/assets/dota_manifest.json')
     .then(res => res.json())
     .then(data => {
         ASSET_MANIFEST = data;
-        // console.log('Asset Manifest Loaded', data);
     })
     .catch(err => console.warn('Failed to load asset manifest', err));
 
+// --- Normalization Helpers ---
+
+const HERO_NAME_OVERRIDES = {
+    'emberspirit': 'ember_spirit',
+    'centaur': 'centaur',
+    'treant': 'treant',
+    'magnataur': 'magnataur',
+    'windrunner': 'windrunner',
+    'necrolyte': 'necrophos',
+    'skeleton_king': 'wraith_king',
+    'rattletrap': 'clockwerk',
+    'zuus': 'zeus',
+    'doom_bringer': 'doom',
+    'obsidian_destroyer': 'outworld_destroyer',
+    'shadow_demon': 'shadow_demon',
+    'shredder': 'timbersaw',
+    'wisp': 'io',
+    'magnus': 'magnataur',
+    'furion': 'nature_prophet',
+    'windranger': 'windrunner',
+    'windrunner': 'windrunner',
+    'wind_ranger': 'windrunner',
+    'wind_runner': 'windrunner'
+};
+
+const ITEM_NAME_OVERRIDES = {
+    'branches': 'branches', // Explicitly keep as branches (match branches.png)
+    'ward_sentry': 'ward_sentry',
+    'ward_observer': 'ward_observer',
+    'travel_boots': 'travel_boots',
+    'travel_boots_2': 'travel_boots_2',
+    'blink': 'blink',
+    'sphere': 'sphere'
+};
+
+const normalizeName = (name) => {
+    if (!name) return null;
+    let clean = name;
+    if (clean.startsWith('item_')) clean = clean.replace('item_', '');
+    if (clean.startsWith('npc_dota_hero_')) clean = clean.replace('npc_dota_hero_', '');
+    clean = clean.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+    clean = clean.replace(/_+/g, '_');
+    if (clean.startsWith('_')) clean = clean.slice(1);
+    if (clean.endsWith('_')) clean = clean.slice(0, -1);
+    if (ITEM_NAME_OVERRIDES[clean]) return ITEM_NAME_OVERRIDES[clean];
+    return clean;
+};
+
+const normalizeHeroName = (name) => {
+    if (!name) return null;
+    let lower = normalizeName(name);
+    if (HERO_NAME_OVERRIDES[lower]) return HERO_NAME_OVERRIDES[lower];
+    return lower;
+};
+
 const findBestMatch = (name, type) => {
-    // type: 'heroes', 'items', 'abilities'
-    if (!name || !ASSET_MANIFEST || !ASSET_MANIFEST[type]) return name; // Fallback to raw/normalized name
+    if (!name || !ASSET_MANIFEST || !ASSET_MANIFEST[type]) return name;
+    const files = ASSET_MANIFEST[type];
+    const target = name.toLowerCase();
 
-    const files = ASSET_MANIFEST[type]; // array of filenames "antimage.png"
-    const target = name.toLowerCase(); // keys are snake_case
-
-    // 1. Exact match (name + .png)
+    // Exact match (.png)
     if (files.includes(`${target}.png`)) return target;
 
-    // 2. Exact match (name) - sometimes parser has mismatch
-    // 3. Heuristics
-    // "windrunner_focusfire" vs "focus_fire.png"
-    // "empty_bottle" vs "bottle.png"
-
-    // Heuristic A: Substring match (Target contains File OR File contains Target)
-    // "empty_bottle" contains "bottle". -> Match!
-    // But "bottle" does NOT contain "empty_bottle".
-    // We prefer the *Asset* that is contained in the *Target*?
-    // "empty_bottle" (Parser) -> "bottle" (Asset). Yes.
-
-    // Heuristic B: Suffix Match (windrunner_focusfire -> focusfire)
-    // Remove "windrunner_" prefix?
-    // Check if any asset is a suffix of target?
-    // "focus_fire" is NOT strictly suffix of "windrunner_focusfire" due to underscore.
-
-    // Heuristic C: Fuzzy Score (Simple common chars or stripped)
+    // Fallback for Windranger/Windrunner
+    if (target === 'windranger' && files.includes('windrunner.png')) return 'windrunner';
+    if (target === 'windrunner' && files.includes('windranger.png')) return 'windranger';
+    if (target.includes('wind') && target.includes('ranger') && files.includes('windrunner.png')) return 'windrunner';
 
     let bestMatch = null;
     let maxScore = -1;
-
     const targetClean = target.replace(/[^a-z0-9]/g, '');
 
     for (const file of files) {
         const fileBase = file.replace('.png', '');
         const fileClean = fileBase.replace(/[^a-z0-9]/g, '');
-
-        // Perfect match ignoring separators
         if (targetClean === fileClean) return fileBase;
-
-        // Check containment (bottle inside empty_bottle)
         if (targetClean.includes(fileClean)) {
-            // Score by length ratio (closer length = better)
-            const score = fileClean.length / targetClean.length; // 0.0 - 1.0
+            const score = fileClean.length / targetClean.length;
             if (score > maxScore) {
                 maxScore = score;
                 bestMatch = fileBase;
             }
         }
-
-        // Also check if Target is inside File (unlikely for "empty_bottle" -> "bottle" direction but possible)
     }
-
     return bestMatch || target;
 };
 
@@ -84,130 +115,259 @@ const formatNumber = (num) => {
     return num.toString();
 };
 
-// Specific overrides for heroes where Parser output (lowercase, no prefix) mismatch Asset filename
-const HERO_NAME_OVERRIDES = {
-    'emberspirit': 'ember_spirit',
-    'centaur': 'centaur', // Sometimes centaur_warrunner? Checked download: centaur.png
-    'treant': 'treant',   // treant_protector? Download: treant.png
-    'magnataur': 'magnataur', // magnus? Download: magnataur.png
-    // Add others if reported missing
+const processMatchData = (rawMatch) => {
+    if (!rawMatch) return null;
+    const processed = { ...rawMatch };
+
+    // 1. Calculate Scores if missing
+    if (processed.radiantScore === undefined || processed.radiantScore === 0) {
+        let rScore = 0, dScore = 0;
+        (processed.players || []).forEach(p => {
+            const kills = p.kills || 0;
+            const slot = p.player_slot !== undefined ? p.player_slot : (p.team === 'Radiant' ? 0 : 128);
+            if (slot < 128) rScore += kills;
+            else dScore += kills;
+        });
+        processed.radiantScore = rScore;
+        processed.direScore = dScore;
+    }
+
+    // 2. Normalize Players
+    processed.players = (processed.players || []).map(p => {
+        // Hero Name Handling
+        let heroName = p.heroName || p.hero_name;
+        if (heroName && heroName.startsWith('npc_dota_hero_')) {
+            heroName = heroName.replace('npc_dota_hero_', '');
+        }
+
+        // Determine Team (Use parser's team if available, otherwise fallback to player_slot)
+        let team = p.team; // Parser already provides "Radiant" or "Dire"
+        if (!team && p.player_slot !== undefined) {
+            team = (p.player_slot < 128) ? 'Radiant' : 'Dire';
+        }
+
+        // Ability Build (Transform timeline to array for grid if needed, or keep timeline)
+        // We will store both formats to be versatile
+        let abilityTimeline = p.ability_upgrades || [];
+        let abilityBuild = [];
+
+        if (abilityTimeline.length > 0) {
+            // Populate linear ability build array (levels 1-30)
+            abilityTimeline.forEach(u => {
+                if (u.level > 0 && u.level <= 30) {
+                    abilityBuild[u.level - 1] = u.ability;
+                }
+            });
+        } else if (p.ability_build && Array.isArray(p.ability_build)) {
+            // Fallback: Use existing flat array from parser
+            abilityBuild = [...p.ability_build];
+        }
+
+        // Wards (Combine logs)
+        // Note: parsed match might separate logs. We map p.obs_placed etc.
+
+        return {
+            ...p,
+            steamId: p.steamId || p.steamid || p.account_id?.toString(),
+            heroName: heroName,
+            team: team,
+            heroId: p.heroId || p.hero_id,
+            level: p.level || p.lvl,
+            kills: p.kills || 0,
+            deaths: p.deaths || 0,
+            assists: p.assists || 0,
+            lastHits: p.lastHits || p.last_hits || 0,
+            denies: p.denies || 0,
+            netWorth: p.netWorth || p.net_worth || 0,
+            gpm: p.gpm || p.gold_per_min || 0,
+            xpm: p.xpm || p.xp_per_min || 0,
+            heroDamage: p.heroDamage || p.hero_damage || 0,
+            towerDamage: p.towerDamage || p.tower_damage || 0,
+            heroHealing: p.heroHealing || p.hero_healing || 0,
+            items: p.items || [],
+            backpack: p.backpack || [],
+            neutral_item: p.neutral_item || null,
+            aghs_scepter: p.aghs_scepter || false,
+            aghs_shard: p.aghs_shard || false,
+            purchase_log: p.purchase_log || [],
+            ability_upgrades: abilityTimeline, // Raw timeline
+            ability_build: abilityBuild // Linear array 0..29
+        };
+    });
+
+    // 3. Wards (Combine global logs if present)
+    if (!processed.wards) {
+        const obs = processed.obs_log || [];
+        const sen = processed.sen_log || [];
+        processed.wards = [
+            ...obs.map(w => ({ type: 'Observer', x: w.x, y: w.y, z: w.z, time: w.time, team: w.team })),
+            ...sen.map(w => ({ type: 'Sentry', x: w.x, y: w.y, z: w.z, time: w.time, team: w.team }))
+        ];
+    }
+
+    // 4. Draft
+    if ((!processed.picks_bans || processed.picks_bans.length === 0) && processed.draft_timings) {
+        processed.picks_bans = processed.draft_timings.map(dt => ({
+            is_pick: dt.pick,
+            hero_id: dt.hero_id,
+            team: dt.draft_active_team, // 2=Radiant, 3=Dire usually
+            order: dt.draft_order
+        }));
+    }
+
+    return processed;
 };
 
-const normalizeHeroName = (name) => {
-    if (!name) return null;
-    const lower = name.toLowerCase();
-    if (HERO_NAME_OVERRIDES[lower]) return HERO_NAME_OVERRIDES[lower];
-    return lower;
+// --- Components ---
+
+const formatTime = (seconds) => {
+    if (seconds == null) return null;
+    const sign = seconds < 0 ? '-' : '';
+    const date = new Date(Math.abs(seconds) * 1000);
+    const m = date.getUTCMinutes();
+    const s = date.getUTCSeconds().toString().padStart(2, '0');
+    // Handle hours if needed, but usually match duration < 60m logic applies
+    // Just manual calc is safer for negative
+    const abs = Math.abs(seconds);
+    const mm = Math.floor(abs / 60);
+    const ss = (abs % 60).toFixed(0).padStart(2, '0');
+    return `${seconds < 0 ? '-' : ''}${mm}:${ss}`;
 };
 
-const normalizeName = (name) => {
-    if (!name) return null;
-    let clean = name;
-
-    // Handle specific prefixes to strip
-    if (clean.startsWith('item_')) clean = clean.replace('item_', '');
-    // Abilities often don't have prefix but items do.
-
-    // Convert PascalCase/camelCase to snake_case
-    // e.g. "Abaddon_AphoticShield" -> "abaddon_aphotic_shield"
-    // e.g. "PowerTreads" -> "power_treads"
-    // e.g. "blink" -> "blink"
-
-    // Strategy: Insert underscore before Capital letters that follow lowercase/number
-    clean = clean.replace(/([a-z0-9])([A-Z])/g, '$1_$2');
-
-    // Lowercase everything
-    clean = clean.toLowerCase();
-
-    // Remove any double underscores if they appeared (e.g. Abaddon_AphoticShield -> Abaddon__Aphotic_Shield)
-    clean = clean.replace(/_+/g, '_');
-
-    // Remove leading/trailing underscores
-    if (clean.startsWith('_')) clean = clean.slice(1);
-    if (clean.endsWith('_')) clean = clean.slice(0, -1);
-
-    return clean;
+const getPurchaseTime = (purchaseLog, itemName) => {
+    if (!purchaseLog || !itemName) return null;
+    const target = normalizeName(itemName);
+    // Find last purchase
+    for (let i = purchaseLog.length - 1; i >= 0; i--) {
+        const log = purchaseLog[i];
+        if (!log || !log.key) continue;
+        const logKey = normalizeName(log.key);
+        if (logKey === target) {
+            return log.time;
+        }
+    }
+    return null;
 };
-
-const normalizeItemName = normalizeName; // Reuse logic
-const normalizeAbilityName = normalizeName; // Reuse logic
 
 const PlayerRow = ({ p }) => {
-    // Determine image using internal heroName
     const normalizedHero = normalizeHeroName(p.heroName);
-    // Use findBestMatch for robust matching (e.g. "centaur_warrunner" vs "centaur.png")
     const bestHero = findBestMatch(normalizedHero, 'heroes');
     const heroImg = bestHero ? `${HERO_IMG_BASE}${bestHero}.png` : null;
 
+    const renderItem = (item, idx, isBackpack = false) => {
+        const cleanItem = normalizeName(item);
+        const finalItem = findBestMatch(cleanItem, 'items');
+        const time = getPurchaseTime(p.purchase_log, item);
+
+        return (
+            <div key={`${isBackpack ? 'bp' : 'item'}-${idx}`} className={`item-slot ${isBackpack ? 'backpack-slot' : ''}`}>
+                <img
+                    src={`${ITEM_IMG_BASE}${finalItem}.png`}
+                    alt={item}
+                    title={`${item} (Purchased: ${formatTime(time)})`}
+                    onError={(e) => e.target.style.opacity = 0}
+                />
+                {time != null && (
+                    <div className="item-time">{formatTime(time)}</div>
+                )}
+            </div>
+        );
+    };
+
+    const renderNeutralItem = (item) => {
+        // Always render the slot so alignment is consistent
+        const isEmpty = !item;
+        const cleanItem = normalizeName(item);
+        const finalItem = findBestMatch(cleanItem, 'items');
+
+        return (
+            <div className={`item-slot neutral-slot ${isEmpty ? 'empty' : ''}`}>
+                {!isEmpty && (
+                    <img
+                        src={`${ITEM_IMG_BASE}${finalItem}.png`}
+                        alt={item}
+                        title={`Neutral: ${item}`}
+                        onError={(e) => e.target.style.opacity = 0}
+                    />
+                )}
+            </div>
+        );
+    };
+
+    const renderAghsStatus = () => {
+        const scepterImg = p.aghs_scepter ? '/assets/images/dota/scepter_1.png' : '/assets/images/dota/scepter_0.png';
+        const shardImg = p.aghs_shard ? '/assets/images/dota/shard_1.png' : '/assets/images/dota/shard_0.png';
+
+        return (
+            <div className="aghs-status-container">
+                <img
+                    src={scepterImg}
+                    className="aghs-icon"
+                    title={`Aghanim's Scepter: ${p.aghs_scepter ? 'Yes' : 'No'}`}
+                    alt="Scepter"
+                />
+                <img
+                    src={shardImg}
+                    className="aghs-icon"
+                    title={`Aghanim's Shard: ${p.aghs_shard ? 'Yes' : 'No'}`}
+                    alt="Shard"
+                />
+            </div>
+        )
+    }
+
     return (
-        <tr>
-            <td className="left-align">
+        <tr id={`player-${p.steamId || p.heroId}`}>
+            <td className="left-align player-cell-wrapper">
                 <div className="player-cell">
-                    {heroImg ? (
-                        <img
-                            src={heroImg}
-                            alt={p.heroName}
-                            className="hero-icon"
-                            onError={(e) => {
-                                // console.warn(`Hero Image Failed: ${p.heroName} -> ${e.target.src}`);
-                                e.target.style.display = 'none';
-                            }}
-                        />
-                    ) : (
-                        <span style={{ fontSize: '0.8rem', color: '#888' }}>{p.heroName || p.heroId}</span>
-                    )}
-                    <div className="player-info">
-                        <span className="player-name">{p.name}</span>
-                        {p.facet && (
-                            <div className="facet-info" style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
-                                <span className="facet-title">{p.facetTitle}</span>
-                                {p.facetIcon && (
-                                    <img
-                                        src={p.facetIcon}
-                                        alt={p.facetTitle}
-                                        style={{ width: '16px', height: '16px', marginRight: '0.5rem', borderRadius: '2px' }}
-                                        onError={(e) => e.target.style.display = 'none'}
-                                    />
-                                )}
-                            </div>
+                    <div className="hero-portrait-container">
+                        {heroImg ? (
+                            <img src={heroImg} alt={p.heroName} className="hero-icon" onError={e => e.target.style.display = 'none'} />
+                        ) : (
+                            <span className="hero-placeholder">{p.heroName || p.heroId}</span>
                         )}
-                        <span className="player-rank">Level {p.level}</span>
+                        <div className="hero-level">{p.level}</div>
+                    </div>
+
+                    <div className="player-info">
+                        <span className="player-name">{p.name || p.personaname || 'Unknown'}</span>
+                        {p.facet && <span className="facet-label">{p.facetTitle}</span>}
                     </div>
                 </div>
             </td>
-            <td>{p.level}</td>
             <td className="kda-cell">
-                <span className="kda-kills">{p.kills}</span>
-                <span className="kda-deaths">{p.deaths}</span>
-                <span className="kda-assists">{p.assists}</span>
+                <span className="kda-val k">{p.kills}</span>/
+                <span className="kda-val d">{p.deaths}</span>/
+                <span className="kda-val a">{p.assists}</span>
             </td>
-            <td>{p.lastHits} <span style={{ color: '#666' }}>/</span> {p.denies}</td>
+            <td className="secondary-stats">{p.lastHits} <span className="stat-separator">/</span> {p.denies}</td>
             <td className="networth">{formatNumber(p.netWorth)}</td>
-            <td>{p.gpm} <span style={{ color: '#666' }}>/</span> {p.xpm}</td>
-            <td>{formatNumber(p.heroDamage)}</td>
-            <td>{formatNumber(p.towerDamage)}</td>
-            <td>{formatNumber(p.heroHealing)}</td>
+            <td className="secondary-stats">{p.gpm} <span className="stat-separator">/</span> {p.xpm}</td>
+
+            <td className="damage-cell">{formatNumber(p.heroDamage)}</td>
+            <td className="damage-cell tower">{formatNumber(p.towerDamage)}</td>
+            <td className="heal-cell">{formatNumber(p.heroHealing) !== '0' ? formatNumber(p.heroHealing) : '-'}</td>
+
             <td>
-                <div className="items-cell">
-                    {p.items.map((item, idx) => {
-                        // Parser names: e.g. "PowerTreads" or "item_blink"
-                        // Assets: "power_treads.png", "blink.png"
-                        const cleanItem = normalizeItemName(item);
-                        const finalItem = findBestMatch(cleanItem, 'items');
-                        return (
-                            <img
-                                key={idx}
-                                src={`${ITEM_IMG_BASE}${finalItem}.png`}
-                                alt={item}
-                                title={item}
-                                className="item-icon"
-                                onError={(e) => {
-                                    // console.error(`Failed to load item image: ${e.target.src}`);
-                                    e.target.style.display = 'none';
-                                }}
-                            />
-                        );
-                    })}
+                <div className="items-column">
+                    {/* Main Objects Row: Items + Neutral + Aghs */}
+                    <div className="items-row-primary">
+                        <div className="items-cell main">
+                            {p.items.map((item, idx) => renderItem(item, idx, false))}
+                        </div>
+                        <div className="neutral-aghs-group">
+                            {renderNeutralItem(p.neutral_item)}
+                            {renderAghsStatus()}
+                        </div>
+                    </div>
+
+                    {/* Backpack Row */}
+                    {p.backpack && p.backpack.length > 0 && (
+                        <div className="items-cell backpack">
+                            <div className="backpack-icon" title="Backpack">🎒</div>
+                            {p.backpack.map((item, idx) => renderItem(item, idx, true))}
+                        </div>
+                    )}
                 </div>
             </td>
         </tr>
@@ -217,116 +377,43 @@ const PlayerRow = ({ p }) => {
 const TeamTable = ({ teamName, players, winner }) => {
     const isRadiant = teamName === 'Radiant';
     const headerClass = isRadiant ? 'radiant-header' : 'dire-header';
-    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-
-    // Sort function
-    const sortedPlayers = useMemo(() => {
-        let sortablePlayers = [...players];
-        if (sortConfig.key !== null) {
-            sortablePlayers.sort((a, b) => {
-                let aValue = a[sortConfig.key];
-                let bValue = b[sortConfig.key];
-
-                // Handle special cases
-                if (sortConfig.key === 'playerName') {
-                    aValue = aValue || '';
-                    bValue = bValue || '';
-                    if (sortConfig.direction === 'asc') {
-                        return aValue.localeCompare(bValue);
-                    } else {
-                        return bValue.localeCompare(aValue);
-                    }
-                }
-
-                // Handle numeric values
-                aValue = aValue || 0;
-                bValue = bValue || 0;
-
-                if (sortConfig.direction === 'asc') {
-                    return aValue - bValue;
-                } else {
-                    return bValue - aValue;
-                }
-            });
-        }
-        return sortablePlayers;
-    }, [players, sortConfig]);
-
-    // Handle sort click
-    const handleSort = (key) => {
-        let direction = 'asc';
-        if (sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
-        setSortConfig({ key, direction });
-    };
-
-    // Totals
     const totalKills = players.reduce((a, b) => a + b.kills, 0);
     const totalDeaths = players.reduce((a, b) => a + b.deaths, 0);
     const totalAssists = players.reduce((a, b) => a + b.assists, 0);
-    const totalGold = players.reduce((a, b) => a + b.netWorth, 0);
-
-    // Sort icon component
-    const SortIcon = ({ columnKey }) => {
-        if (sortConfig.key !== columnKey) {
-            return <span style={{ opacity: 0.3 }}>↕</span>;
-        }
-        return sortConfig.direction === 'asc' ? <span>↑</span> : <span>↓</span>;
-    };
+    const totalNet = players.reduce((a, b) => a + b.netWorth, 0);
 
     return (
-        <div>
+        <div className="team-section">
             <div className={`section-header ${headerClass}`}>
-                <span>{teamName} - Overview</span>
-                {winner === teamName && <span style={{ opacity: 0.6 }}>WINNER</span>}
+                <span className="team-title">{teamName}</span>
+                {winner === teamName && <span className="winner-badge">WINNER</span>}
             </div>
             <div className="table-responsive">
                 <table className="stats-table">
                     <thead>
                         <tr>
-                            <th className="left-align sortable-header" style={{ width: '25%' }} onClick={() => handleSort('playerName')}>
-                                Player <SortIcon columnKey="playerName" />
-                            </th>
-                            <th className="sortable-header" style={{ width: '5%' }} onClick={() => handleSort('level')}>
-                                LVL <SortIcon columnKey="level" />
-                            </th>
-                            <th className="sortable-header" style={{ width: '10%' }} onClick={() => handleSort('kills')}>
-                                K D A <SortIcon columnKey="kills" />
-                            </th>
-                            <th className="sortable-header" style={{ width: '10%' }} onClick={() => handleSort('lastHits')}>
-                                LH / DN <SortIcon columnKey="lastHits" />
-                            </th>
-                            <th className="sortable-header" style={{ width: '8%' }} onClick={() => handleSort('netWorth')}>
-                                NET <SortIcon columnKey="netWorth" />
-                            </th>
-                            <th className="sortable-header" style={{ width: '10%' }} onClick={() => handleSort('gpm')}>
-                                GPM / XPM <SortIcon columnKey="gpm" />
-                            </th>
-                            <th className="sortable-header" style={{ width: '8%' }} onClick={() => handleSort('heroDamage')}>
-                                HD <SortIcon columnKey="heroDamage" />
-                            </th>
-                            <th className="sortable-header" style={{ width: '6%' }} onClick={() => handleSort('towerDamage')}>
-                                TD <SortIcon columnKey="towerDamage" />
-                            </th>
-                            <th className="sortable-header" style={{ width: '6%' }} onClick={() => handleSort('heroHealing')}>
-                                HH <SortIcon columnKey="heroHealing" />
-                            </th>
-                            <th style={{ width: '20%' }}>ITEMS</th>
+                            <th className="left-align" style={{ width: '20%' }}>HERO</th>
+                            <th style={{ width: '10%' }}>K / D / A</th>
+                            <th style={{ width: '8%' }}>LH/DN</th>
+                            <th style={{ width: '8%' }}>NET</th>
+                            <th style={{ width: '10%' }}>GPM/XPM</th>
+                            <th style={{ width: '7%' }}>HD</th>
+                            <th style={{ width: '7%' }}>TD</th>
+                            <th style={{ width: '6%' }}>HH</th>
+                            <th style={{ width: '25%' }}>ITEMS</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {sortedPlayers.map(p => <PlayerRow key={p.steamId} p={p} />)}
-                        {/* Totals Row */}
-                        <tr style={{ background: '#11151b', fontWeight: 'bold' }}>
-                            <td colSpan={2} style={{ textAlign: 'right', paddingRight: '20px' }}>Totals</td>
+                        {players.map(p => <PlayerRow key={p.steamId || Math.random()} p={p} />)}
+                        <tr className="totals-row">
+                            <td className="left-align">Totals</td>
                             <td className="kda-cell">
-                                <span>{totalKills}</span>
-                                <span className="kda-deaths">{totalDeaths}</span>
-                                <span>{totalAssists}</span>
+                                <span className="kda-val">{totalKills}</span>/
+                                <span className="kda-val">{totalDeaths}</span>/
+                                <span className="kda-val">{totalAssists}</span>
                             </td>
                             <td></td>
-                            <td className="networth">{formatNumber(totalGold)}</td>
+                            <td className="networth">{formatNumber(totalNet)}</td>
                             <td colSpan={5}></td>
                         </tr>
                     </tbody>
@@ -336,147 +423,145 @@ const TeamTable = ({ teamName, players, winner }) => {
     );
 };
 
-const AbilityBuildGrid = ({ teamName, players }) => {
+const AbilityTimeline = ({ teamName, players }) => {
     return (
-        <div style={{ marginTop: '2rem', overflowX: 'auto' }}>
-            <div className="section-header" style={{ color: '#fff', borderLeft: '4px solid #888' }}>
-                {teamName} - Ability Build (Levels 1-30)
-            </div>
-            <div className="ability-grid-header">
-                <div style={{ paddingLeft: '10px', fontSize: '0.75rem', textTransform: 'uppercase', color: '#667788', alignSelf: 'center' }}>Player</div>
-                {[...Array(30)].map((_, i) => (
-                    <div key={i} className="level-header">{i + 1}</div>
-                ))}
-            </div>
-            {players.map(p => {
-                const heroImg = p.heroName ? `${HERO_IMG_BASE}${p.heroName}.png` : null;
-                // abilityMap is list of strings in order.
-                // We map indices 0..24 to columns 1..25
-                return (
-                    <div key={p.steamId} className="ability-player-row">
-                        <div className="player-cell" style={{ paddingLeft: '10px' }}>
-                            {heroImg && <img src={heroImg} alt={p.heroName} style={{ width: '32px', height: '18px', borderRadius: '2px' }} />}
-                            <div className="player-info">
-                                <span className="player-name" style={{ fontSize: '0.8rem' }}>{p.name}</span>
-                                {p.facet && (
-                                    <div className="facet-info" style={{ fontSize: '0.65rem', color: '#888', marginTop: '0.1rem' }}>
-                                        <span className="facet-title">{p.facetTitle}</span>
-                                    </div>
-                                )}
+        <div className="ability-section">
+            <div className="sub-header">{teamName} - Skill Build</div>
+            <div className="ability-timeline-container">
+                {/* Level Header */}
+                <div className="timeline-header-row">
+                    <div className="player-label-col"></div>
+                    {[...Array(30)].map((_, i) => (
+                        <div key={i} className="timeline-col-header">{i + 1}</div>
+                    ))}
+                </div>
+
+                {players.map(p => {
+                    const normalizedHero = normalizeHeroName(p.heroName);
+                    const bestHero = findBestMatch(normalizedHero, 'heroes');
+                    const heroImg = bestHero ? `${HERO_IMG_BASE}${bestHero}.png` : null;
+                    return (
+                        <div key={p.steamId} className="timeline-row">
+                            <div className="player-label-col">
+                                {heroImg && <img src={heroImg} className="mini-hero-icon" alt={p.heroName} onError={(e) => e.target.style.display = 'none'} />}
                             </div>
+                            {[...Array(30)].map((_, i) => {
+                                // Use the processed 'ability_build' array
+                                const ability = p.ability_build ? p.ability_build[i] : null;
+                                if (ability) {
+                                    const cleanName = normalizeName(ability);
+                                    let content = null;
+
+                                    if (cleanName.includes('special_bonus_attributes') || cleanName === 'stats') {
+                                        content = (
+                                            <img
+                                                src="/assets/images/dota/attribute_bonus.svg"
+                                                title={`Lvl ${i + 1}: Attribute Bonus`}
+                                                className="ability-icon-tiny special-icon"
+                                                alt="Stats"
+                                            />
+                                        );
+                                    } else if (cleanName.includes('special_bonus_unique')) {
+                                        content = (
+                                            <img
+                                                src="/assets/images/dota/talent_tree.svg"
+                                                title={`Lvl ${i + 1}: Talent`}
+                                                className="ability-icon-tiny special-icon"
+                                                alt="Talent"
+                                            />
+                                        );
+                                    } else {
+                                        const img = findBestMatch(cleanName, 'abilities');
+                                        content = (
+                                            <img
+                                                src={`${ABILITY_IMG_BASE}${img}.png`}
+                                                title={`Lvl ${i + 1}: ${ability}`}
+                                                className="ability-icon-tiny"
+                                                onError={(e) => e.target.style.opacity = 0}
+                                                alt={ability}
+                                            />
+                                        );
+                                    }
+
+                                    return (
+                                        <div key={i} className="timeline-slot active">
+                                            {content}
+                                        </div>
+                                    )
+                                }
+                                return <div key={i} className="timeline-slot empty"></div>;
+                            })}
                         </div>
-                        {[...Array(30)].map((_, i) => {
-                            const ability = p.ability_build ? p.ability_build[i] : null;
-                            if (ability) {
-                                return (
-                                    <div key={i} style={{ textAlign: 'center' }}>
-                                        <img
-                                            src={`${ABILITY_IMG_BASE}${findBestMatch(normalizeAbilityName(ability), 'abilities')}.png`}
-                                            className="ability-icon-small"
-                                            title={ability}
-                                            onError={(e) => {
-                                                // console.error(`Failed to load ability image: ${e.target.src}`);
-                                                // Fallback to _hp1 or default not needed if local files standardized
-                                                e.target.style.opacity = 0;
-                                            }}
-                                        />
-                                    </div>
-                                )
-                            } else {
-                                return <div key={i} className="empty-slot" style={{ width: '6px', height: '6px' }}></div>;
-                            }
-                        })}
-                    </div>
-                );
-            })}
+                    )
+                })}
+            </div>
         </div>
     )
 }
 
 const DraftTimeline = ({ picksBans }) => {
     if (!picksBans || picksBans.length === 0) return null;
-
-    // Helper to get hero image
-    const getHeroImg = (id) => {
-        // We need a mapping or fetch mechanism for ID -> Name if not provided.
-        // For now, assuming we might need to rely on the ID being sufficient if we had a map, 
-        // OR we just use the ID if we can't map. 
-        // Ideally the parser should provide hero names in picks_bans too to avoid huge client-side maps.
-        // Waiting for user feedback or assuming we have a map.
-        // Actually, let's use a placeholder or handle it if we have the data.
-        // The parser output shows "hero_id". We need "hero_name" for the image URL.
-        // We can find the hero name from the players list if a player picked it? 
-        // Bans won't have players.
-        // We might need a small ID->Name map or fetch it.
-        // For this step, I will use a placeholder or generic DOTA ID usage if valid.
-        // Crap, I need the hero name string (e.g. "antimage") for the image URL.
-        // I will assume I can pass a heroMap or just use ID for now and fix later?
-        // Let's check if we can pass a map from the parent or if we need to fetch constants.
-        return null;
-    };
-
-    // The parser output in the example had "hero_id". 
-    // To display images we need names. 
-    // I'll skip the image logic for a second and just render boxes with IDs/Names if available
-    // OR I can use the `dotaApi` service if available?
-    // Let's look at `dotaApi.js` later. For now, basic structure.
-
     return (
-        <div style={{ marginBottom: '20px', overflowX: 'auto' }}>
-            <div className="section-header">Draft</div>
-            <div className="draft-timeline">
+        <div className="draft-container">
+            <div className="sub-header">Draft</div>
+            <div className="draft-row">
                 {picksBans.map((pb, idx) => (
                     <div key={idx} className={`draft-card ${pb.is_pick ? 'pick' : 'ban'} team-${pb.team}`}>
-                        <span className="draft-label">{pb.is_pick ? 'PICK' : 'BAN'}</span>
-                        {/* We need hero ID to Name mapping here. For now showcasing ID */}
-                        <div className="draft-hero-id">{pb.hero_id}</div>
+                        <div className="draft-hero-content">
+                            <HeroImage heroId={pb.hero_id} style={{ width: '100%', height: '100%', borderRadius: 0 }} />
+                        </div>
+                        <div className={`draft-type-label ${pb.is_pick ? 'pick-label' : 'ban-label'}`}>
+                            {pb.is_pick ? 'PICK' : 'BAN'} {pb.order}
+                        </div>
                     </div>
                 ))}
             </div>
         </div>
     )
-}
+};
 
 const HeatmapOverlay = ({ players, wards }) => {
     const canvasRef = React.useRef(null);
-
-    // Fixed Bounds for 7.33 Map (approximate grid coordinates)
-    // Fixed Bounds for 7.33 Map (approximate grid coordinates)
-    // Updated again: User requested "just a bit more inward".
-    // Expanded from 48-208 to 40-216.
     const bounds = { minX: 40, maxX: 216, minY: 40, maxY: 216 };
-    const scaleX = 176; // 216-40
+    const scaleX = 176;
     const scaleY = 176;
 
     const [showHeatmap, setShowHeatmap] = React.useState(true);
     const [showObs, setShowObs] = React.useState(true);
     const [showSent, setShowSent] = React.useState(true);
-    const [wardTeamFilter, setWardTeamFilter] = React.useState('all'); // 'all', 'radiant', 'dire'
+    const [wardTeamFilter, setWardTeamFilter] = React.useState('all');
 
     React.useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-
         const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        if (showHeatmap) {
+        if (showHeatmap && players) {
             ctx.globalCompositeOperation = 'screen';
             ctx.shadowBlur = 10;
-
             players.forEach(p => {
+                // Apply team filter for heatmap
+                if (wardTeamFilter !== 'all') {
+                    const teamName = p.team === 'Radiant' ? 'radiant' : 'dire';
+                    if (wardTeamFilter !== teamName) return;
+                }
+
+                // p.positions MUST be [[t,x,y],...] format or compatible
+                // TODO: Ensure normalized parser output provides this format
                 if (!p.positions) return;
                 const color = p.team === 'Radiant' ? 'rgba(0, 255, 64, 0.08)' : 'rgba(255, 60, 60, 0.12)';
                 ctx.fillStyle = color;
                 ctx.shadowColor = color;
-
                 p.positions.forEach(pos => {
-                    const x = pos[1];
-                    const y = pos[2];
+                    // Check structure. OpenDota might be sparse map?
+                    // Assuming normalized array from processMatchData or direct parser output
+                    const x = Array.isArray(pos) ? pos[1] : pos.x;
+                    const y = Array.isArray(pos) ? pos[2] : pos.y;
+                    if (!x || !y) return;
 
                     const px = ((x - bounds.minX) / scaleX) * canvas.width;
                     const py = canvas.height - ((y - bounds.minY) / scaleY) * canvas.height;
-
                     ctx.beginPath();
                     ctx.arc(px, py, 4, 0, 2 * Math.PI);
                     ctx.fill();
@@ -485,291 +570,223 @@ const HeatmapOverlay = ({ players, wards }) => {
             ctx.globalCompositeOperation = 'source-over';
             ctx.shadowBlur = 0;
         }
-    }, [players, showHeatmap]);
+    }, [players, showHeatmap, wardTeamFilter]);
 
     return (
-        <div className="minimap-section" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: '40px', marginTop: '20px' }}>
-
-            {/* Map Container - Centered */}
-            <div className="minimap-container" style={{ position: 'relative', width: '512px', height: '512px', flex: '0 0 auto', border: '1px solid #333', boxShadow: '0 0 20px rgba(0,0,0,0.5)' }}>
-                <div className="minimap" style={{ width: '100%', height: '100%', position: 'relative' }}>
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            backgroundImage: `url('/assets/images/dota_map_733.png')`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            filter: 'grayscale(90%) brightness(0.6) contrast(1.1)',
-                            zIndex: 1
-                        }}
-                    />
-                    <canvas
-                        ref={canvasRef}
-                        width={512}
-                        height={512}
-                        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
-                    />
+        <div className="minimap-section">
+            <div className="minimap-container">
+                <div className="minimap">
+                    <div className="minimap-bg" />
+                    <canvas ref={canvasRef} width={512} height={512} />
                     {(showObs || showSent) && wards && wards.map((w, i) => {
                         if (w.type === 'Observer' && !showObs) return null;
                         if (w.type === 'Sentry' && !showSent) return null;
-
-                        // Team filter
                         if (wardTeamFilter !== 'all') {
-                            const wardTeam = (w.team || '').toLowerCase();
-                            if (wardTeamFilter === 'radiant' && wardTeam !== 'radiant') return null;
-                            if (wardTeamFilter === 'dire' && wardTeam !== 'dire') return null;
+                            const t = (w.team === 2 || w.team === 'Radiant') ? 'radiant' : 'dire';
+                            if (wardTeamFilter !== t) return null;
                         }
-
                         const xPct = ((w.x - bounds.minX) / scaleX) * 100;
                         const yPct = ((w.y - bounds.minY) / scaleY) * 100;
 
+                        // Debug logging
+                        if (i === 0) {
+                            console.log('Ward sample:', w);
+                            console.log('Bounds:', bounds);
+                            console.log('Scale:', { scaleX, scaleY });
+                            console.log('Calculated position:', { xPct, yPct });
+                            console.log('Total wards:', wards.length);
+                        }
+
                         return (
-                            <div
-                                key={i}
-                                className={`ward-icon ${w.type === 'Observer' ? 'obs' : 'sent'}`}
-                                style={{
-                                    position: 'absolute',
-                                    left: `${xPct}%`,
-                                    bottom: `${yPct}%`,
-                                    width: '12px', height: '12px', borderRadius: '50%',
-                                    backgroundColor: w.type === 'Observer' ? '#fb4' : '#48f',
-                                    border: '1px solid black',
-                                    boxShadow: '0 0 5px black',
-                                    transform: 'translate(-50%, 50%)' // Center on point
-                                }}
-                                title={`${w.type} Ward`}
-                            ></div>
+                            <div key={i} className={`ward-icon ${w.type === 'Observer' ? 'obs' : 'sent'}`}
+                                style={{ left: `${xPct}%`, bottom: `${yPct}%` }}
+                                title={`${w.type} Ward (${w.time}s)`}
+                            />
                         );
                     })}
                 </div>
             </div>
 
-            {/* Controls Side Panel - Right Side */}
-            <div className="vision-controls-panel" style={{
-                display: 'flex', flexDirection: 'column', gap: '20px',
-                background: '#15191f', padding: '20px', borderRadius: '8px',
-                minWidth: '220px', border: '1px solid #333'
-            }}>
-                <div style={{ textTransform: 'uppercase', color: '#888', fontSize: '0.8rem', letterSpacing: '1px', fontWeight: 'bold' }}>Map Controls</div>
-
-                <div className="toggle-group" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <button
-                        onClick={() => setShowHeatmap(!showHeatmap)}
-                        style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            background: showHeatmap ? 'rgba(76, 204, 102, 0.15)' : 'rgba(255,255,255,0.05)',
-                            color: showHeatmap ? '#4c6' : '#888',
-                            padding: '12px', border: showHeatmap ? '1px solid #4c6' : '1px solid #333',
-                            borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s'
-                        }}
-                    >
-                        <span>Heatmap</span>
-                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: showHeatmap ? '#4c6' : '#444' }}></div>
-                    </button>
-
-                    <button
-                        onClick={() => setShowObs(!showObs)}
-                        style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            background: showObs ? 'rgba(255, 187, 68, 0.15)' : 'rgba(255,255,255,0.05)',
-                            color: showObs ? '#fb4' : '#888',
-                            padding: '12px', border: showObs ? '1px solid #fb4' : '1px solid #333',
-                            borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s'
-                        }}
-                    >
-                        <span>Observer Wards</span>
-                        <div className="ward-dot obs"></div>
-                    </button>
-
-                    <button
-                        onClick={() => setShowSent(!showSent)}
-                        style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            background: showSent ? 'rgba(68, 136, 255, 0.15)' : 'rgba(255,255,255,0.05)',
-                            color: showSent ? '#48f' : '#888',
-                            padding: '12px', border: showSent ? '1px solid #48f' : '1px solid #333',
-                            borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s'
-                        }}
-                    >
-                        <span>Sentry Wards</span>
-                        <div className="ward-dot sent"></div>
-                    </button>
+            <div className="vision-controls-panel">
+                <div className="ctrl-header">Map Layers</div>
+                <div className="toggle-group">
+                    <button className={`toggle-btn ${showHeatmap ? 'active' : ''}`} onClick={() => setShowHeatmap(!showHeatmap)}>Heatmap</button>
+                    <button className={`toggle-btn obs ${showObs ? 'active' : ''}`} onClick={() => setShowObs(!showObs)}>Observer</button>
+                    <button className={`toggle-btn sent ${showSent ? 'active' : ''}`} onClick={() => setShowSent(!showSent)}>Sentry</button>
                 </div>
-
-                <div style={{ height: '1px', background: '#333', margin: '10px 0' }}></div>
-
-                {/* Team Filter */}
-                <div style={{ textTransform: 'uppercase', color: '#888', fontSize: '0.8rem', letterSpacing: '1px', fontWeight: 'bold' }}>Team Filter</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <button
-                        onClick={() => setWardTeamFilter('all')}
-                        style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            background: wardTeamFilter === 'all' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255,255,255,0.05)',
-                            color: wardTeamFilter === 'all' ? '#fff' : '#888',
-                            padding: '12px', border: wardTeamFilter === 'all' ? '1px solid #fff' : '1px solid #333',
-                            borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s'
-                        }}
-                    >
-                        <span>All Teams</span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3d9546' }}></div>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#c23c2a' }}></div>
-                        </div>
-                    </button>
-
-                    <button
-                        onClick={() => setWardTeamFilter('radiant')}
-                        style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            background: wardTeamFilter === 'radiant' ? 'rgba(61, 149, 70, 0.15)' : 'rgba(255,255,255,0.05)',
-                            color: wardTeamFilter === 'radiant' ? '#3d9546' : '#888',
-                            padding: '12px', border: wardTeamFilter === 'radiant' ? '1px solid #3d9546' : '1px solid #333',
-                            borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s'
-                        }}
-                    >
-                        <span>Radiant Only</span>
-                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#3d9546' }}></div>
-                    </button>
-
-                    <button
-                        onClick={() => setWardTeamFilter('dire')}
-                        style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            background: wardTeamFilter === 'dire' ? 'rgba(194, 60, 42, 0.15)' : 'rgba(255,255,255,0.05)',
-                            color: wardTeamFilter === 'dire' ? '#c23c2a' : '#888',
-                            padding: '12px', border: wardTeamFilter === 'dire' ? '1px solid #c23c2a' : '1px solid #333',
-                            borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s'
-                        }}
-                    >
-                        <span>Dire Only</span>
-                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#c23c2a' }}></div>
-                    </button>
-                </div>
-
-                <div style={{ height: '1px', background: '#333', margin: '10px 0' }}></div>
-
-                <div style={{ textTransform: 'uppercase', color: '#888', fontSize: '0.8rem', letterSpacing: '1px', fontWeight: 'bold' }}>Legend</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'rgba(61, 149, 70, 0.8)' }}></div>
-                        <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Radiant</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'rgba(194, 60, 42, 0.8)' }}></div>
-                        <div style={{ color: '#ccc', fontSize: '0.9rem' }}>Dire</div>
-                    </div>
+                <div className="ctrl-divider"></div>
+                <div className="ctrl-header">Team Filter</div>
+                <div className="toggle-group">
+                    <button className={`toggle-btn ${wardTeamFilter === 'all' ? 'active' : ''}`} onClick={() => setWardTeamFilter('all')}>All</button>
+                    <button className={`toggle-btn rad ${wardTeamFilter === 'radiant' ? 'active' : ''}`} onClick={() => setWardTeamFilter('radiant')}>Radiant</button>
+                    <button className={`toggle-btn dire ${wardTeamFilter === 'dire' ? 'active' : ''}`} onClick={() => setWardTeamFilter('dire')}>Dire</button>
                 </div>
             </div>
         </div>
     );
 };
 
+const HeroRenderStack = ({ players, team }) => {
+    const isRadiant = team === 'Radiant';
+
+    return (
+        <div className={`hero-render-stack ${isRadiant ? 'radiant' : 'dire'}`}>
+            {players.map((p, idx) => {
+                const heroName = normalizeHeroName(p.heroName || p.hero_name);
+
+                // We'll create a small helper for the video sources
+                const renderVideo = (name) => {
+                    const webmUrl = `${VALVE_RENDER_BASE}${name}.webm`;
+                    const movUrl = `${VALVE_RENDER_BASE}${name}.mov`;
+                    const pngUrl = `${VALVE_RENDER_BASE}${name}.png`;
+
+                    return (
+                        <video
+                            className="hero-render-media"
+                            poster={pngUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            key={name}
+                            onError={(e) => {
+                                // Simple fallback for the whole video element
+                                if (name === 'windranger') {
+                                    // If windranger video fails, try windrunner
+                                    const container = e.target.parentElement;
+                                    // This is a bit hacky for a map, better to use state if needed
+                                    // But let's see if we can just swap the sources or re-render
+                                }
+                            }}
+                        >
+                            <source src={movUrl} type='video/mp4; codecs="hvc1"' />
+                            <source src={webmUrl} type="video/webm" />
+                            <img src={pngUrl} alt={name} />
+                        </video>
+                    );
+                };
+
+                return (
+                    <a
+                        key={p.steamId || idx}
+                        href={`#player-${p.steamId || p.heroId}`}
+                        className="stacked-render-wrapper"
+                        style={{ zIndex: 10 - idx }}
+                    >
+                        {renderVideo(heroName)}
+                        <div className="render-player-name">
+                            {p.name || p.personaname || 'Unknown'}
+                        </div>
+                    </a>
+                );
+            })}
+        </div>
+    );
+};
+
+// --- Main Page Component ---
+
 const MatchDetails = ({ match: propMatch }) => {
     const { id } = useParams();
-    const { teams, matchHistory } = useTournament(); // Access teams data
+    const { teams, matchHistory } = useTournament();
     const [activeTab, setActiveTab] = React.useState('overview');
 
-    // Resolve match from prop or context history
-    const match = propMatch || matchHistory.find(m => m.matchId.toString() === id);
+    // 1. Resolve Match Source
+    const rawMatch = propMatch || matchHistory.find(m => m.matchId.toString() === id);
 
-    if (!match) return <div style={{ padding: '2rem', textAlign: 'center', color: '#888' }}>Match not found (ID: {id})</div>;
-    if (!match.players) return <div style={{ padding: '2rem', textAlign: 'center', color: '#888' }}>Match data incomplete</div>;
+    // 2. Process Data (Memoized)
+    const match = useMemo(() => processMatchData(rawMatch), [rawMatch]);
 
+    if (!match) return <div className="loading-state">Match not found (ID: {id})</div>;
+
+    // 3. Derived Data
     const radiantPlayers = match.players.filter(p => p.team === 'Radiant');
     const direPlayers = match.players.filter(p => p.team === 'Dire');
 
-    // Resolve Winner Name and Class
-    let winnerName = match.winner;
-    let winnerClass = 'radiant-text'; // default
+    // Winner Display Logic
+    let winnerName = match.winner; // "Radiant" or "Dire"
+    let winnerClass = match.winner === 'Radiant' ? 'radiant-winner' : 'dire-winner';
 
-    // Check if winner is ID or Side
-    if (match.winner === 'Radiant') {
-        winnerClass = 'radiant-text';
-        if (match.radiantTeamId) {
-            const t = teams.find(team => team.id.toString() === match.radiantTeamId.toString());
-            if (t) winnerName = t.name;
-        }
-    } else if (match.winner === 'Dire') {
-        winnerClass = 'dire-text';
-        if (match.direTeamId) {
-            const t = teams.find(team => team.id.toString() === match.direTeamId.toString());
-            if (t) winnerName = t.name;
-        }
-    } else {
-        // Winner might be a Team ID directly
-        const teamName = teams.find(t => t.id == match.winner)?.name;
-        if (teamName) winnerName = teamName;
-
-        // Try to deduce color class
-        if (match.radiantTeamId && match.winner == match.radiantTeamId) winnerClass = 'radiant-text';
-        else if (match.direTeamId && match.winner == match.direTeamId) winnerClass = 'dire-text';
+    // Attempt to lookup Team Name if IDs exist
+    if (match.winner === 'Radiant' && match.radiantTeamId) {
+        const t = teams.find(team => team.id.toString() === match.radiantTeamId.toString());
+        if (t) winnerName = t.name;
+    } else if (match.winner === 'Dire' && match.direTeamId) {
+        const t = teams.find(team => team.id.toString() === match.direTeamId.toString());
+        if (t) winnerName = t.name;
     }
 
-
-
-    // Create a hero ID map from players to at least show names for picked heroes
-    const heroIdMap = {};
-    match.players.forEach(p => {
-        heroIdMap[p.heroId] = p.heroName;
-    });
+    const durationMin = Math.floor(match.duration / 60);
+    const durationSec = (match.duration % 60).toFixed(0).padStart(2, '0');
 
     return (
         <div className="match-details-container">
-            <div className="match-header">
-                <div>
-                    <span className="match-id">Match {match.matchId}</span>
-                    <span className="match-duration">{(match.duration / 60).toFixed(0)}:{(match.duration % 60).toFixed(0).padStart(2, '0')}</span>
+            {/* Scoreboard Header */}
+            <div className="match-scoreboard-container">
+                <HeroRenderStack players={radiantPlayers} team="Radiant" />
+
+                <div className="match-scoreboard">
+                    <div className="team-score radiant">
+                        <div className="score-label">Radiant</div>
+                        <div className="score-val">{match.radiantScore}</div>
+                    </div>
+
+                    <div className="match-meta">
+                        <div className={`match-winner-banner ${winnerClass}`}>
+                            {winnerName} Victory
+                        </div>
+                        <div className="meta-row">
+                            <span className="meta-id">ID: {match.matchId}</span>
+                            <span className="meta-time">{durationMin}:{durationSec}</span>
+                        </div>
+                    </div>
+
+                    <div className="team-score dire">
+                        <div className="score-val">{match.direScore}</div>
+                        <div className="score-label">Dire</div>
+                    </div>
                 </div>
-                <div className={`winner-label ${winnerClass}`}>
-                    {winnerName} Victory
-                </div>
+
+                <HeroRenderStack players={direPlayers} team="Dire" />
             </div>
 
+            {/* Navigation */}
             <div className="tabs">
                 <button className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</button>
                 <button className={`tab-button ${activeTab === 'heatmaps' ? 'active' : ''}`} onClick={() => setActiveTab('heatmaps')}>Heatmaps</button>
+                <button className={`tab-button ${activeTab === 'graphs' ? 'active' : ''}`} onClick={() => setActiveTab('graphs')}>Graphs</button>
             </div>
 
-            {activeTab === 'overview' && (
-                <>
-                    <div className="draft-section">
-                        {match.picks_bans && (
-                            <div className="draft-row">
-                                {match.picks_bans.map((pb, i) => {
-                                    const isBan = !pb.is_pick;
-                                    return (
-                                        <div key={i} className={`draft-item ${isBan ? 'ban' : 'pick'} ${pb.team === 2 ? 'radiant' : 'dire'}`}>
-                                            <HeroImage heroId={pb.hero_id} style={{ width: '100%', height: '100%', opacity: isBan ? 0.6 : 1, filter: isBan ? 'grayscale(100%)' : 'none' }} />
-                                            {isBan && <div className="ban-overlay">✖</div>}
-                                            <span className="draft-type">{pb.is_pick ? 'PICK' : 'BAN'}</span>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        )}
+            <div className="tab-content">
+                {activeTab === 'overview' && (
+                    <>
+                        <DraftTimeline picksBans={match.picks_bans} />
+
+                        <TeamTable teamName="Radiant" players={radiantPlayers} winner={match.winner} />
+                        <TeamTable teamName="Dire" players={direPlayers} winner={match.winner} />
+
+                        <div className="timelines-wrapper">
+                            <AbilityTimeline teamName="Radiant" players={radiantPlayers} />
+                            <AbilityTimeline teamName="Dire" players={direPlayers} />
+                        </div>
+                    </>
+                )}
+
+                {activeTab === 'heatmaps' && (
+                    <div className="heatmap-tab">
+                        <div className="section-header">Player Positioning & Wards</div>
+                        <HeatmapOverlay players={match.players} wards={match.wards} />
                     </div>
+                )}
 
-                    <TeamTable teamName="Radiant" players={radiantPlayers} winner={match.winner} />
-                    <TeamTable teamName="Dire" players={direPlayers} winner={match.winner} />
-
-                    <AbilityBuildGrid teamName="Radiant" players={radiantPlayers} />
-                    <AbilityBuildGrid teamName="Dire" players={direPlayers} />
-                </>
-            )}
-
-            {activeTab === 'heatmaps' && (
-                <div className="heatmap-tab">
-                    <h3>Player Positioning Heatmap & Ward Map</h3>
-                    {/* Pass both players and wards to Overlay */}
-                    <HeatmapOverlay players={match.players} wards={match.wards} />
-                </div>
-            )}
-
+                {activeTab === 'graphs' && (
+                    <div className="graphs-placeholder">
+                        <div className="empty-state">
+                            <span>Graphs coming soon</span>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
