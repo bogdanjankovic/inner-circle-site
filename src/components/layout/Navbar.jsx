@@ -22,7 +22,7 @@ const Navbar = () => {
     };
 
     return (
-        <nav style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 1000 }}>
+        <nav style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)', zIndex: 1000 }}>
             <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '80px' }}>
 
                 {/* Logo */}

@@ -27,8 +27,10 @@ function App() {
   return (
     <div className="app-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <SEOHead />
-      <WIPBanner />
-      <Navbar />
+      <header style={{ position: 'sticky', top: 0, zIndex: 2000 }}>
+        <WIPBanner />
+        <Navbar />
+      </header>
       <main style={{ flex: 1, position: 'relative' }}>
         {/* Background Fog/Glow Effect Overlay */}
         <div style={{
