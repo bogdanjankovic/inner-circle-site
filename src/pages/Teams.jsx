@@ -23,6 +23,7 @@ const PlayerModal = ({ player, onClose, stats }) => {
     const [refreshedPlayer, setRefreshedPlayer] = useState(player);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [positionHeroes, setPositionHeroes] = useState([]);
+    const [showHistory, setShowHistory] = useState(false);
 
     // Refresh heroes with STRATZ API when modal opens (with caching)
     useEffect(() => {
@@ -90,7 +91,14 @@ const PlayerModal = ({ player, onClose, stats }) => {
         refreshHeroes();
     }, [player.steamId, player.position, player.accountId]);
 
-    const displayStats = stats || { matches: 0, kills: 0, deaths: 0, assists: 0, roshansKilled: 0, tormentorsKilled: 0, runesActivated: 0, neutralTokens: 0 };
+    const displayStats = stats || {
+        matches: 0,
+        avgKills: 0, avgDeaths: 0, avgAssists: 0,
+        avgHeroDamage: 0, avgHeroHealing: 0, avgTowerDamage: 0,
+        avgGpm: 0, avgXpm: 0,
+        avgObsPlaced: 0, avgSenPlaced: 0, avgObsKilled: 0, avgSenKilled: 0,
+        matchHistory: []
+    };
 
     return (
         <div className="modal-overlay" onClick={onClose} style={{ zIndex: 2100 }}>
@@ -217,26 +225,145 @@ const PlayerModal = ({ player, onClose, stats }) => {
                         </div>
                     </div>
 
-                    <div className="card" style={{ border: '1px solid var(--accent)', padding: '1rem' }}>
-                        <h3 style={{ color: 'var(--accent)', fontSize: '1.1rem', marginBottom: '0.8rem' }}>Turnir Statistika</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                    <div
+                        className="card tournament-stats-card"
+                        onClick={() => setShowHistory(!showHistory)}
+                        style={{
+                            border: '1px solid var(--accent)',
+                            padding: '1.2rem',
+                            cursor: 'pointer',
+                            position: 'relative',
+                            transition: 'all 0.2s',
+                            background: 'rgba(20, 20, 20, 0.8)',
+                            overflow: 'hidden'
+                        }}
+                    >
+                        <h3 style={{ color: '#e63946', fontSize: '1rem', marginBottom: '1.2rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Turnir Statistika</h3>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
                             <div>
-                                <label style={{ color: '#888', fontSize: '0.8rem' }}>K / D / A</label>
+                                <label style={{ color: '#666', fontSize: '0.75rem', display: 'block', marginBottom: '0.2rem' }}>K / D / A (Avg)</label>
                                 <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
-                                    <span style={{ color: '#4caf50' }}>{displayStats.kills}</span> / <span style={{ color: '#f44336' }}>{displayStats.deaths}</span> / <span>{displayStats.assists}</span>
+                                    <span style={{ color: '#4caf50' }}>{displayStats.avgKills || 0}</span>
+                                    <span style={{ color: '#666' }}>/</span>
+                                    <span style={{ color: '#f44336' }}>{displayStats.avgDeaths || 0}</span>
+                                    <span style={{ color: '#666' }}>/</span>
+                                    <span style={{ color: '#ddd' }}>{displayStats.avgAssists || 0}</span>
                                 </div>
                             </div>
                             <div>
-                                <label style={{ color: '#888', fontSize: '0.8rem' }}>Mečeva</label>
-                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{displayStats.matches}</div>
+                                <label style={{ color: '#666', fontSize: '0.75rem', display: 'block', marginBottom: '0.2rem' }}>GPM / XPM</label>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#ffd700' }}>
+                                    {displayStats.avgGpm || 0} / {displayStats.avgXpm || 0}
+                                </div>
                             </div>
-                            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)', padding: '0.3rem', borderRadius: '4px', fontSize: '0.8rem' }}>
-                                <div title="Roshans Killed">🦁 {displayStats.roshansKilled}</div>
-                                <div title="Tormentors Killed">🧊 {displayStats.tormentorsKilled}</div>
-                                <div title="Runes">💧 {displayStats.runesActivated}</div>
-                                <div title="Neutral Tokens">💎 {displayStats.neutralTokens}</div>
+                            <div>
+                                <label style={{ color: '#666', fontSize: '0.75rem', display: 'block', marginBottom: '0.2rem' }}>Mečeva</label>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{displayStats.matches || 0}</div>
                             </div>
                         </div>
+
+                        <div style={{
+                            marginTop: '1.2rem',
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(3, 1fr)',
+                            gap: '0.8rem',
+                            background: 'rgba(0,0,0,0.5)',
+                            padding: '0.8rem',
+                            borderRadius: '6px',
+                            fontSize: '0.85rem'
+                        }} title="Prosečan damage i healing po meču">
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ color: '#f44336', fontWeight: 'bold' }}>{displayStats.avgHeroDamage?.toLocaleString() || 0}</div>
+                                <div style={{ fontSize: '0.65rem', color: '#666' }}>HERO DAMAGE</div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ color: '#4caf50', fontWeight: 'bold' }}>{displayStats.avgHeroHealing?.toLocaleString() || 0}</div>
+                                <div style={{ fontSize: '0.65rem', color: '#666' }}>HEALING</div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ color: '#ffa726', fontWeight: 'bold' }}>{displayStats.avgTowerDamage?.toLocaleString() || 0}</div>
+                                <div style={{ fontSize: '0.65rem', color: '#666' }}>TOWER DMG</div>
+                            </div>
+                        </div>
+
+                        <div style={{
+                            marginTop: '0.8rem',
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: '0.8rem',
+                            fontSize: '0.8rem'
+                        }}>
+                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '4px' }}>
+                                <div style={{ color: '#666', fontSize: '0.65rem', marginBottom: '0.2rem' }}>WARDING (BOUGHT)</div>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <span title="Observers Bought">👁️ {displayStats.avgObsPlaced || 0}</span>
+                                    <span title="Sentries Bought">🛡️ {displayStats.avgSenPlaced || 0}</span>
+                                </div>
+                            </div>
+                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '4px' }}>
+                                <div style={{ color: '#666', fontSize: '0.65rem', marginBottom: '0.2rem' }}>DEWARDING (KILLED)</div>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <span title="Observers Killed">👁️ {displayStats.avgObsKilled || 0}</span>
+                                    <span title="Sentries Killed">🛡️ {displayStats.avgSenKilled || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {!showHistory && (
+                            <div style={{ textAlign: 'center', marginTop: '1rem', color: 'var(--accent)', fontSize: '0.8rem', opacity: 0.7 }}>
+                                Klikni za istoriju mečeva
+                            </div>
+                        )}
+
+                        {showHistory && displayStats.matchHistory && displayStats.matchHistory.length > 0 && (
+                            <div style={{
+                                marginTop: '1.5rem',
+                                borderTop: '1px solid rgba(255,255,255,0.1)',
+                                paddingTop: '1rem',
+                                animation: 'fadeIn 0.3s ease'
+                            }} onClick={e => e.stopPropagation()}>
+                                <h4 style={{ fontSize: '0.9rem', marginBottom: '0.8rem', color: '#888' }}>Istorija Turnira</h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {displayStats.matchHistory.map((m, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => navigate(`/matches/${m.matchId}`)}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '1rem',
+                                                padding: '0.6rem 0.8rem',
+                                                background: 'rgba(255,255,255,0.03)',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                transition: 'background 0.2s'
+                                            }}
+                                            onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                                            onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                                        >
+                                            <HeroImage heroId={m.heroId} style={{ width: '38px', height: '38px', borderRadius: '4px', border: '1px solid #444' }} />
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: m.isWin ? '#4caf50' : '#f44336' }}>
+                                                        {m.isWin ? 'Pobeda' : 'Poraz'}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#999' }}>
+                                                        {m.kills} / {m.deaths} / {m.assists}
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+                                                    <div style={{ fontSize: '0.7rem', color: '#666' }}>{new Date(m.timestamp * 1000).toLocaleDateString()}</div>
+                                                    <div style={{ fontSize: '0.7rem', color: '#ffd700', opacity: 0.8 }}>
+                                                        GPM: {m.gpm} | XPM: {m.xpm}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -429,7 +556,7 @@ const Teams = () => {
                 <PlayerModal
                     player={selectedPlayer}
                     onClose={() => setSelectedPlayer(null)}
-                    stats={selectedPlayer.data?.accountId ? tournamentStats[selectedPlayer.data.accountId] : null}
+                    stats={selectedPlayer.steamId ? tournamentStats[selectedPlayer.steamId] : null}
                 />
             )}
 

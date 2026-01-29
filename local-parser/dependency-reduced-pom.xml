@@ -19,12 +19,20 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>GuiParser</mainClass>
+                  <mainClass>com.local.GuiParser</mainClass>
                 </transformer>
+                <transformer />
               </transformers>
             </configuration>
           </execution>
         </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.atteo.classindex</groupId>
+            <artifactId>classindex-transformer</artifactId>
+            <version>3.4</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>

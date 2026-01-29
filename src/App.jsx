@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
+import WIPBanner from './components/layout/WIPBanner';
 import Footer from './components/layout/Footer';
 import Home from './pages/Home';
 import About from './pages/About';
@@ -26,6 +27,7 @@ function App() {
   return (
     <div className="app-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <SEOHead />
+      <WIPBanner />
       <Navbar />
       <main style={{ flex: 1, position: 'relative' }}>
         {/* Background Fog/Glow Effect Overlay */}

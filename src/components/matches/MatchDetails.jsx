@@ -156,12 +156,17 @@ const processMatchData = (rawMatch) => {
             // Populate linear ability build array (levels 1-30)
             abilityTimeline.forEach(u => {
                 if (u.level > 0 && u.level <= 30) {
-                    abilityBuild[u.level - 1] = u.ability;
+                    const idx = u.level - 1;
+                    if (!abilityBuild[idx]) abilityBuild[idx] = [];
+                    // Ensure we don't duplicate (though unlikely from parser)
+                    if (!abilityBuild[idx].includes(u.ability)) {
+                        abilityBuild[idx].push(u.ability);
+                    }
                 }
             });
         } else if (p.ability_build && Array.isArray(p.ability_build)) {
-            // Fallback: Use existing flat array from parser
-            abilityBuild = [...p.ability_build];
+            // Fallback: Wrap existing flat array items in arrays
+            abilityBuild = p.ability_build.map(a => a ? [a] : []);
         }
 
         // Wards (Combine logs)
@@ -447,48 +452,50 @@ const AbilityTimeline = ({ teamName, players }) => {
                                 {heroImg && <img src={heroImg} className="mini-hero-icon" alt={p.heroName} onError={(e) => e.target.style.display = 'none'} />}
                             </div>
                             {[...Array(30)].map((_, i) => {
-                                // Use the processed 'ability_build' array
-                                const ability = p.ability_build ? p.ability_build[i] : null;
-                                if (ability) {
-                                    const cleanName = normalizeName(ability);
-                                    let content = null;
+                                // Use the processed 'ability_build' array (now an array of abilities)
+                                const abilities = p.ability_build ? p.ability_build[i] : null;
 
-                                    if (cleanName.includes('special_bonus_attributes') || cleanName === 'stats') {
-                                        content = (
-                                            <img
-                                                src="/assets/images/dota/attribute_bonus.svg"
-                                                title={`Lvl ${i + 1}: Attribute Bonus`}
-                                                className="ability-icon-tiny special-icon"
-                                                alt="Stats"
-                                            />
-                                        );
-                                    } else if (cleanName.includes('special_bonus_unique')) {
-                                        content = (
-                                            <img
-                                                src="/assets/images/dota/talent_tree.svg"
-                                                title={`Lvl ${i + 1}: Talent`}
-                                                className="ability-icon-tiny special-icon"
-                                                alt="Talent"
-                                            />
-                                        );
-                                    } else {
-                                        const img = findBestMatch(cleanName, 'abilities');
-                                        content = (
-                                            <img
-                                                src={`${ABILITY_IMG_BASE}${img}.png`}
-                                                title={`Lvl ${i + 1}: ${ability}`}
-                                                className="ability-icon-tiny"
-                                                onError={(e) => e.target.style.opacity = 0}
-                                                alt={ability}
-                                            />
-                                        );
-                                    }
-
+                                if (abilities && abilities.length > 0) {
                                     return (
-                                        <div key={i} className="timeline-slot active">
-                                            {content}
+                                        <div key={i} className="timeline-slot active" style={{ gap: '2px' }}>
+                                            {abilities.map((ability, aIdx) => {
+                                                const cleanName = normalizeName(ability);
+                                                if (cleanName.includes('special_bonus_attributes') || cleanName === 'stats') {
+                                                    return (
+                                                        <img
+                                                            key={aIdx}
+                                                            src="/assets/images/dota/attribute_bonus.svg"
+                                                            title={`Lvl ${i + 1}: Attribute Bonus`}
+                                                            className="ability-icon-tiny special-icon"
+                                                            alt="Stats"
+                                                        />
+                                                    );
+                                                } else if (cleanName.includes('special_bonus_unique')) {
+                                                    return (
+                                                        <img
+                                                            key={aIdx}
+                                                            src="/assets/images/dota/talent_tree.svg"
+                                                            title={`Lvl ${i + 1}: ${ability}`}
+                                                            className="ability-icon-tiny special-icon"
+                                                            alt="Talent"
+                                                        />
+                                                    );
+                                                } else {
+                                                    const img = findBestMatch(cleanName, 'abilities');
+                                                    return (
+                                                        <img
+                                                            key={aIdx}
+                                                            src={`${ABILITY_IMG_BASE}${img}.png`}
+                                                            title={`Lvl ${i + 1}: ${ability}`}
+                                                            className="ability-icon-tiny"
+                                                            onError={(e) => e.target.style.opacity = 0}
+                                                            alt={ability}
+                                                        />
+                                                    );
+                                                }
+                                            })}
                                         </div>
-                                    )
+                                    );
                                 }
                                 return <div key={i} className="timeline-slot empty"></div>;
                             })}

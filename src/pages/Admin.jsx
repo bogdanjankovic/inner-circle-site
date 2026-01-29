@@ -649,7 +649,7 @@ const ManageTournament = ({ tournament, teams, onMatchUpdate }) => {
 };
 
 const Admin = () => {
-    const { pendingTeams, approveTeam, rejectTeam, teams, deleteTeam, updateTeam, matchHistory, deleteMatch, createTournament, tournaments, activeTournament, deleteTournament, publishTournament, updateTournament } = useTournament();
+    const { pendingTeams, approveTeam, rejectTeam, teams, deleteTeam, updateTeam, matchHistory, deleteMatch, bulkDeleteMatches, createTournament, tournaments, activeTournament, deleteTournament, publishTournament, updateTournament } = useTournament();
     const [editingTeam, setEditingTeam] = useState(null);
     const [editingMatch, setEditingMatch] = useState(null);
     const [viewingTournament, setViewingTournament] = useState(null);
@@ -662,6 +662,7 @@ const Admin = () => {
     const [tourneyType, setTourneyType] = useState('single_elimination'); // 'single_elimination' | 'round_robin'
     const [matchFormat, setMatchFormat] = useState('bo1'); // 'bo1' | 'bo2' | 'bo3' | 'bo5'
     const [selectedTeamIds, setSelectedTeamIds] = useState([]);
+    const [selectedMatchIds, setSelectedMatchIds] = useState([]);
 
     // Shuffle Tournament Integration
     const [teamSource, setTeamSource] = useState('regular'); // 'regular' | 'shuffle'
@@ -1074,11 +1075,45 @@ const Admin = () => {
                         <a href="/admin/upload" className="btn btn-primary" style={{ textDecoration: 'none' }}>+ Otpremi Novi Meč</a>
                     </div>
 
-                    <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ marginBottom: '1rem', display: 'flex', gap: '2rem', alignItems: 'center' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: '#aaa' }}>
-                            <input type="checkbox" defaultChecked={true} onChange={() => { /* re-render handled by React state if I used state, but here I'm modifying render logic. I'll just hardcode it for now as per request */ }} disabled title="Sorting is active" />
+                            <input type="checkbox" defaultChecked={true} disabled title="Sorting is active" />
                             Sortiraj: Turnirski mečevi prvi
                         </label>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '1rem', color: '#fff' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedMatchIds.length === matchHistory.length && matchHistory.length > 0}
+                                    onChange={(e) => {
+                                        if (e.target.checked) setSelectedMatchIds(matchHistory.map(m => m.matchId.toString()));
+                                        else setSelectedMatchIds([]);
+                                    }}
+                                />
+                                Izaberi Sve
+                            </label>
+
+                            {selectedMatchIds.length > 0 && (
+                                <button
+                                    onClick={async () => {
+                                        const success = await bulkDeleteMatches(selectedMatchIds);
+                                        if (success) setSelectedMatchIds([]);
+                                    }}
+                                    className="btn"
+                                    style={{
+                                        backgroundColor: '#f44336',
+                                        padding: '0.4rem 1.2rem',
+                                        fontSize: '0.9rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem'
+                                    }}
+                                >
+                                    🗑️ Obriši Označeno ({selectedMatchIds.length})
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -1124,14 +1159,27 @@ const Admin = () => {
                                     padding: '1rem',
                                     borderBottom: '1px solid var(--border)',
                                     display: 'flex',
-                                    justifyContent: 'space-between',
+                                    gap: '1.5rem',
                                     alignItems: 'center',
                                     background: 'rgba(255,255,255,0.02)',
                                     marginBottom: '0.5rem',
                                     borderRadius: '4px',
                                     borderLeft: m.isTournament ? '4px solid var(--accent)' : '4px solid #666'
                                 }}>
-                                    <div>
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedMatchIds.includes(m.matchId.toString())}
+                                            onChange={(e) => {
+                                                const sid = m.matchId.toString();
+                                                if (e.target.checked) setSelectedMatchIds([...selectedMatchIds, sid]);
+                                                else setSelectedMatchIds(selectedMatchIds.filter(id => id !== sid));
+                                            }}
+                                            style={{ transform: 'scale(1.3)', cursor: 'pointer' }}
+                                        />
+                                    </div>
+
+                                    <div style={{ flex: 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
                                             {m.isTournament ? (
                                                 <span style={{ fontSize: '0.65rem', background: 'var(--accent)', color: 'black', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>TURNIR: {m.linkedTournament.name}</span>

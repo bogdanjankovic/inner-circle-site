@@ -112,7 +112,7 @@ export const TournamentProvider = ({ children }) => {
             // Player Logic
             if (!match.players) return;
             match.players.forEach(p => {
-                const tid = p.tournamentPlayerId;
+                const tid = p.steamId || p.steamid || p.account_id?.toString() || p.tournamentPlayerId;
                 if (!tid) return;
 
                 if (!newStats[tid]) {
@@ -120,10 +120,12 @@ export const TournamentProvider = ({ children }) => {
                         matches: 0,
                         kills: 0, deaths: 0, assists: 0,
                         gpm: 0, xpm: 0,
-                        heroDamage: 0, towerDamage: 0,
+                        heroDamage: 0, towerDamage: 0, heroHealing: 0,
                         roshansKilled: 0, towersKilled: 0, tormentorsKilled: 0,
                         runesActivated: 0, neutralTokens: 0,
-                        lastHits: 0, denies: 0, netWorth: 0
+                        lastHits: 0, denies: 0, netWorth: 0,
+                        obsPlaced: 0, senPlaced: 0, obsKilled: 0, senKilled: 0,
+                        matchHistory: [] // Store individual match results for history view
                     };
                 }
 
@@ -138,14 +140,61 @@ export const TournamentProvider = ({ children }) => {
                 s.denies += (p.denies || 0);
                 s.netWorth += (p.netWorth || 0);
 
-                s.heroDamage += (p.heroDamage || 0);
-                s.towerDamage += (p.towerDamage || 0);
-                s.roshansKilled += (p.roshans || 0);
-                s.towersKilled += (p.towersKilled || 0);
+                s.heroDamage += (p.heroDamage || p.hero_damage || 0);
+                s.heroHealing += (p.heroHealing || p.hero_healing || 0);
+                s.towerDamage += (p.towerDamage || p.tower_damage || 0);
+                s.roshansKilled += (p.roshans || p.roshan_kills || 0);
+                s.towersKilled += (p.towersKilled || p.tower_kills || 0);
                 s.tormentorsKilled += (p.tormentorsKilled || 0);
-                s.runesActivated += (p.runesActivated || 0);
+                s.runesActivated += (p.runesActivated || p.rune_pickups || 0);
                 s.neutralTokens += (p.neutralTokens || 0);
+
+                s.obsPlaced += (p.obs_placed || 0);
+                s.senPlaced += (p.sen_placed || 0);
+                s.obsKilled += (p.obs_destroyed || 0);
+                s.senKilled += (p.sen_destroyed || 0);
+
+                // Add match summary to history
+                s.matchHistory.push({
+                    matchId: match.matchId || match.match_id,
+                    heroId: p.heroId || p.hero_id,
+                    heroName: p.heroName,
+                    kills: p.kills || 0,
+                    deaths: p.deaths || 0,
+                    assists: p.assists || 0,
+                    winner: match.winner,
+                    playerTeam: p.team,
+                    isWin: (match.winner === p.team),
+                    timestamp: match.timestamp,
+                    duration: match.duration,
+                    gpm: p.gpm || p.gold_per_min || 0,
+                    xpm: p.xpm || p.xp_per_min || 0
+                });
             });
+        });
+
+        // Calculate averages for player stats
+        Object.keys(newStats).forEach(tid => {
+            const s = newStats[tid];
+            if (s.matches > 0) {
+                s.avgKills = (s.kills / s.matches).toFixed(1);
+                s.avgDeaths = (s.deaths / s.matches).toFixed(1);
+                s.avgAssists = (s.assists / s.matches).toFixed(1);
+                s.avgGpm = Math.round(s.gpm / s.matches);
+                s.avgXpm = Math.round(s.xpm / s.matches);
+                s.avgLastHits = Math.round(s.lastHits / s.matches);
+                s.avgDenies = Math.round(s.denies / s.matches);
+                s.avgHeroDamage = Math.round(s.heroDamage / s.matches);
+                s.avgHeroHealing = Math.round(s.heroHealing / s.matches);
+                s.avgTowerDamage = Math.round(s.towerDamage / s.matches);
+                s.avgObsPlaced = (s.obsPlaced / s.matches).toFixed(1);
+                s.avgSenPlaced = (s.senPlaced / s.matches).toFixed(1);
+                s.avgObsKilled = (s.obsKilled / s.matches).toFixed(1);
+                s.avgSenKilled = (s.senKilled / s.matches).toFixed(1);
+
+                // Sort history by timestamp descending
+                s.matchHistory.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            }
         });
 
         // Apply Team Stats to State
@@ -292,6 +341,27 @@ export const TournamentProvider = ({ children }) => {
                 recalculateStats(newHistory);
             }
         }
+    };
+
+    const bulkDeleteMatches = async (matchIds) => {
+        if (!matchIds || matchIds.length === 0) return;
+
+        if (window.confirm(`DA LI STE SIGURNI? Ovo će obrisati ${matchIds.length} izabranih mečeva i ponovo izračunati statistiku.`)) {
+            const stringIds = matchIds.map(id => id.toString());
+            const { error } = await supabase.from('matches').delete().in('match_id', stringIds);
+
+            if (!error) {
+                const newHistory = matchHistory.filter(m => !stringIds.includes(m.matchId.toString()));
+                setMatchHistory(newHistory);
+                recalculateStats(newHistory);
+                return true;
+            } else {
+                console.error("Error bulk deleting matches:", error);
+                alert("Greška pri brisanju mečeva.");
+                return false;
+            }
+        }
+        return false;
     };
 
     // --- Tournaments ---
@@ -559,6 +629,7 @@ export const TournamentProvider = ({ children }) => {
             tournamentStats, processMatchStats,
             matchHistory,
             deleteMatch,
+            bulkDeleteMatches,
             isLoading,
             dispatch
         }}>
