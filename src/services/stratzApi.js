@@ -56,8 +56,12 @@ query {
  */
 export const getTopHeroesByPositionStratz = async (steamAccountId, position) => {
     try {
+        if (!STRATZ_API_KEY || STRATZ_API_KEY.includes('PASTE_')) {
+            console.log('STRATZ: Missing or placeholder API key, skipping fetch');
+            return [];
+        }
+
         console.log('STRATZ: Fetching for steamAccountId:', steamAccountId, 'position:', position);
-        console.log('STRATZ: API Key available:', !!STRATZ_API_KEY);
 
         const query = position ?
             getPlayerHeroesByPositionQuery(steamAccountId, position) :
@@ -91,10 +95,14 @@ export const getTopHeroesByPositionStratz = async (steamAccountId, position) => 
         console.log('STRATZ: Response headers:', response.headers);
 
         if (!response.ok) {
+            if (response.status === 403) {
+                console.warn('STRATZ: Access Forbidden (403). Possible invalid or expired API key.');
+                return [];
+            }
             // Try to get error details from 400 response
-            const errorText = await response.text();
-            console.log('STRATZ: Error response body:', errorText);
-            throw new Error(`STRATZ API error: ${response.status} - ${errorText}`);
+            const errorText = await response.text().catch(() => 'No details');
+            console.warn(`STRATZ API error: ${response.status} - ${errorText}`);
+            return []; // Graceful fallback
         }
 
         const data = await response.json();
@@ -190,8 +198,8 @@ query {
  * @returns {Array} Top 3 Dota Plus heroes
  */
 export const getTopDotaPlusHeroes = async (steamAccountId, forceRefresh = false) => {
-    if (!STRATZ_API_KEY) {
-        console.warn('STRATZ API key not found, skipping Dota Plus heroes fetch');
+    if (!STRATZ_API_KEY || STRATZ_API_KEY.includes('PASTE_')) {
+        console.warn('STRATZ API key not found or invalid, skipping Dota Plus heroes fetch');
         return [];
     }
 
@@ -224,9 +232,13 @@ export const getTopDotaPlusHeroes = async (steamAccountId, forceRefresh = false)
         });
 
         if (!response.ok) {
+            if (response.status === 403) {
+                console.warn('STRATZ Dota Plus: Access Forbidden (403). Skipping.');
+                return [];
+            }
             const errorText = await response.text().catch(() => 'No error details');
             console.warn(`STRATZ API error: ${response.status} - ${errorText}`);
-            throw new Error(`STRATZ API error: ${response.status}`);
+            return [];
         }
 
         const data = await response.json();
