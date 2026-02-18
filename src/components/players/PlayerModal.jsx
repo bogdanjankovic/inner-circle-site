@@ -39,7 +39,7 @@ export const PlayerModal = ({ player, onClose, stats }) => {
                     let posHeroes = [];
                     if (player.position && player.position !== 0) {
                         console.log('=== GETTING POSITION HEROES FROM STRATZ (CACHED) ===');
-                        const accountId = player.accountId || steamIdToAccountId(player.steamId.toString());
+                        const accountId = player.accountId || (player.steamId ? steamIdToAccountId(player.steamId.toString()) : null);
                         posHeroes = await getPositionHeroesFromStratz(accountId, player.position, player.steamId, false);
                     }
 
@@ -97,7 +97,7 @@ export const PlayerModal = ({ player, onClose, stats }) => {
             if (player.steamId && player.position && player.position !== 0) {
                 try {
                     console.log('=== POSITION CHANGED - FORCE REFRESHING STRATZ ===');
-                    const accountId = player.accountId || steamIdToAccountId(player.steamId.toString());
+                    const accountId = player.accountId || (player.steamId ? steamIdToAccountId(player.steamId.toString()) : null);
                     const posHeroes = await getPositionHeroesFromStratz(accountId, player.position, player.steamId, true);
                     setPositionHeroes(posHeroes);
                 } catch (error) {

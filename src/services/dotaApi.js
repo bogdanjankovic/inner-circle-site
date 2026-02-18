@@ -182,13 +182,16 @@ const calculateStatsFromTotals = (totals, wl, recentMatches) => {
  * @returns {string} accountId
  */
 export const steamIdToAccountId = (steamId64) => {
+    if (!steamId64) return null;
     try {
         const bigId = BigInt(steamId64);
         const offset = BigInt('76561197960265728');
+        // If it's already a 32-bit ID (or at least much smaller than the 64-bit offset)
+        if (bigId < offset) return steamId64.toString();
         return (bigId - offset).toString();
     } catch (e) {
         console.warn("Invalid SteamID format, assuming it is already AccountID or invalid:", steamId64);
-        return steamId64; // Fallback or assume it's already 32-bit if small enough
+        return steamId64.toString();
     }
 };
 

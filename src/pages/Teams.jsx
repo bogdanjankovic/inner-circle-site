@@ -113,7 +113,7 @@ const Teams = () => {
                 <PlayerModal
                     player={selectedPlayer}
                     onClose={() => setSelectedPlayer(null)}
-                    stats={selectedPlayer.steamId ? tournamentStats[steamIdToAccountId(selectedPlayer.steamId.toString())] : null}
+                    stats={selectedPlayer.steamId || selectedPlayer.accountId ? tournamentStats[steamIdToAccountId((selectedPlayer.steamId || selectedPlayer.accountId).toString())] : null}
                 />
             )}
 
