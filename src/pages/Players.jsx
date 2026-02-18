@@ -2,7 +2,7 @@ import { useTournament } from '../context/TournamentContext';
 import RankDisplay from '../components/ui/RankDisplay';
 import HeroTooltip, { HeroImage } from '../components/ui/HeroTooltip';
 import React, { useState, useMemo, useEffect } from 'react';
-import { getMatchDetails, fetchPlayerData, getPositionHeroesFromStratz, clearPlayerPositionCache } from '../services/dotaApi';
+import { getMatchDetails, fetchPlayerData, getPositionHeroesFromStratz, clearPlayerPositionCache, steamIdToAccountId } from '../services/dotaApi';
 import { useNavigate } from 'react-router-dom';
 
 const PlayerModal = ({ player, onClose, stats }) => {
@@ -645,7 +645,8 @@ const Players = () => {
                 if (viewMode === 'registration') {
                     return player.winrate || 0;
                 } else {
-                    const stats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+                    const tid = player.steamId ? steamIdToAccountId(player.steamId.toString()) : null;
+                    const stats = tid && tournamentStats[tid] ? tournamentStats[tid] : {};
                     return stats.matches ? (stats.wins / stats.matches) * 100 : 0;
                 }
 
@@ -653,7 +654,8 @@ const Players = () => {
                 if (viewMode === 'registration') {
                     return player.stats?.gpm || 0;
                 } else {
-                    const stats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+                    const tid = player.steamId ? steamIdToAccountId(player.steamId.toString()) : null;
+                    const stats = tid && tournamentStats[tid] ? tournamentStats[tid] : {};
                     return stats.avgGpm || 0;
                 }
 
@@ -661,25 +663,34 @@ const Players = () => {
                 if (viewMode === 'registration') {
                     return player.stats?.xpm || 0;
                 } else {
-                    const stats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+                    const tid = player.steamId ? steamIdToAccountId(player.steamId.toString()) : null;
+                    const stats = tid && tournamentStats[tid] ? tournamentStats[tid] : {};
                     return stats.avgXpm || 0;
                 }
 
-            case 'matches':
-                const matchStats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+            case 'matches': {
+                const tid = player.steamId ? steamIdToAccountId(player.steamId.toString()) : null;
+                const matchStats = tid && tournamentStats[tid] ? tournamentStats[tid] : {};
                 return matchStats.matches || 0;
+            }
 
-            case 'kills':
-                const killStats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+            case 'kills': {
+                const tid = player.steamId ? steamIdToAccountId(player.steamId.toString()) : null;
+                const killStats = tid && tournamentStats[tid] ? tournamentStats[tid] : {};
                 return killStats.kills || 0;
+            }
 
-            case 'deaths':
-                const deathStats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+            case 'deaths': {
+                const tid = player.steamId ? steamIdToAccountId(player.steamId.toString()) : null;
+                const deathStats = tid && tournamentStats[tid] ? tournamentStats[tid] : {};
                 return deathStats.deaths || 0;
+            }
 
-            case 'assists':
-                const assistStats = player.steamId && tournamentStats[player.steamId] ? tournamentStats[player.steamId] : {};
+            case 'assists': {
+                const tid = player.steamId ? steamIdToAccountId(player.steamId.toString()) : null;
+                const assistStats = tid && tournamentStats[tid] ? tournamentStats[tid] : {};
                 return assistStats.assists || 0;
+            }
 
             default:
                 return 0;
@@ -768,7 +779,7 @@ const Players = () => {
                 <PlayerModal
                     player={selectedPlayer}
                     onClose={() => setSelectedPlayer(null)}
-                    stats={selectedPlayer.steamId ? tournamentStats[selectedPlayer.steamId] : null}
+                    stats={selectedPlayer.steamId ? tournamentStats[steamIdToAccountId(selectedPlayer.steamId.toString())] : null}
                 />
             )}
 

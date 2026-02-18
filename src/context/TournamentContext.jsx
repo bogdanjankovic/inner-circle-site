@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { steamIdToAccountId } from '../services/dotaApi';
 
 const TournamentContext = createContext();
 
@@ -112,8 +113,10 @@ export const TournamentProvider = ({ children }) => {
             // Player Logic
             if (!match.players) return;
             match.players.forEach(p => {
-                const tid = p.steamId || p.steamid || p.account_id?.toString() || p.tournamentPlayerId;
-                if (!tid) return;
+                const rawId = p.steamId || p.steamid || p.account_id?.toString() || p.tournamentPlayerId;
+                if (!rawId) return;
+
+                const tid = steamIdToAccountId(rawId.toString());
 
                 if (!newStats[tid]) {
                     newStats[tid] = {
