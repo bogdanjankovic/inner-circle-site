@@ -69,7 +69,7 @@ class HeroCache {
             const age = now - cachedAt;
 
             let maxAge = this.CACHE_DURATION;
-            if (dataType === 'opendota') maxAge = this.OPENDOTA_CACHE_DURATION;
+            if (dataType === 'openDota') maxAge = this.OPENDOTA_CACHE_DURATION;
             if (dataType === 'dotaplus') maxAge = this.DOTAPLUS_CACHE_DURATION;
 
             if (age > maxAge) {
@@ -78,7 +78,7 @@ class HeroCache {
             }
 
             console.log(`SUPABASE CACHE: Hit for ${steamAccountId} (${dataType}), age: ${Math.round(age / (60 * 60 * 1000))}h`);
-            return dataType === 'opendota' ? data.profile_data : data.heroes;
+            return dataType === 'openDota' ? data.profile_data : data.heroes;
         } catch (error) {
             console.error('SUPABASE CACHE: Exception:', error);
             return null;
@@ -111,7 +111,7 @@ class HeroCache {
                 cached_at: new Date().toISOString()
             };
 
-            if (dataType === 'opendota') {
+            if (dataType === 'openDota') {
                 record.profile_data = data;
                 record.heroes = null;
             } else {

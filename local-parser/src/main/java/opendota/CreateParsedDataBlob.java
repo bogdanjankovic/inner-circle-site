@@ -264,23 +264,21 @@ public class CreateParsedDataBlob {
             }
         }
 
-        // Calculate team scores from player kills (if not already set)
-        if (parsedData.radiantScore == null || parsedData.radiantScore == 0) {
-            int radiantKills = 0;
-            int direKills = 0;
-            for (int i = 0; i < parsedData.players.size(); i++) {
-                PlayerData p = parsedData.players.get(i);
-                if (p.kills != null) {
-                    if (i < 5) {
-                        radiantKills += p.kills;
-                    } else {
-                        direKills += p.kills;
-                    }
+        // Calculate team scores from player kills (if not already set or if based on
+        // bugged index)
+        int radiantKills = 0;
+        int direKills = 0;
+        for (PlayerData p : parsedData.players) {
+            if (p.kills != null && p.player_slot != null) {
+                if (p.player_slot < 128) {
+                    radiantKills += p.kills;
+                } else {
+                    direKills += p.kills;
                 }
             }
-            parsedData.radiantScore = radiantKills;
-            parsedData.direScore = direKills;
         }
+        parsedData.radiantScore = radiantKills;
+        parsedData.direScore = direKills;
     }
 
     private void greevilsGreed(Entry e, ParsedData container, Metadata meta) {

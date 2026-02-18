@@ -5,11 +5,11 @@ import { getTopHeroesByPositionStratz, steamIdToStratzAccountId, getTopDotaPlusH
 // Lane to position mapping based on Dota 2 lane system
 // OpenDota tracks by lane, not by position/role
 const LANE_TO_POSITION = {
-    1: 'safe_lane',   // Carry
-    2: 'mid_lane',    // Midlaner  
-    3: 'off_lane',    // Offlaner
-    4: 'off_lane',    // Soft Support
-    5: 'safe_lane'    // Hard Support
+    1: 1,   // Safe lane (Carry)
+    2: 2,   // Mid lane (Midlaner)
+    3: 3,   // Off lane (Offlaner)
+    4: 3,   // Off lane (Soft Support)
+    5: 1    // Safe lane (Hard Support)
 };
 
 // Position names for display
@@ -27,37 +27,153 @@ const POSITION_NAMES = {
  * @returns {Object} Calculated stats
  */
 const calculateStatsFromRecentMatches = (recentMatches) => {
+    console.log('[PUB STATS DEBUG] Called with matches:', recentMatches?.length);
+    if (recentMatches?.length > 0) {
+        console.log('[PUB STATS DEBUG] First match sample:', recentMatches[0]);
+        console.log('[PUB STATS DEBUG] First match fields:', Object.keys(recentMatches[0]));
+    }
+
     if (!recentMatches || recentMatches.length === 0) {
+        console.log('[PUB STATS DEBUG] No matches - returning zeros');
         return {
             avgKDA: 0,
             avgGPM: 0,
             avgXPM: 0,
-            winrate: 0
+            winrate: 0,
+            avgHeroDamage: 0,
+            avgHeroHealing: 0,
+            avgTowerDamage: 0,
+            avgObsPlaced: 0,
+            avgSenPlaced: 0,
+            avgObsKilled: 0,
+            avgSenKilled: 0
         };
     }
 
-    const validMatches = recentMatches.filter(match => match && match.kda);
+    const validMatches = recentMatches.filter(match => match && match.kda !== undefined);
 
     if (validMatches.length === 0) {
         return {
             avgKDA: 0,
             avgGPM: 0,
             avgXPM: 0,
-            winrate: 0
+            winrate: 0,
+            avgHeroDamage: 0,
+            avgHeroHealing: 0,
+            avgTowerDamage: 0,
+            avgObsPlaced: 0,
+            avgSenPlaced: 0,
+            avgObsKilled: 0,
+            avgSenKilled: 0
         };
     }
 
-    const totalKDA = validMatches.reduce((sum, match) => sum + match.kda, 0);
-    const totalGPM = validMatches.reduce((sum, match) => sum + (match.gold_per_min || 0), 0);
-    const totalXPM = validMatches.reduce((sum, match) => sum + (match.xp_per_min || 0), 0);
+    const totalKDA = validMatches.reduce((sum, match) => sum + (Number(match.kda) || 0), 0);
+    const totalGPM = validMatches.reduce((sum, match) => sum + (Number(match.gold_per_min) || 0), 0);
+    const totalXPM = validMatches.reduce((sum, match) => sum + (Number(match.xp_per_min) || 0), 0);
+
+    // Detailed stats
+    const totalHeroDamage = validMatches.reduce((sum, match) => sum + (Number(match.hero_damage) || 0), 0);
+    const totalHeroHealing = validMatches.reduce((sum, match) => sum + (Number(match.hero_healing) || 0), 0);
+    const totalTowerDamage = validMatches.reduce((sum, match) => sum + (Number(match.tower_damage) || 0), 0);
+
+    // Warding stats (OpenDota recentMatches has limited fields, sometimes these are missing or null)
+    const totalObsPlaced = validMatches.reduce((sum, match) => sum + (Number(match.obs_placed) || 0), 0);
+    const totalSenPlaced = validMatches.reduce((sum, match) => sum + (Number(match.sen_placed) || 0), 0);
+    // obs_destroyed might not be in recentMatches directly, but we'll try
+    const totalObsKilled = validMatches.reduce((sum, match) => sum + (Number(match.obs_destroyed) || 0), 0);
+    const totalSenKilled = validMatches.reduce((sum, match) => sum + (Number(match.sen_destroyed) || 0), 0);
+
     const wins = validMatches.filter(match => match.player_slot !== undefined ? (match.player_slot < 128 ? match.radiant_win : !match.radiant_win) : false).length;
 
     return {
         avgKDA: (totalKDA / validMatches.length).toFixed(2),
         avgGPM: Math.round(totalGPM / validMatches.length),
         avgXPM: Math.round(totalXPM / validMatches.length),
-        winrate: ((wins / validMatches.length) * 100).toFixed(1)
+        winrate: ((wins / validMatches.length) * 100).toFixed(1),
+        avgHeroDamage: Math.round(totalHeroDamage / validMatches.length),
+        avgHeroHealing: Math.round(totalHeroHealing / validMatches.length),
+        avgTowerDamage: Math.round(totalTowerDamage / validMatches.length),
+        avgObsPlaced: (totalObsPlaced / validMatches.length).toFixed(1),
+        avgSenPlaced: (totalSenPlaced / validMatches.length).toFixed(1),
+        avgObsKilled: (totalObsKilled / validMatches.length).toFixed(1),
+        avgSenKilled: (totalSenKilled / validMatches.length).toFixed(1)
     };
+};
+
+/**
+ * Calculate stats from OpenDota totals endpoint (aggregate data)
+ * @param {Array} totals - Array of totals data
+ * @param {Object} wl - Win/loss data  
+ * @param {Array} recentMatches - Recent matches for match count
+ * @returns {Object} Calculated stats
+ */
+const calculateStatsFromTotals = (totals, wl, recentMatches) => {
+    console.log('[TOTALS DEBUG] calculateStatsFromTotals called');
+    console.log('[TOTALS DEBUG] Totals length:', totals?.length);
+
+    if (!totals || totals.length === 0) {
+        console.log('[TOTALS DEBUG] No totals data, returning zeros');
+        return {
+            avgKDA: 0,
+            avgGPM: 0,
+            avgXPM: 0,
+            winrate: 0,
+            avgHeroDamage: 0,
+            avgHeroHealing: 0,
+            avgTowerDamage: 0,
+            avgObsPlaced: 0,
+            avgSenPlaced: 0,
+            avgObsKilled: 0,
+            avgSenKilled: 0
+        };
+    }
+
+    // Totals is an array of objects, each object has a 'field' and 'n' (count) and 'sum'
+    const totalsMap = {};
+    totals.forEach(item => {
+        if (item.field) {
+            totalsMap[item.field] = {
+                sum: item.sum || 0,
+                n: item.n || 0
+            };
+        }
+    });
+
+    console.log('[TOTALS DEBUG] Available fields:', Object.keys(totalsMap));
+
+    // Calculate averages from aggregated data
+    const matchCount = (wl?.win || 0) + (wl?.lose || 0);
+    const winrate = matchCount > 0 ? ((wl.win / matchCount) * 100).toFixed(1) : 0;
+
+    // Helper function to calculate average
+    const getAvg = (field) => {
+        const data = totalsMap[field];
+        if (!data || !data.n || data.n === 0) return 0;
+        return Math.round(data.sum / data.n);
+    };
+
+    const getAvgDecimal = (field) => {
+        const data = totalsMap[field];
+        if (!data || !data.n || data.n === 0) return 0;
+        return (data.sum / data.n).toFixed(1);
+    };
+
+    const stats = {
+        avgKDA: getAvgDecimal('kda'),
+        avgGPM: getAvg('gold_per_min'),
+        avgXPM: getAvg('xp_per_min'),
+        winrate: winrate,
+        avgHeroDamage: getAvg('hero_damage'),
+        avgHeroHealing: getAvg('hero_healing'),
+        avgTowerDamage: getAvg('tower_damage'),
+        avgObsPlaced: getAvgDecimal('purchase_ward_observer'),
+        avgSenPlaced: getAvgDecimal('purchase_ward_sentry'),
+        avgAPM: getAvg('actions_per_min')
+    };
+
+    console.log('[TOTALS DEBUG] Calculated stats:', stats);
+    return stats;
 };
 
 /**
@@ -218,8 +334,26 @@ export const fetchPlayerData = async (steamId, position = null, forceRefresh = f
     if (!forceRefresh) {
         const cachedData = await heroCache.getOpenDota(steamId);
         if (cachedData) {
-            console.log('Using cached OpenDota data');
-            return cachedData;
+            console.log('[CACHE DEBUG] Found cached OpenDota data');
+            console.log('[CACHE DEBUG] Cached stats:', cachedData.stats);
+
+            // Version check: cache must have all current fields
+            const hasValidStats = cachedData.stats &&
+                cachedData.stats.avgHeroDamage !== undefined &&
+                cachedData.stats.avgAPM !== undefined && // Check for APM
+                cachedData.stats.avgObsPlaced !== undefined && // Check for warding
+                (cachedData.stats.avgHeroDamage > 0 ||
+                    cachedData.stats.avgHeroHealing > 0 ||
+                    cachedData.stats.avgTowerDamage > 0);
+
+            if (!hasValidStats) {
+                console.log('[CACHE DEBUG] ❌ Cache INVALID - missing fields or zero stats, clearing cache');
+                await heroCache.clearOpenDota(steamId);
+                // Continue below to fetch fresh data
+            } else {
+                console.log('[CACHE DEBUG] ✅ Cache VALID - has all fields');
+                return cachedData;
+            }
         }
     } else {
         console.log('Force refresh - clearing OpenDota cache');
@@ -238,14 +372,17 @@ export const fetchPlayerData = async (steamId, position = null, forceRefresh = f
         // 2. Fetch Win/Loss
         const wlReq = fetch(`${API_URL}/players/${accountId}/wl`);
 
-        // 3. Fetch Recent Matches (for GPM/XPM/KDA averages)
-        const matchesReq = fetch(`${API_URL}/players/${accountId}/recentMatches`);
+        // 3. Fetch Recent Matches (for match count and winrate calculation)
+        const matchesReq = fetch(`${API_URL}/players/${accountId}/matches?limit=50`);
 
         // 4. Fetch Heroes (for top heroes)
         const heroesReq = fetch(`${API_URL}/players/${accountId}/heroes`);
 
-        const [profileRes, wlRes, matchesRes, heroesRes] = await Promise.all([
-            profileReq, wlReq, matchesReq, heroesReq
+        // 5. Fetch Totals (for detailed aggregate statistics: damage, healing, wards, etc.)
+        const totalsReq = fetch(`${API_URL}/players/${accountId}/totals`);
+
+        const [profileRes, wlRes, matchesRes, heroesRes, totalsRes] = await Promise.all([
+            profileReq, wlReq, matchesReq, heroesReq, totalsReq
         ]);
 
         if (!profileRes.ok) throw new Error('Failed to fetch profile');
@@ -255,9 +392,24 @@ export const fetchPlayerData = async (steamId, position = null, forceRefresh = f
         const wl = await wlRes.json();
         const recentMatches = await matchesRes.json();
         const heroes = await heroesRes.json();
+        const totals = await totalsRes.json();
 
-        // Calculate additional stats from recent matches
-        const stats = calculateStatsFromRecentMatches(recentMatches);
+        console.log('[API DEBUG] Recent matches response:', {
+            count: recentMatches?.length,
+            firstMatch: recentMatches?.[0],
+            firstMatchKeys: recentMatches?.[0] ? Object.keys(recentMatches[0]) : []
+        });
+
+        console.log('[API DEBUG] Totals response:', {
+            count: totals?.length,
+            firstTotal: totals?.[0],
+            fields: totals?.[0] ? Object.keys(totals[0]) : []
+        });
+
+        // Calculate stats from totals endpoint (aggregate data)
+        const stats = calculateStatsFromTotals(totals, wl, recentMatches);
+
+        console.log('[API DEBUG] Calculated stats:', stats);
 
         // Process heroes directly (no recursion) - ALWAYS USE OPENDOTA FOR REGISTRATION
         let topHeroes = [];
@@ -344,7 +496,14 @@ export const getPositionHeroesFromStratz = async (accountId, position, steamId64
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
         const cachedHeroes = await heroCache.getStratz(accountId, position);
-        if (cachedHeroes) {
+        console.log(`DEBUG CACHE CHECK for ${accountId}/${position}:`, {
+            exists: !!cachedHeroes,
+            isArray: Array.isArray(cachedHeroes),
+            length: cachedHeroes?.length,
+            data: cachedHeroes
+        });
+
+        if (cachedHeroes && Array.isArray(cachedHeroes) && cachedHeroes.length > 0) {
             console.log('Using cached STRATZ data for position:', position);
             return cachedHeroes;
         }
@@ -365,8 +524,54 @@ export const getPositionHeroesFromStratz = async (accountId, position, steamId64
             await heroCache.setStratz(accountId, position, stratzHeroes);
             return stratzHeroes;
         } else {
-            console.log('STRATZ returned 0 heroes - caching empty result');
-            await heroCache.setStratz(accountId, position, stratzHeroes);
+            console.log('STRATZ returned 0 heroes - falling back to OpenDota lane aggregation');
+            try {
+                const laneRole = LANE_TO_POSITION[position];
+                const url = laneRole
+                    ? `${API_URL}/players/${accountId}/matches?lane_role=${laneRole}&limit=50`
+                    : `${API_URL}/players/${accountId}/matches?limit=50`;
+
+                console.log(`OpenDota Fallback: Fetching matches from ${url}`);
+                const response = await fetch(url);
+                const matches = await response.json();
+
+                if (matches && Array.isArray(matches)) {
+                    console.log(`OpenDota: Aggregating ${matches.length} matches for position ${position}`);
+
+                    // Aggregate hero stats from matches
+                    const heroStats = {};
+                    matches.forEach(m => {
+                        if (!heroStats[m.hero_id]) {
+                            heroStats[m.hero_id] = { heroId: m.hero_id, games: 0, win: 0 };
+                        }
+                        heroStats[m.hero_id].games++;
+                        const isWin = m.player_slot < 128 ? m.radiant_win : !m.radiant_win;
+                        if (isWin) heroStats[m.hero_id].win++;
+                    });
+
+                    const topHeroes = Object.values(heroStats)
+                        .filter(h => h.games >= 1)
+                        .sort((a, b) => b.games - a.games)
+                        .slice(0, 3)
+                        .map(h => ({
+                            heroId: h.heroId,
+                            games: h.games,
+                            win: h.win,
+                            winrate: ((h.win / h.games) * 100).toFixed(1)
+                        }));
+
+                    if (topHeroes.length > 0) {
+                        console.log('Successfully aggregated OpenDota fallback heroes');
+                        await heroCache.setStratz(accountId, position, topHeroes);
+                        return topHeroes;
+                    }
+                }
+            } catch (odError) {
+                console.error('OpenDota aggregation fallback failed:', odError);
+            }
+
+            console.log('OpenDota fallback also returned 0 - caching empty result');
+            await heroCache.setStratz(accountId, position, []);
             return [];
         }
     } catch (error) {

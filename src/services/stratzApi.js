@@ -1,7 +1,14 @@
 // STRATZ GraphQL API Service
-// STRATZ GraphQL API Service
 const STRATZ_API_URL = '/api/stratz';
-const STRATZ_API_KEY = import.meta.env.VITE_STRATZ_API_KEY || ''; // Add to .env file
+const STRATZ_API_KEY = (import.meta.env.VITE_STRATZ_API_KEY || '').trim();
+
+console.log('STRATZ: Initializing API Key check...');
+if (STRATZ_API_KEY) {
+    console.log('STRATZ: Key length:', STRATZ_API_KEY.length);
+    console.log('STRATZ: Key prefix:', STRATZ_API_KEY.substring(0, 10) + '...');
+} else {
+    console.warn('STRATZ: API Key is MISSING or EMPTY');
+}
 
 // Position mapping for STRATZ
 const STRATZ_POSITIONS = {
@@ -91,17 +98,15 @@ export const getTopHeroesByPositionStratz = async (steamAccountId, position) => 
             body: requestBody
         });
 
-        console.log('STRATZ: Response status:', response.status);
-        console.log('STRATZ: Response headers:', response.headers);
+        // Simplified logging - don't spam console
+        // console.log('STRATZ: Response status:', response.status);
 
         if (!response.ok) {
+            console.warn(`STRATZ API Error (${response.status})`);
+
             if (response.status === 403) {
-                console.warn('STRATZ: Access Forbidden (403). Possible invalid or expired API key.');
-                return [];
+                console.warn('STRATZ: Access Forbidden - Check API key or tier limit');
             }
-            // Try to get error details from 400 response
-            const errorText = await response.text().catch(() => 'No details');
-            console.warn(`STRATZ API error: ${response.status} - ${errorText}`);
             return []; // Graceful fallback
         }
 
@@ -147,6 +152,11 @@ export const getTopHeroesByPositionStratz = async (steamAccountId, position) => 
         // If still not enough, take all with at least 1 match
         if (filteredHeroes.length < 3) {
             filteredHeroes = heroesPerformance.filter(h => h.matchCount >= 1);
+        }
+
+        if (filteredHeroes.length === 0) {
+            console.log(`STRATZ: No heroes found for position ${position} (POSITION_${position}) after filtering.`);
+            console.log('STRATZ: Total heroes returned by API:', heroesPerformance.length);
         }
 
         return filteredHeroes
@@ -232,26 +242,22 @@ export const getTopDotaPlusHeroes = async (steamAccountId, forceRefresh = false)
         });
 
         if (!response.ok) {
+            // Simplified error logging - don't log full HTML responses
+            console.warn(`STRATZ Dota Plus: API Error (${response.status})`);
+
             if (response.status === 403) {
-                console.warn('STRATZ Dota Plus: Access Forbidden (403). Skipping.');
-                return [];
+                console.warn('STRATZ Dota Plus: Access Forbidden - Cloudflare challenge or insufficient API tier');
             }
-            const errorText = await response.text().catch(() => 'No error details');
-            console.warn(`STRATZ API error: ${response.status} - ${errorText}`);
             return [];
         }
 
         const data = await response.json();
 
-        console.log('STRATZ Dota Plus: Full response data:', data);
+        // Detailed logging removed to reduce console clutter
+        // console.log('STRATZ Dota Plus: Full response data:', data);
 
         if (data.errors) {
-            console.log('STRATZ Dota Plus: GraphQL errors:', data.errors);
-            data.errors.forEach((error, index) => {
-                console.log(`STRATZ Dota Plus Error ${index + 1}:`, error.message);
-                console.log(`STRATZ Dota Plus Error ${index + 1} Locations:`, error.locations);
-                console.log(`STRATZ Dota Plus Error ${index + 1} Path:`, error.path);
-            });
+            console.warn('STRATZ Dota Plus: GraphQL errors detected');
             throw new Error(`GraphQL error: ${data.errors[0].message}`);
         }
 

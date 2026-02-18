@@ -29,23 +29,16 @@ const useHeroMap = () => {
 
 export const HeroImage = ({ heroId, style }) => {
     const heroMap = useHeroMap();
-    
-    console.log(`[HeroImage] Looking for hero ID ${heroId}. Map size: ${Object.keys(heroMap).length}`);
-    
+
+    // Debug log removed to reduce console clutter
+    // console.log(`[HeroImage] Looking for hero ID ${heroId}. Map size: ${Object.keys(heroMap).length}`);
+
     if (!heroId) return null;
-    
+
     const hero = heroMap[heroId];
     if (!hero) {
-        // Only log warning for unique hero IDs to reduce spam
-        if (!window.loggedHeroWarnings) window.loggedHeroWarnings = new Set();
-        if (!window.loggedHeroWarnings.has(heroId)) {
-            console.warn(`[HeroImage] Hero ID ${heroId} not found in map. Map size: ${Object.keys(heroMap).length}`);
-            window.loggedHeroWarnings.add(heroId);
-        }
+        // Hero not found - silently return null to reduce console spam
         return null;
-    }
-    if (hero && !hero.img) {
-        console.warn(`[HeroImage] Hero ID ${heroId} found but missing 'img' property.`, hero);
     }
 
     // OpenDota constants provide paths like "/apps/dota2/images/dota_react/heroes/icons/antimage.png?"

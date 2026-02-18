@@ -44,6 +44,7 @@ public class WebsiteMatchData {
         public int netWorth;
         public int gpm;
         public int xpm;
+        public int apm; // Actions Per Minute
         public int heroDamage;
         public int towerDamage;
         public int heroHealing;
@@ -308,13 +309,21 @@ public class WebsiteMatchData {
             result.direScore = parsed.direScore;
 
             // Build players array
+            class PlayerWithSlot {
+                Player player;
+                int slot;
+            }
+            List<PlayerWithSlot> allPlayersWithSlots = new ArrayList<>();
+
             for (int slot = 0; slot < 10; slot++) {
                 Player player = new Player();
                 PlayerData pd = parsed.players.get(slot);
                 Entry lastInterval = lastIntervals.get(slot);
 
-                // Basic info
-                player.team = slot < 5 ? "Radiant" : "Dire";
+                // Basic info - Use actual player_slot to determine team
+                int current_player_slot = (pd.player_slot != null) ? pd.player_slot
+                        : (slot < 5 ? slot : 128 + (slot - 5));
+                player.team = current_player_slot < 128 ? "Radiant" : "Dire";
                 player.heroId = playerHeroIds.getOrDefault(slot, 0);
                 player.heroName = getHeroName(player.heroId, playerUnits.get(slot));
                 player.facet = playerVariants.getOrDefault(slot, 0);
@@ -322,7 +331,6 @@ public class WebsiteMatchData {
                 // Stats from last interval including player name and steamId
                 if (lastInterval != null) {
                     player.name = lastInterval.name != null ? lastInterval.name : "Player " + (slot + 1);
-                    // Safely convert longValue to string
                     if (lastInterval.longValue != null) {
                         player.steamId = String.valueOf(lastInterval.longValue);
                     } else {
@@ -337,7 +345,7 @@ public class WebsiteMatchData {
                     player.netWorth = lastInterval.networth != null ? lastInterval.networth : 0;
                 }
 
-                // Calculate GPM/XPM from gold_t and xp_t
+                // GPM/XPM/APM extraction
                 try {
                     if (pd.gold_t != null && !pd.gold_t.isEmpty()) {
                         int totalGold = pd.gold_t.get(pd.gold_t.size() - 1);
@@ -347,139 +355,112 @@ public class WebsiteMatchData {
                         int totalXp = pd.xp_t.get(pd.xp_t.size() - 1);
                         player.xpm = maxTime > 0 ? (int) (totalXp / (maxTime / 60.0)) : 0;
                     }
+                    if (pd.actions != null && !pd.actions.isEmpty()) {
+                        int totalActions = 0;
+                        for (Integer count : pd.actions.values()) {
+                            if (count != null)
+                                totalActions += count;
+                        }
+                        player.apm = maxTime > 0 ? (int) (totalActions / (maxTime / 60.0)) : 0;
+                    }
                 } catch (Exception ex) {
-                    // Keep default 0 values
                 }
 
-                // Sum hero damage from damage map
+                // Damage/Healing sums
                 try {
                     if (pd.damage != null) {
                         for (Map.Entry<String, Integer> dmgEntry : pd.damage.entrySet()) {
                             String target = dmgEntry.getKey();
-                            if (target.contains("npc_dota_hero_")) {
+                            if (target.contains("npc_dota_hero_"))
                                 player.heroDamage += dmgEntry.getValue();
-                            } else if (target.contains("_tower") || target.contains("_rax_") ||
-                                    target.contains("_fort") || target.contains("_healers")) {
+                            else if (target.contains("_tower") || target.contains("_rax_") || target.contains("_fort")
+                                    || target.contains("_healers"))
                                 player.towerDamage += dmgEntry.getValue();
-                            }
                         }
                     }
-                } catch (Exception ex) {
-                    // Keep default 0
-                }
-
-                // Sum healing
-                try {
                     if (pd.healing != null) {
-                        for (Integer heal : pd.healing.values()) {
+                        for (Integer heal : pd.healing.values())
                             player.heroHealing += heal;
-                        }
                     }
                 } catch (Exception ex) {
-                    // Keep default 0
                 }
 
-                // Extract items
-                // Extract items
+                // Items and backpack
                 try {
-                    // Start with items from parser (final state)
-                    if (pd.items != null && !pd.items.isEmpty()) {
+                    if (pd.items != null)
                         player.items.addAll(pd.items);
-                    } else if (pd.purchase_log != null) {
-                        // Fallback: Extract from purchase log
-                        List<String> allPurchases = new ArrayList<>();
-                        for (Map<String, Object> purchase : pd.purchase_log) {
-                            String item = (String) purchase.get("key");
-                            if (item != null && !item.startsWith("recipe_") && !item.equals("ward_observer")
-                                    && !item.equals("ward_sentry") && !item.equals("tango") && !item.equals("clarity")
-                                    && !item.equals("enchanted_mango") && !item.equals("faerie_fire")) {
-                                allPurchases.add(item);
-                            }
-                        }
-                        int start = Math.max(0, allPurchases.size() - 6);
-                        for (int i = start; i < allPurchases.size(); i++) {
-                            player.items.add(allPurchases.get(i));
-                        }
-                    }
-
-                    if (pd.backpack != null && !pd.backpack.isEmpty()) {
+                    if (pd.backpack != null)
                         player.backpack.addAll(pd.backpack);
-                    }
-
-                    if (pd.purchase_log != null && !pd.purchase_log.isEmpty()) {
+                    if (pd.purchase_log != null)
                         player.purchase_log.addAll(pd.purchase_log);
-                    }
-
-                    if (pd.neutral_item != null)
-                        player.neutral_item = pd.neutral_item;
-                    if (pd.aghs_scepter != null)
-                        player.aghs_scepter = pd.aghs_scepter;
-                    if (pd.aghs_shard != null)
-                        player.aghs_shard = pd.aghs_shard;
-
+                    player.neutral_item = pd.neutral_item;
+                    player.aghs_scepter = pd.aghs_scepter != null && pd.aghs_scepter;
+                    player.aghs_shard = pd.aghs_shard != null && pd.aghs_shard;
                 } catch (Exception ex) {
-                    // Keep empty items
                 }
 
-                // Extract positions from lane_pos (format: {"time": {"x": y}})
+                // Positions
                 try {
                     if (pd.lane_pos != null) {
                         for (Map.Entry<String, HashMap<String, Integer>> timeEntry : pd.lane_pos.entrySet()) {
-                            int time = Integer.parseInt(timeEntry.getKey());
+                            int t = Integer.parseInt(timeEntry.getKey());
                             for (Map.Entry<String, Integer> xyEntry : timeEntry.getValue().entrySet()) {
-                                int x = Integer.parseInt(xyEntry.getKey());
-                                int y = xyEntry.getValue();
-                                player.positions.add(new int[] { time, x, y });
+                                player.positions
+                                        .add(new int[] { t, Integer.parseInt(xyEntry.getKey()), xyEntry.getValue() });
                             }
-                        }
-                        if (slot == 0) {
-                            System.err.println("Player 0 positions count: " + player.positions.size());
                         }
                     }
                 } catch (Exception ex) {
-                    System.err.println("Failed to extract positions for slot " + slot + ": " + ex.getMessage());
                 }
 
-                // Extract ability build and talents
+                // Ability build
                 try {
                     if (pd.ability_upgrades != null) {
                         for (Map<String, Object> upgrade : pd.ability_upgrades) {
                             String ability = (String) upgrade.get("ability");
-                            if (ability != null) {
+                            if (ability != null)
                                 player.ability_build.add(ability);
-                            }
                         }
                     }
                     if (pd.talents != null) {
                         for (Map<String, Object> talent : pd.talents) {
                             String ability = (String) talent.get("ability");
-                            if (ability != null) {
+                            if (ability != null)
                                 player.talents.add(ability);
-                            }
                         }
                     }
                 } catch (Exception ex) {
-                    // Keep empty lists
                 }
 
-                result.players.add(player);
+                // Store actual player_slot for sorting
+                PlayerWithSlot pws = new PlayerWithSlot();
+                pws.player = player;
+                pws.slot = current_player_slot;
+                allPlayersWithSlots.add(pws);
+            }
+
+            // Sort players by player_slot (Radiant 0-4, then Dire 128-132)
+            allPlayersWithSlots.sort((a, b) -> Integer.compare(a.slot, b.slot));
+            for (PlayerWithSlot pws : allPlayersWithSlots) {
+                result.players.add(pws.player);
             }
 
             // Extract wards from obs_log and sen_log
             for (int slot = 0; slot < 10; slot++) {
                 try {
                     PlayerData pd = parsed.players.get(slot);
-                    String team = slot < 5 ? "Radiant" : "Dire";
+                    // Team is determined by pd.player_slot
+                    int current_player_slot = (pd.player_slot != null) ? pd.player_slot
+                            : (slot < 5 ? slot : 128 + (slot - 5));
+                    String team = current_player_slot < 128 ? "Radiant" : "Dire";
 
                     if (pd.obs_log != null) {
-                        System.err.println("Player slot " + slot + " obs_log size: " + pd.obs_log.size());
                         for (Entry obs : pd.obs_log) {
-                            Ward ward = new Ward();
-                            ward.type = "Observer";
-                            ward.team = team;
-                            ward.time = obs.time != null ? obs.time : 0;
-                            System.err.println("Observer ward: time=" + obs.time + ", x=" + obs.x + ", y=" + obs.y);
                             if (obs.x != null && obs.y != null) {
+                                Ward ward = new Ward();
+                                ward.type = "Observer";
+                                ward.team = team;
+                                ward.time = obs.time != null ? obs.time : 0;
                                 ward.x = Math.round(obs.x);
                                 ward.y = Math.round(obs.y);
                                 result.wards.add(ward);
@@ -488,14 +469,12 @@ public class WebsiteMatchData {
                     }
 
                     if (pd.sen_log != null) {
-                        System.err.println("Player slot " + slot + " sen_log size: " + pd.sen_log.size());
                         for (Entry sen : pd.sen_log) {
-                            Ward ward = new Ward();
-                            ward.type = "Sentry";
-                            ward.team = team;
-                            ward.time = sen.time != null ? sen.time : 0;
-                            System.err.println("Sentry ward: time=" + sen.time + ", x=" + sen.x + ", y=" + sen.y);
                             if (sen.x != null && sen.y != null) {
+                                Ward ward = new Ward();
+                                ward.type = "Sentry";
+                                ward.team = team;
+                                ward.time = sen.time != null ? sen.time : 0;
                                 ward.x = Math.round(sen.x);
                                 ward.y = Math.round(sen.y);
                                 result.wards.add(ward);
@@ -503,30 +482,26 @@ public class WebsiteMatchData {
                         }
                     }
                 } catch (Exception ex) {
-                    System.err.println("Ward extraction error for slot " + slot + ": " + ex.getMessage());
                 }
             }
 
-            // Extract picks/bans from draft_timings
-            try {
-                if (parsed.draft_timings != null) {
-                    for (Object dt : parsed.draft_timings) {
-                        try {
-                            String json = gson.toJson(dt);
-                            JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
-                            PickBan pb = new PickBan();
-                            pb.hero_id = obj.has("hero_id") ? obj.get("hero_id").getAsInt() : 0;
+            // Extract picks/bans from draft_timings if epilogue data is missing or empty
+            if (result.picks_bans.isEmpty() && parsed.draft_timings != null) {
+                for (Object dt : parsed.draft_timings) {
+                    try {
+                        String json = gson.toJson(dt);
+                        JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
+                        PickBan pb = new PickBan();
+                        pb.hero_id = obj.has("hero_id") ? obj.get("hero_id").getAsInt() : 0;
+                        if (pb.hero_id > 0) {
                             pb.is_pick = obj.has("pick") && obj.get("pick").getAsBoolean();
                             pb.team = obj.has("draft_active_team") ? obj.get("draft_active_team").getAsInt() : 2;
                             pb.order = obj.has("draft_order") ? obj.get("draft_order").getAsInt() : 0;
                             result.picks_bans.add(pb);
-                        } catch (Exception ex) {
-                            // Skip malformed entries
                         }
+                    } catch (Exception ex) {
                     }
                 }
-            } catch (Exception ex) {
-                // Keep empty picks_bans
             }
 
         } catch (

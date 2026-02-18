@@ -42,7 +42,6 @@ const PlayerModal = ({ player, onClose, stats }) => {
                     if (player.position && player.position !== 0) {
                         console.log('=== GETTING POSITION HEROES FROM STRATZ (CACHED) ===');
                         try {
-                            // Import directly to avoid issues
                             const { getPositionHeroesFromStratz } = await import('../services/dotaApi');
                             posHeroes = await getPositionHeroesFromStratz(player.accountId, player.position, player.steamId, false);
                             console.log('DEBUG: Position heroes loaded:', posHeroes);
@@ -55,32 +54,37 @@ const PlayerModal = ({ player, onClose, stats }) => {
                     // Get Dota Plus heroes from STRATZ (with caching)
                     let dotaPlusHeroes = [];
                     try {
-                        console.log('=== GETTING DOTA PLUS HEROES (CACHED) ===');
                         const { getTopDotaPlusHeroes, steamIdToStratzAccountId } = await import("../services/stratzApi.js");
                         const stratzAccountId = steamIdToStratzAccountId(player.steamId);
-                        console.log('DEBUG: Stratz account ID:', stratzAccountId);
                         dotaPlusHeroes = await getTopDotaPlusHeroes(stratzAccountId);
-                        console.log('DEBUG: Dota Plus heroes loaded:', dotaPlusHeroes);
                     } catch (error) {
                         console.error('ERROR loading Dota Plus heroes:', error);
-                        dotaPlusHeroes = [];
                     }
 
-                    setRefreshedPlayer({
-                        ...player,
-                        topHeroes: existingTopHeroes,
-                        dotaPlusHeroes: dotaPlusHeroes || []
-                    });
+                    // ✨ NEW: Fetch pub statistics from OpenDota (will use cache if available)
+                    console.log('[PUB STATS] Fetching player data for pub statistics...');
+                    try {
+                        const { fetchPlayerData } = await import('../services/dotaApi');
+                        const playerData = await fetchPlayerData(player.steamId, player.position);
+                        console.log('[PUB STATS] Fetched data:', playerData);
+
+                        setRefreshedPlayer(prev => ({
+                            ...prev,
+                            topHeroes: existingTopHeroes,
+                            dotaPlusHeroes: dotaPlusHeroes || [],
+                            stats: playerData.stats // Update stats with detailed pub statistics
+                        }));
+                    } catch (error) {
+                        console.error('[PUB STATS] Error fetching player data:', error);
+                        setRefreshedPlayer(prev => ({
+                            ...prev,
+                            topHeroes: existingTopHeroes,
+                            dotaPlusHeroes: dotaPlusHeroes || []
+                        }));
+                    }
                     setPositionHeroes(posHeroes || []);
-                    console.log('=== HEROES REFRESHED SUCCESSFULLY (USING EXISTING DATA) ===');
                 } catch (error) {
                     console.error('Failed to refresh heroes:', error);
-                    // Fallback to existing data
-                    setRefreshedPlayer({
-                        ...player,
-                        topHeroes: player.topHeroes || [],
-                        dotaPlusHeroes: []
-                    });
                     setPositionHeroes([]);
                 } finally {
                     setIsRefreshing(false);
@@ -90,6 +94,24 @@ const PlayerModal = ({ player, onClose, stats }) => {
 
         refreshHeroes();
     }, [player.steamId, player.position, player.accountId]);
+
+    // Force refresh STRATZ data when position changes
+    useEffect(() => {
+        const refreshPositionHeroes = async () => {
+            if (player.steamId && player.position && player.position !== 0) {
+                try {
+                    console.log('=== POSITION CHANGED - FORCE REFRESHING STRATZ ===');
+                    const { getPositionHeroesFromStratz } = await import('../services/dotaApi');
+                    const posHeroes = await getPositionHeroesFromStratz(player.accountId, player.position, player.steamId, true);
+                    setPositionHeroes(posHeroes);
+                } catch (error) {
+                    console.error('Failed to refresh position heroes:', error);
+                }
+            }
+        };
+
+        refreshPositionHeroes();
+    }, [player.position]);
 
     const displayStats = stats || {
         matches: 0,
@@ -188,38 +210,69 @@ const PlayerModal = ({ player, onClose, stats }) => {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div className="card" style={{ padding: '1rem' }}>
-                        <h3 style={{ fontSize: '1.1rem', marginBottom: '0.8rem' }}>Pub Statistika</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                    <div className="card" style={{ padding: '1.2rem' }}>
+                        <h3 style={{ fontSize: '1rem', marginBottom: '1.2rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Pub Statistika</h3>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
                             <div>
-                                <label style={{ color: '#888', fontSize: '0.8rem' }}>Winrate</label>
-                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{player.winrate}%</div>
+                                <label style={{ color: '#666', fontSize: '0.75rem', display: 'block', marginBottom: '0.2rem' }}>Winrate</label>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#4caf50' }}>{player.winrate}%</div>
                             </div>
                             <div>
-                                <label style={{ color: '#888', fontSize: '0.8rem' }}>Mečeva</label>
+                                <label style={{ color: '#666', fontSize: '0.75rem', display: 'block', marginBottom: '0.2rem' }}>GPM / XPM</label>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#ffd700' }}>
+                                    {player.stats?.gpm || 0} / {player.stats?.xpm || 0}
+                                </div>
+                            </div>
+                            <div>
+                                <label style={{ color: '#666', fontSize: '0.75rem', display: 'block', marginBottom: '0.2rem' }}>Mečeva</label>
                                 <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{player.winCount + player.lossCount}</div>
                             </div>
-                            <div>
-                                <label style={{ color: '#888', fontSize: '0.8rem' }}>GPM / XPM</label>
-                                <div style={{ fontSize: '1rem' }}>{player.stats?.gpm} / {player.stats?.xpm}</div>
-                            </div>
-                            <div>
-                                <label style={{ color: '#888', fontSize: '0.8rem' }}>KDA</label>
-                                <div style={{ fontSize: '1rem' }}>
-                                    {(() => {
-                                        if (player.stats?.kda && !isNaN(player.stats.kda)) {
-                                            return player.stats.kda;
-                                        }
-                                        const kills = Number(player.stats?.kills) || 0;
-                                        const deaths = Number(player.stats?.deaths) || 0;
-                                        const assists = Number(player.stats?.assists) || 0;
+                        </div>
 
-                                        if (kills > 0 || assists > 0) {
-                                            const kda = (kills + assists) / Math.max(deaths, 1);
-                                            return isNaN(kda) ? 'N/A' : kda.toFixed(2);
-                                        }
-                                        return 'N/A';
-                                    })()}
+                        <div style={{
+                            marginTop: '1.2rem',
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(3, 1fr)',
+                            gap: '0.8rem',
+                            background: 'rgba(0,0,0,0.5)',
+                            padding: '0.8rem',
+                            borderRadius: '6px',
+                            fontSize: '0.85rem'
+                        }} title="Prosečan damage i healing po meču (poslednjih 50 mečeva)">
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ color: '#f44336', fontWeight: 'bold' }}>{player.stats?.avgHeroDamage?.toLocaleString() || 0}</div>
+                                <div style={{ fontSize: '0.65rem', color: '#666' }}>HERO DAMAGE</div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ color: '#4caf50', fontWeight: 'bold' }}>{player.stats?.avgHeroHealing?.toLocaleString() || 0}</div>
+                                <div style={{ fontSize: '0.65rem', color: '#666' }}>HEALING</div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ color: '#ffa726', fontWeight: 'bold' }}>{player.stats?.avgTowerDamage?.toLocaleString() || 0}</div>
+                                <div style={{ fontSize: '0.65rem', color: '#666' }}>TOWER DMG</div>
+                            </div>
+                        </div>
+
+                        <div style={{
+                            marginTop: '0.8rem',
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: '0.8rem',
+                            fontSize: '0.8rem'
+                        }}>
+                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '4px' }}>
+                                <div style={{ color: '#666', fontSize: '0.65rem', marginBottom: '0.2rem' }}>WARDING (BOUGHT)</div>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <span title="Observers Bought">👁️ {player.stats?.avgObsPlaced || 0}</span>
+                                    <span title="Sentries Bought">🛡️ {player.stats?.avgSenPlaced || 0}</span>
+                                </div>
+                            </div>
+                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '4px' }}>
+                                <div style={{ color: '#666', fontSize: '0.65rem', marginBottom: '0.2rem' }}>DEWARDING (KILLED)</div>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <span title="Observers Killed">👁️ {player.stats?.avgObsKilled || 0}</span>
+                                    <span title="Sentries Killed">🛡️ {player.stats?.avgSenKilled || 0}</span>
                                 </div>
                             </div>
                         </div>
@@ -400,7 +453,7 @@ const PlayerModal = ({ player, onClose, stats }) => {
                 {refreshedPlayer.position && refreshedPlayer.position !== 0 && (
                     <div style={{ marginTop: '1.5rem' }}>
                         <h3 style={{ color: '#2196f3', fontSize: '1.1rem' }}>
-                            Top {POSITIONS.find(p => p.id === refreshedPlayer.position)?.name} Heroji u poslednje vreme
+                            Top {POSITIONS.find(p => p.id === refreshedPlayer.position)?.name} Heroji (poslednjih 50 mečeva)
                         </h3>
                         {positionHeroes.length > 0 ? (
                             <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem' }}>

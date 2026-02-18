@@ -8,4 +8,5 @@ if not exist "%JAVA_EXE%" (
     exit /b 1
 )
 
-"%JAVA_EXE%" -cp "%JAR_PATH%" opendota.Main %*
+echo Starting GUI Parser...
+start "" "%JAVA_EXE%" -jar "%JAR_PATH%"

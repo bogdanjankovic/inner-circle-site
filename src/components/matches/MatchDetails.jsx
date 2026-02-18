@@ -120,18 +120,16 @@ const processMatchData = (rawMatch) => {
     if (!rawMatch) return null;
     const processed = { ...rawMatch };
 
-    // 1. Calculate Scores if missing
-    if (processed.radiantScore === undefined || processed.radiantScore === 0) {
-        let rScore = 0, dScore = 0;
-        (processed.players || []).forEach(p => {
-            const kills = p.kills || 0;
-            const slot = p.player_slot !== undefined ? p.player_slot : (p.team === 'Radiant' ? 0 : 128);
-            if (slot < 128) rScore += kills;
-            else dScore += kills;
-        });
-        processed.radiantScore = rScore;
-        processed.direScore = dScore;
-    }
+    // 1. Recalculate Scores from player totals (Always, to ensure accuracy)
+    let rScore = 0, dScore = 0;
+    (processed.players || []).forEach(p => {
+        const kills = p.kills || 0;
+        const slot = p.player_slot !== undefined ? p.player_slot : (p.team === 'Radiant' ? 0 : 128);
+        if (slot < 128) rScore += kills;
+        else dScore += kills;
+    });
+    processed.radiantScore = rScore;
+    processed.direScore = dScore;
 
     // 2. Normalize Players
     processed.players = (processed.players || []).map(p => {
