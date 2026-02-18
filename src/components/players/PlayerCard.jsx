@@ -103,7 +103,7 @@ export const PlayerCard = ({ player, stats, viewMode, onClick }) => {
                     <>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                             <span style={{ color: '#888' }}>Winrate:</span>
-                            <span style={{ color: '#4caf50', fontWeight: 'bold' }}>{player.winrate}%</span>
+                            <span style={{ color: '#4caf50', fontWeight: 'bold' }}>{player.winrate || 0}%</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                             <span style={{ color: '#888' }}>GPM / XPM:</span>
@@ -111,7 +111,7 @@ export const PlayerCard = ({ player, stats, viewMode, onClick }) => {
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                             <span style={{ color: '#888' }}>Mečeva:</span>
-                            <span>{player.winCount + player.lossCount || 0}</span>
+                            <span>{(Number(player.winCount) || 0) + (Number(player.lossCount) || 0)}</span>
                         </div>
                     </>
                 ) : (

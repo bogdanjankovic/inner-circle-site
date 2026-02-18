@@ -62,17 +62,19 @@ export const PlayerModal = ({ player, onClose, stats }) => {
 
                         setRefreshedPlayer(prev => ({
                             ...prev,
-                            topHeroes: existingTopHeroes,
+                            ...playerData,
+                            topHeroes: existingTopHeroes.length > 0 ? existingTopHeroes : (playerData.topHeroes || []),
                             dotaPlusHeroes: dotaPlusHeroes || [],
-                            stats: playerData.stats // Update stats with detailed pub statistics
+                            winCount: playerData.profile?.winCount || 0,
+                            lossCount: playerData.profile?.lossCount || 0,
+                            stats: {
+                                ...playerData.stats,
+                                gpm: playerData.stats?.avgGPM || 0,
+                                xpm: playerData.stats?.avgXPM || 0
+                            }
                         }));
                     } catch (error) {
                         console.error('[PUB STATS] Error fetching player data:', error);
-                        setRefreshedPlayer(prev => ({
-                            ...prev,
-                            topHeroes: existingTopHeroes,
-                            dotaPlusHeroes: dotaPlusHeroes || []
-                        }));
                     }
 
                     setPositionHeroes(posHeroes || []);
@@ -123,14 +125,14 @@ export const PlayerModal = ({ player, onClose, stats }) => {
 
                 <div className="modal-stack-mobile" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <img
-                        src={player.avatar || 'https://via.placeholder.com/150'}
-                        alt={player.personaName}
+                        src={refreshedPlayer.avatar || 'https://via.placeholder.com/150'}
+                        alt={refreshedPlayer.personaName}
                         style={{ width: '80px', height: '80px', borderRadius: '50%', border: '3px solid var(--accent)' }}
                     />
                     <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                            <h2 style={{ fontSize: '1.8rem', margin: 0 }}>{player.personaName}</h2>
-                            {player.isCaptain && (
+                            <h2 style={{ fontSize: '1.8rem', margin: 0 }}>{refreshedPlayer.personaName}</h2>
+                            {refreshedPlayer.isCaptain && (
                                 <span style={{
                                     padding: '0.2rem 0.5rem',
                                     background: '#ffd700',
@@ -153,7 +155,7 @@ export const PlayerModal = ({ player, onClose, stats }) => {
                             </span>
                         </div>
                         <div className="rank-row" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                            <RankDisplay rankTier={player.rankTier} leaderboardRank={player.leaderboardRank} width="40px" />
+                            <RankDisplay rankTier={refreshedPlayer.rankTier} leaderboardRank={refreshedPlayer.leaderboardRank} width="40px" />
                             {player.teamName ? (
                                 <button
                                     onClick={() => {
@@ -210,7 +212,7 @@ export const PlayerModal = ({ player, onClose, stats }) => {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
                             <div>
                                 <label style={{ color: '#666', fontSize: '0.75rem', display: 'block', marginBottom: '0.2rem' }}>Winrate</label>
-                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#4caf50' }}>{player.winrate}%</div>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#4caf50' }}>{refreshedPlayer.winrate || 0}%</div>
                             </div>
                             <div>
                                 <label style={{ color: '#666', fontSize: '0.75rem', display: 'block', marginBottom: '0.2rem' }}>GPM / XPM</label>
@@ -220,7 +222,9 @@ export const PlayerModal = ({ player, onClose, stats }) => {
                             </div>
                             <div>
                                 <label style={{ color: '#666', fontSize: '0.75rem', display: 'block', marginBottom: '0.2rem' }}>Mečeva</label>
-                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{player.winCount + player.lossCount}</div>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+                                    {(Number(refreshedPlayer.winCount) || 0) + (Number(refreshedPlayer.lossCount) || 0)}
+                                </div>
                             </div>
                         </div>
 
